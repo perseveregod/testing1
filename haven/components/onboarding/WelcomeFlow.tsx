@@ -2,10 +2,12 @@
 
 import { useCallback, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
-import { LocateFixed, MapPinned, Navigation, ShieldCheck } from "lucide-react";
+import { BellRing, LocateFixed, MapPinned, Navigation, ShieldCheck, Smartphone } from "lucide-react";
 import { EMERGENCY_NUMBER } from "@/lib/client/defaults";
 import { useLocation } from "@/components/providers/LocationProvider";
 import { AppIconMark } from "@/components/brand/AppIconMark";
+import { usePush } from "@/lib/client/push";
+import { InstallSheet } from "./InstallSheet";
 
 // First-run welcome: three short screens, shown once per device.
 
@@ -56,29 +58,50 @@ const STEPS = [
   },
 ] as const;
 
+// Shown as a fourth screen only when this device can take push notifications
+// (or can, once Haven is on the Home Screen).
+const ALERT_STEP = {
+  icon: BellRing,
+  color: "#ff2d55",
+  title: "Hear about it first",
+  body: "Alerts for incidents near your places, even when Haven is closed. Only what's near you, never a feed of everything.",
+} as const;
+const INSTALL_STEP = {
+  icon: Smartphone,
+  color: "#ff2d55",
+  title: "Put Haven on your Home Screen",
+  body: "Full screen, faster, and the only way iPhone lets a web app notify you. Ten seconds, from the Share button.",
+} as const;
+
 export function WelcomeFlow() {
   const done = useSyncExternalStore(subscribe, seen, () => true);
   const [step, setStep] = useState(0);
   const { request, status } = useLocation();
   const path = usePathname();
 
+  const push = usePush();
+  const [installOpen, setInstallOpen] = useState(false);
+
   const finish = useCallback(() => markSeen(), []);
 
   // Someone opening a shared incident link goes straight to it.
   if (done || path.startsWith("/incidents/")) return null;
-  const s = STEPS[step];
+  const extra = push.status === "off" ? ALERT_STEP : push.status === "install" ? INSTALL_STEP : null;
+  const steps = extra ? [...STEPS, extra] : STEPS;
+  const s = steps[Math.min(step, steps.length - 1)]!;
   const Icon = s.icon;
-  const last = step === STEPS.length - 1;
+  const locationStep = step === STEPS.length - 1;
+  const last = step === steps.length - 1;
 
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="welcome-title"
+      data-push={push.status}
       className="haven-fade-in fixed inset-0 z-[80] flex flex-col bg-bg"
       style={{ paddingTop: "calc(var(--safe-top) + 16px)", paddingBottom: "calc(var(--safe-bottom) + 20px)" }}
     >
-      <div className="ambient" aria-hidden />
       <div className="relative mx-auto flex w-full max-w-md flex-1 flex-col px-6">
         <div className="flex items-center justify-between">
           <AppIconMark className="size-9" />
@@ -100,7 +123,7 @@ export function WelcomeFlow() {
             {s.title}
           </h1>
           <p className="mt-3 text-[17px] leading-[1.5] text-muted">{s.body}</p>
-          {last && (
+          {locationStep && (
             <p className="mt-6 rounded-[16px] bg-surface px-4 py-3 text-[14px] leading-snug text-muted">
               Haven doesn&apos;t contact emergency services. If someone is in danger, call {EMERGENCY_NUMBER}.
             </p>
@@ -108,7 +131,7 @@ export function WelcomeFlow() {
         </div>
 
         <div className="mb-5 flex justify-center gap-2" aria-hidden>
-          {STEPS.map((_, i) => (
+          {steps.map((_, i) => (
             <span
               key={i}
               className={`h-2 rounded-full transition-all duration-300 ${i === step ? "w-6 bg-text" : "w-2 bg-white/25"}`}
@@ -116,13 +139,14 @@ export function WelcomeFlow() {
           ))}
         </div>
 
-        {last ? (
+        {locationStep ? (
           <div className="grid gap-2.5">
             {status !== "denied" && status !== "unavailable" && (
               <button
                 onClick={() => {
                   request();
-                  finish();
+                  if (last) finish();
+                  else setStep((n) => n + 1);
                 }}
                 className="press flex min-h-[54px] items-center justify-center gap-2 rounded-2xl bg-brand text-[16px] font-semibold text-white"
               >
@@ -130,11 +154,46 @@ export function WelcomeFlow() {
               </button>
             )}
             <button
-              onClick={finish}
+              onClick={() => (last ? finish() : setStep((n) => n + 1))}
               className="press flex min-h-[54px] items-center justify-center rounded-2xl bg-surface-2 text-[16px] font-semibold"
             >
-              {status === "denied" || status === "unavailable" ? "Get started" : "Maybe later"}
+              {status === "denied" || status === "unavailable" ? (last ? "Get started" : "Continue") : "Maybe later"}
             </button>
+          </div>
+        ) : last && extra === ALERT_STEP ? (
+          <div className="grid gap-2.5">
+            <button
+              onClick={async () => {
+                await push.enable();
+                finish();
+              }}
+              disabled={push.busy}
+              className="press flex min-h-[54px] items-center justify-center gap-2 rounded-2xl bg-live text-[16px] font-semibold text-white disabled:opacity-70"
+            >
+              <BellRing className="size-5" aria-hidden /> Turn on alerts
+            </button>
+            <button onClick={finish} className="press flex min-h-[54px] items-center justify-center rounded-2xl bg-surface-2 text-[16px] font-semibold">
+              Not now
+            </button>
+          </div>
+        ) : last && extra === INSTALL_STEP ? (
+          <div className="grid gap-2.5">
+            <button
+              onClick={() => setInstallOpen(true)}
+              className="press flex min-h-[54px] items-center justify-center gap-2 rounded-2xl bg-text text-[16px] font-semibold text-bg"
+            >
+              <Smartphone className="size-5" aria-hidden /> Show me how
+            </button>
+            <button onClick={finish} className="press flex min-h-[54px] items-center justify-center rounded-2xl bg-surface-2 text-[16px] font-semibold">
+              Not now
+            </button>
+            <InstallSheet
+              open={installOpen}
+              onClose={() => {
+                setInstallOpen(false);
+                finish();
+              }}
+            />
           </div>
         ) : (
           <button
