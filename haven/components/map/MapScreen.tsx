@@ -21,6 +21,7 @@ import { NearbyPeek } from "@/components/map/NearbyPeek";
 import { useClock } from "@/lib/client/safewalk";
 import { StormReportSheet } from "@/components/storm/StormReportSheet";
 import { DEFAULT_CENTER } from "@/lib/client/defaults";
+import { errorMessage } from "@/lib/client/api";
 import { activeLabel, distanceFrom, useIncidents, useNearYou, useViewer, type InitialIncidents } from "@/lib/client/hooks";
 import type { LatLng } from "@/lib/geo";
 import { useLocation } from "@/components/providers/LocationProvider";
@@ -289,13 +290,14 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
 
       {/* Top: search, filters, one status line, quick chips */}
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 z-20"
-        style={{ paddingTop: "calc(var(--safe-top) + 10px)" }}
+        className="pointer-events-none absolute inset-x-0 top-0 z-20 px-3"
+        style={{ paddingTop: "calc(var(--safe-top) + 8px)" }}
       >
-        <div className="pointer-events-auto mx-auto flex max-w-lg gap-2 px-4">
+        <div className="glass pointer-events-auto mx-auto max-w-lg rounded-[24px] p-2">
+        <div className="flex gap-2">
           <button
             onClick={() => setSearchOpen(true)}
-            className="glass press flex h-12 min-w-0 flex-1 items-center gap-2.5 rounded-full px-4 text-left"
+            className="press flex h-11 min-w-0 flex-1 items-center gap-2.5 rounded-full bg-white/[0.07] px-4 text-left"
           >
             <Search className="size-[18px] shrink-0 text-muted" aria-hidden />
             <span
@@ -312,18 +314,18 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
               setSelectedId(null);
               setStormPrefs({ on: !storm.on });
             }}
-            className={`press relative flex size-12 shrink-0 items-center justify-center rounded-full ${
-              storm.on ? "storm-on text-white" : "glass text-text"
+            className={`press relative flex size-11 shrink-0 items-center justify-center rounded-full ${
+              storm.on ? "storm-on text-white" : "bg-white/[0.07] text-text"
             }`}
           >
-            <StormIcon className="size-[24px]" active={storm.on} bolt={storm.on ? "#FFD34D" : "#FFC233"} />
+            <StormIcon className="size-[22px]" active={storm.on} bolt={storm.on ? "#FFD34D" : "#FFC233"} />
           </button>
           {!storm.on && (
           <button
             type="button"
             aria-label={`Filters${filterCount ? ` (${filterCount} active)` : ""}`}
             onClick={() => setFilterOpen(true)}
-            className="glass press relative flex size-12 shrink-0 items-center justify-center rounded-full text-text"
+            className="press relative flex size-11 shrink-0 items-center justify-center rounded-full bg-white/[0.07] text-text"
           >
             <SlidersHorizontal className="size-[18px]" aria-hidden />
             {filterCount > 0 && (
@@ -334,9 +336,8 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
           </button>
           )}
         </div>
-
         <div
-          className="no-scrollbar pointer-events-auto mx-auto mt-2 flex max-w-lg items-center gap-2 overflow-x-auto px-4 py-1"
+          className="no-scrollbar flex items-center gap-1.5 overflow-x-auto pt-2"
           role="toolbar"
           aria-label="Quick filters"
         >
@@ -349,8 +350,8 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
                   key={k ?? "all"}
                   aria-pressed={on}
                   onClick={() => setStormFilter(k)}
-                  className={`press inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold ${
-                    on ? "bg-text text-bg" : "glass text-text"
+                  className={`press inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold ${
+                    on ? "bg-text text-bg" : "bg-white/[0.07] text-text"
                   }`}
                 >
                   {dot && <span className="size-2 rounded-full" style={{ background: dot }} aria-hidden />}
@@ -373,8 +374,8 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
                     groups: q.id === null ? [] : [q.id],
                   }))
                 }
-                className={`press inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold ${
-                  on ? "bg-text text-bg" : "glass text-text"
+                className={`press inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold ${
+                  on ? "bg-text text-bg" : "bg-white/[0.07] text-text"
                 }`}
               >
                 {q.color && (
@@ -389,9 +390,10 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
             );
           })}
         </div>
+        </div>
 
         {/* Status: what the map is showing, and whether it is real. */}
-        <div className="pointer-events-auto mx-auto mt-1 flex max-w-lg px-4">
+        {storm.on && <div className="pointer-events-auto mx-auto mt-2 flex max-w-lg px-1">
           <p
             className="inline-flex h-7 items-center gap-2 rounded-full bg-bg/70 px-3 text-[12px] font-medium text-muted backdrop-blur-md tnum"
             aria-live="polite"
@@ -425,10 +427,10 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
               </>
             )}
           </p>
-        </div>
+        </div>}
 
         {storm.on && (
-          <div className="mx-auto mt-2 max-w-lg px-4">
+          <div className="mx-auto mt-2 max-w-lg px-1">
             <StormBanner />
           </div>
         )}
@@ -456,31 +458,18 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
         >
           <div className="mx-auto flex max-w-lg justify-end px-4 pb-3">
             <div className="pointer-events-auto flex flex-col items-end gap-2.5">
-              <div className="glass flex flex-col overflow-hidden rounded-[18px]">
-                <MapControl label="Map style" onClick={() => setLayersOpen(true)}>
-                  <Layers className="size-[18px]" aria-hidden />
+              <MapControl label="Map style" onClick={() => setLayersOpen(true)} className="glass rounded-full">
+                <Layers className="size-[18px]" aria-hidden />
+              </MapControl>
+              {Math.abs(camera.bearing - (camera.pitch > 5 ? BEARING_3D : 0)) > 2 && (
+                <MapControl label="Point the map north" onClick={() => mapRef.current?.resetNorth()} className="glass haven-pop rounded-full">
+                  <Navigation2
+                    className="size-[16px] fill-live text-live transition-transform duration-150"
+                    style={{ transform: `rotate(${-camera.bearing}deg)` }}
+                    aria-hidden
+                  />
                 </MapControl>
-                <span className="mx-2.5 h-px bg-line-strong" aria-hidden />
-                <MapControl
-                  label={camera.pitch > 5 ? "Switch to flat 2D view" : "Switch to 3D view"}
-                  onClick={() => mapRef.current?.toggle3D()}
-                  className="text-[12.5px] font-bold tracking-[0.02em]"
-                >
-                  {camera.pitch > 5 ? "2D" : "3D"}
-                </MapControl>
-                {Math.abs(camera.bearing) > 2 && (
-                  <>
-                    <span className="mx-2.5 h-px bg-line-strong" aria-hidden />
-                    <MapControl label="Point the map north" onClick={() => mapRef.current?.resetNorth()} className="haven-pop">
-                      <Navigation2
-                        className="size-[16px] fill-live text-live transition-transform duration-150"
-                        style={{ transform: `rotate(${-camera.bearing}deg)` }}
-                        aria-hidden
-                      />
-                    </MapControl>
-                  </>
-                )}
-              </div>
+              )}
               <MapControl
                 label={position ? "Center on my location" : "Use my location"}
                 onClick={locate}
@@ -539,9 +528,19 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
               </div>
             </div>
           )}
-          {!storm.on && !selected && !near.isLoading && (
+          {!storm.on && !selected && (
             <div className="mb-2">
-              <NearbyPeek items={near.items} position={position} now={now} onPick={setSelectedId} />
+              <NearbyPeek
+                items={near.items}
+                activeCount={near.activeCount}
+                loading={near.isLoading}
+                error={near.error ? errorMessage(near.error) : null}
+                onRetry={() => near.mutate()}
+                allDemo={near.items.length > 0 && near.items.every((i) => i.isDemo)}
+                position={position}
+                now={now}
+                onPick={setSelectedId}
+              />
             </div>
           )}
           <IncidentPreview
@@ -578,6 +577,8 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
         onClose={() => setLayersOpen(false)}
         value={mode}
         onChange={chooseMode}
+        tilted={camera.pitch > 5}
+        onToggle3D={() => mapRef.current?.toggle3D()}
       />
       <FilterSheet
         open={filterOpen}

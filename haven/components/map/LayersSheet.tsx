@@ -36,14 +36,40 @@ export function LayersSheet({
   onClose,
   value,
   onChange,
+  tilted,
+  onToggle3D,
 }: {
   open: boolean;
   onClose: () => void;
   value: MapMode;
   onChange: (m: MapMode) => void;
+  tilted?: boolean;
+  onToggle3D?: () => void;
 }) {
   return (
     <Sheet open={open} onClose={onClose} title="Map style">
+      {onToggle3D && (
+        <div className="mb-3 flex overflow-hidden rounded-[14px] bg-surface-2 p-[3px]" role="radiogroup" aria-label="View">
+          {(["2D", "3D"] as const).map((v) => {
+            const on = (v === "3D") === Boolean(tilted);
+            return (
+              <button
+                key={v}
+                role="radio"
+                aria-checked={on}
+                onClick={() => {
+                  if (!on) onToggle3D();
+                }}
+                className={`flex min-h-11 flex-1 items-center justify-center rounded-[11px] text-[14px] font-semibold ${
+                  on ? "bg-surface-3 text-text shadow-[0_1px_3px_rgba(0,0,0,0.4)]" : "text-muted"
+                }`}
+              >
+                {v === "2D" ? "Flat map" : "3D buildings"}
+              </button>
+            );
+          })}
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-2.5 pb-2">
         {MODES.map((m) => {
           const disabled = m.id === "satellite" && !MAPTILER_KEY;
