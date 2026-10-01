@@ -88,12 +88,14 @@ export function SignInSheet({
         </form>
       ) : (
         <form onSubmit={verify} className="pb-2">
-          <p className="mb-3 text-[14px] text-muted">
-            We sent a 6-digit code to <span className="font-semibold text-text">{email}</span>.
-          </p>
+          {!devCode && (
+            <p className="mb-3 text-[14px] text-muted">
+              We sent a 6-digit code to <span className="font-semibold text-text">{email}</span>.
+            </p>
+          )}
           {devCode && (
             <p className="mb-3 rounded-xl bg-warn/10 px-3 py-2 text-[13px]">
-              Development mode: email isn&apos;t configured, so your code is <span className="font-mono font-bold">{devCode}</span>
+              Demo mode: no email service is connected yet, so your code is shown here: <span className="font-mono font-bold">{devCode}</span>
             </p>
           )}
           <input

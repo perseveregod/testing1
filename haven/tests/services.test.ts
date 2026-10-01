@@ -1,4 +1,7 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+// Cookies only exist inside a real request; tests don't need them.
+vi.mock("@/server/auth/session", async (orig) => ({ ...(await orig<typeof import("@/server/auth/session")>()), setSessionCookie: async () => {} }));
 import { LocalStore } from "@/server/store/local";
 import { setStoreForTests } from "@/server/store";
 import type { UserRecord } from "@/server/store/types";
@@ -241,5 +244,18 @@ describe("demo incident ids", () => {
     setStoreForTests(store);
     await ingestAll(true);
     expect((await getIncidentDetail(id, null, null)).id).toBe(id);
+  });
+});
+
+describe("demo email sign-in", () => {
+  it("issues a code that verifies on any instance and rejects wrong codes", async () => {
+    const { startEmailSignIn, verifyEmailSignIn } = await import("@/server/auth/email");
+    const { devCode } = await startEmailSignIn("test@example.com", ip());
+    expect(devCode).toMatch(/^\d{6}$/);
+    // Same code from a "different server" (a fresh start call) within the window.
+    expect((await startEmailSignIn("test@example.com", ip())).devCode).toBe(devCode);
+    await expect(verifyEmailSignIn("test@example.com", "000000" === devCode ? "111111" : "000000", null, ip())).rejects.toMatchObject({ status: 400 });
+    const u = await verifyEmailSignIn("test@example.com", devCode!, null, ip());
+    expect(u.email).toBe("test@example.com");
   });
 });

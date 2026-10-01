@@ -1,6 +1,6 @@
-import { createHash, randomInt, timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
-import { config, isProduction } from "../config";
+import { config } from "../config";
 import { ApiError, rateLimit } from "../http";
 import { getStore } from "../store";
 import type { UserRecord } from "../store/types";
@@ -8,11 +8,17 @@ import { setSessionCookie } from "./session";
 
 // Email one-time-code sign-in. With Supabase configured, Supabase Auth sends
 // and verifies the code (enable "Email OTP" and put {{ .Token }} in the email
-// template). Without it, development mode generates the code locally and
-// returns it in the response so the flow can be tested end to end.
+// template). Without it (demo mode), the code is derived from the session
+// secret, the email and a 10-minute window, so every server instance agrees on
+// it with no shared storage, and it's shown on screen instead of emailed.
 
-const codes = new Map<string, { hash: Buffer; expires: number; attempts: number }>();
-const hash = (s: string) => createHash("sha256").update(s).digest();
+const WINDOW_MS = 10 * 60_000;
+const attempts = new Map<string, number>();
+
+function demoCode(email: string, window: number): string {
+  const mac = createHmac("sha256", config.sessionSecret).update(`${email.toLowerCase()}:${window}`).digest();
+  return String(mac.readUInt32BE(0) % 1_000_000).padStart(6, "0");
+}
 
 function supabaseAuth() {
   if (!config.store.supabaseUrl || !config.store.supabaseAnonKey) return null;
@@ -30,10 +36,7 @@ export async function startEmailSignIn(email: string, ip: string): Promise<{ dev
     if (error) throw new ApiError(502, "Couldn't send the code. Try again shortly.", "email_failed");
     return {};
   }
-  if (isProduction) throw new ApiError(503, "Email sign-in isn't configured.", "auth_unavailable");
-  const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
-  codes.set(email, { hash: hash(code), expires: Date.now() + 10 * 60_000, attempts: 0 });
-  console.info(`[haven] dev sign-in code for ${email}: ${code}`);
+  const code = demoCode(email, Math.floor(Date.now() / WINDOW_MS));
   return { devCode: code };
 }
 
@@ -43,11 +46,18 @@ async function verifyCode(email: string, code: string): Promise<boolean> {
     const { data, error } = await auth.verifyOtp({ email, token: code, type: "email" });
     return !error && Boolean(data.user);
   }
-  const entry = codes.get(email);
-  if (!entry || entry.expires < Date.now() || entry.attempts >= 5) return false;
-  entry.attempts++;
-  const ok = timingSafeEqual(entry.hash, hash(code));
-  if (ok) codes.delete(email);
+  const n = (attempts.get(email) ?? 0) + 1;
+  attempts.set(email, n);
+  if (n > 8) return false;
+  // Accept the current window and the previous one, so a code typed right
+  // after the window rolls over still works.
+  const w = Math.floor(Date.now() / WINDOW_MS);
+  const given = Buffer.from(code.padStart(6, "0"));
+  const ok = [w, w - 1].some((win) => {
+    const expected = Buffer.from(demoCode(email, win));
+    return expected.length === given.length && timingSafeEqual(expected, given);
+  });
+  if (ok) attempts.delete(email);
   return ok;
 }
 
