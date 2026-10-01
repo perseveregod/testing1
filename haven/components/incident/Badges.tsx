@@ -69,11 +69,12 @@ export function SourceBadge({ incident }: { incident: PublicIncident }) {
 }
 
 /**
- * Active and either fresh (under an hour) or serious: worth a LIVE badge.
- * Demo incidents are never "live": the red badge is reserved for real events.
+ * Worth a red LIVE badge: a real, active incident that is serious, or at least
+ * moderate and under an hour old. Low-severity calls (routine EMS runs, stalled
+ * cars) and demo examples never get it, so the badge keeps meaning something.
  */
 export function isLive(i: Pick<PublicIncident, "status" | "severity" | "createdAt"> & { isDemo?: boolean }, now = Date.now()): boolean {
-  if (i.status !== "active" || i.isDemo) return false;
+  if (i.status !== "active" || i.isDemo || i.severity === "low") return false;
   const fresh = now - new Date(i.createdAt).getTime() < 60 * 60_000;
   return fresh || i.severity === "high" || i.severity === "critical";
 }

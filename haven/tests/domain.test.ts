@@ -60,6 +60,20 @@ describe("source adapters", () => {
   });
 });
 
+describe("live badge", () => {
+  it("is reserved for real, active, non-trivial incidents", async () => {
+    const { isLive } = await import("@/components/incident/Badges");
+    const now = Date.now();
+    const base = { status: "active" as const, createdAt: new Date(now - 10 * 60_000).toISOString() };
+    expect(isLive({ ...base, severity: "moderate" }, now)).toBe(true);
+    expect(isLive({ ...base, severity: "low" }, now)).toBe(false);
+    expect(isLive({ ...base, severity: "moderate", isDemo: true }, now)).toBe(false);
+    expect(isLive({ ...base, severity: "high", createdAt: new Date(now - 5 * 3_600_000).toISOString() }, now)).toBe(true);
+    expect(isLive({ ...base, severity: "moderate", createdAt: new Date(now - 5 * 3_600_000).toISOString() }, now)).toBe(false);
+    expect(isLive({ ...base, status: "resolved", severity: "critical" }, now)).toBe(false);
+  });
+});
+
 describe("recency and privacy", () => {
   it("fades incidents after 2h and floors at 55%", async () => {
     const { recencyFactor } = await import("@/components/incident/Badges");
