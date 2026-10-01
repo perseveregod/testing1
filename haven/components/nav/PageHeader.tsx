@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { addTransitionType, startTransition } from "react";
 import { ChevronLeft } from "lucide-react";
 
 /**
@@ -31,7 +32,10 @@ export function PageHeader({
 
   useEffect(() => {
     if (large && sentinel.current) {
-      const io = new IntersectionObserver(([e]) => setScrolled(!e!.isIntersecting), { rootMargin: "-56px 0px 0px 0px" });
+      const io = new IntersectionObserver(
+        ([e]) => setScrolled(!e!.isIntersecting),
+        { rootMargin: "-56px 0px 0px 0px" },
+      );
       io.observe(sentinel.current);
       return () => io.disconnect();
     }
@@ -47,7 +51,9 @@ export function PageHeader({
     <>
       <header
         className={`sticky top-0 z-30 transition-[background-color,box-shadow] duration-300 ${
-          scrolled ? `glass-bar ${large && sub ? "!shadow-none" : ""}` : "bg-transparent"
+          scrolled
+            ? `glass-bar ${large && sub ? "!shadow-none" : ""}`
+            : "bg-transparent"
         }`}
         style={{ paddingTop: "var(--safe-top)" }}
       >
@@ -55,14 +61,22 @@ export function PageHeader({
           {back ? (
             <button
               onClick={() => {
-                if (typeof back === "string") router.push(back);
-                else if (window.history.length > 1) router.back();
-                else router.push("/");
+                // Slide back out the way we came in.
+                startTransition(() => {
+                  addTransitionType("nav-back");
+                  if (typeof back === "string") router.push(back);
+                  else if (window.history.length > 1) router.back();
+                  else router.push("/");
+                });
               }}
               aria-label="Back"
               className={`press z-10 inline-flex items-center justify-center rounded-full text-text ${transparent && !scrolled ? "glass size-10" : "size-11 hover:bg-surface-2"}`}
             >
-              <ChevronLeft className="size-[24px]" strokeWidth={2.2} aria-hidden />
+              <ChevronLeft
+                className="size-[24px]"
+                strokeWidth={2.2}
+                aria-hidden
+              />
             </button>
           ) : (
             <span className="size-11" />
@@ -82,7 +96,11 @@ export function PageHeader({
       {large && (
         <>
           <div className="mx-auto max-w-lg px-5 pb-2 pt-1">
-            <p className="text-[32px] font-bold leading-tight tracking-[-0.03em]" role="heading" aria-level={1}>
+            <p
+              className="text-[32px] font-bold leading-tight tracking-[-0.03em]"
+              role="heading"
+              aria-level={1}
+            >
               {title}
             </p>
             <div ref={sentinel} className="h-px" aria-hidden />

@@ -66,9 +66,12 @@
   --ease-spring: var(--ease-spring);
 }
 
+html {
+  background: var(--bg);
+}
+/* The body stays clear so the fixed ambient layer shows through. */
 html,
 body {
-  background: var(--bg);
   color: var(--text);
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
@@ -217,10 +220,12 @@ body {
 
 @keyframes haven-sheet-in {
   from {
-    transform: translateY(100%);
+    transform: translateY(100%) scale(0.98);
+    opacity: 0.6;
   }
   to {
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
+    opacity: 1;
   }
 }
 @keyframes haven-sheet-out {
@@ -281,7 +286,7 @@ body {
   }
 }
 .haven-shimmer {
-  background: linear-gradient(100deg, var(--surface-2) 30%, #23262c 50%, var(--surface-2) 70%) 0 0 / 200% 100%;
+  background: linear-gradient(100deg, rgba(255, 255, 255, 0.07) 30%, rgba(255, 255, 255, 0.14) 50%, rgba(255, 255, 255, 0.07) 70%) 0 0 / 200% 100%;
   animation: haven-shimmer 1.4s linear infinite;
 }
 
@@ -300,11 +305,28 @@ body {
     translate: var(--vt-offset) 0;
   }
 }
+/* Tabs: the old page sinks back slightly while the new one settles in. */
+@keyframes vt-settle {
+  from {
+    scale: 0.985;
+    filter: blur(6px);
+  }
+}
+@keyframes vt-sink {
+  to {
+    scale: 0.985;
+    filter: blur(6px);
+  }
+}
 ::view-transition-old(.tab) {
-  animation: 120ms ease-in both vt-fade reverse;
+  animation:
+    140ms ease-in both vt-fade reverse,
+    200ms ease-in both vt-sink;
 }
 ::view-transition-new(.tab) {
-  animation: 200ms var(--ease-out) 60ms both vt-fade;
+  animation:
+    220ms var(--ease-out) 40ms both vt-fade,
+    320ms var(--ease-out) both vt-settle;
 }
 ::view-transition-old(.nav-forward) {
   --vt-offset: -48px;
@@ -665,7 +687,7 @@ body {
 .ambient {
   position: fixed;
   inset: 0;
-  z-index: -1;
+  z-index: 0;
   overflow: hidden;
   pointer-events: none;
   background: radial-gradient(120% 80% at 50% 0%, #0d1424 0%, var(--bg) 60%);

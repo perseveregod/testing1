@@ -29,7 +29,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full">
         <Ambient />
-        <AppProviders>{children}</AppProviders>
+        <div className="relative z-[1] min-h-full">
+          <AppProviders>{children}</AppProviders>
+        </div>
       </body>
     </html>
   );

@@ -1,7 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Layers, LocateFixed, Navigation, Navigation2, Search, SlidersHorizontal } from "lucide-react";
+import {
+  Footprints,
+  Layers,
+  LocateFixed,
+  Navigation,
+  Navigation2,
+  Search,
+  SlidersHorizontal,
+} from "lucide-react";
+import Link from "next/link";
 import { DEFAULT_CENTER } from "@/lib/client/defaults";
 import { distanceFrom, useIncidents, useViewer } from "@/lib/client/hooks";
 import type { LatLng } from "@/lib/geo";
@@ -11,8 +20,19 @@ import { LiveBadge } from "@/components/incident/Badges";
 import { getCategory, type FilterGroup } from "@/lib/categories";
 import { IconButton } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/States";
-import { activeFilterCount, DEFAULT_FILTERS, FilterSheet, filterParams, type MapFilters } from "./FilterSheet";
-import { IncidentMap, type Camera, type MapHandle, type Viewport } from "./IncidentMap";
+import {
+  activeFilterCount,
+  DEFAULT_FILTERS,
+  FilterSheet,
+  filterParams,
+  type MapFilters,
+} from "./FilterSheet";
+import {
+  IncidentMap,
+  type Camera,
+  type MapHandle,
+  type Viewport,
+} from "./IncidentMap";
 import { LayersSheet } from "./LayersSheet";
 import { BEARING_3D, PITCH_3D, type MapMode } from "./map3d";
 
@@ -20,7 +40,8 @@ const MODE_KEY = "haven.mapMode";
 
 function savedMode(): MapMode {
   try {
-    const v = typeof window === "undefined" ? null : localStorage.getItem(MODE_KEY);
+    const v =
+      typeof window === "undefined" ? null : localStorage.getItem(MODE_KEY);
     return v === "night" || v === "day" || v === "satellite" ? v : "auto";
   } catch {
     return "auto";
@@ -34,19 +55,32 @@ const QUICK: { id: FilterGroup | null; label: string; color?: string }[] = [
   { id: "police", label: "Police", color: getCategory("police").color },
   { id: "fire", label: "Fire", color: getCategory("fire").color },
   { id: "medical", label: "Medical", color: getCategory("medical").color },
-  { id: "traffic", label: "Traffic", color: getCategory("traffic_accident").color },
-  { id: "weather", label: "Weather", color: getCategory("severe_weather").color },
+  {
+    id: "traffic",
+    label: "Traffic",
+    color: getCategory("traffic_accident").color,
+  },
+  {
+    id: "weather",
+    label: "Weather",
+    color: getCategory("severe_weather").color,
+  },
 ];
 
 const RADIUS_BUCKETS = [1, 2, 5, 10, 25, 50];
 
 /** Snap the viewport so small pans reuse the same query (and SWR cache). */
-function queryArea(v: Viewport | null): { center: LatLng; radiusMi: number } | null {
+function queryArea(
+  v: Viewport | null,
+): { center: LatLng; radiusMi: number } | null {
   if (!v) return null;
   const radiusMi = RADIUS_BUCKETS.find((b) => b >= v.radiusMi * 1.15) ?? 50;
   const step = radiusMi <= 2 ? 0.005 : radiusMi <= 10 ? 0.02 : 0.1;
   return {
-    center: { lat: Math.round(v.center.lat / step) * step, lng: Math.round(v.center.lng / step) * step },
+    center: {
+      lat: Math.round(v.center.lat / step) * step,
+      lng: Math.round(v.center.lng / step) * step,
+    },
     radiusMi,
   };
 }
@@ -64,7 +98,10 @@ export function MapScreen() {
   const [promptDismissed, setPromptDismissed] = useState(false);
   const [mode, setMode] = useState<MapMode>(savedMode);
   const [layersOpen, setLayersOpen] = useState(false);
-  const [camera, setCamera] = useState<Camera>({ bearing: BEARING_3D, pitch: PITCH_3D });
+  const [camera, setCamera] = useState<Camera>({
+    bearing: BEARING_3D,
+    pitch: PITCH_3D,
+  });
 
   const chooseMode = useCallback((m: MapMode) => {
     setMode(m);
@@ -102,7 +139,10 @@ export function MapScreen() {
   }, [position, request]);
 
   const showPrompt =
-    !selected && !position && !promptDismissed && (status === "prompt" || status === "denied" || status === "unavailable");
+    !selected &&
+    !position &&
+    !promptDismissed &&
+    (status === "prompt" || status === "denied" || status === "unavailable");
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-bg">
@@ -118,22 +158,45 @@ export function MapScreen() {
         onCameraChange={setCamera}
       />
       {/* Atmosphere: vignette and grain over the map, gradients under the controls. */}
-      <div className="vignette pointer-events-none absolute inset-0" aria-hidden />
-      <div className="grain pointer-events-none absolute inset-0 opacity-70" aria-hidden />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-bg/90 via-bg/40 to-transparent" aria-hidden />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-bg/90 via-bg/40 to-transparent" aria-hidden />
+      <div
+        className="vignette pointer-events-none absolute inset-0"
+        aria-hidden
+      />
+      <div
+        className="grain pointer-events-none absolute inset-0 opacity-70"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-bg/90 via-bg/40 to-transparent"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-bg/90 via-bg/40 to-transparent"
+        aria-hidden
+      />
 
       {/* Top: search + filters */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-20" style={{ paddingTop: "calc(var(--safe-top) + 10px)" }}>
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 z-20"
+        style={{ paddingTop: "calc(var(--safe-top) + 10px)" }}
+      >
         <div className="pointer-events-auto mx-auto flex max-w-lg gap-2 px-4">
           <button
             onClick={() => setSearchOpen(true)}
             className="glass press flex h-12 min-w-0 flex-1 items-center gap-2.5 rounded-full px-4 text-left"
           >
             <Search className="size-[18px] shrink-0 text-muted" aria-hidden />
-            <span className={`truncate text-[15.5px] ${searchLabel ? "text-text" : "text-muted"}`}>{searchLabel ?? "Search a place"}</span>
+            <span
+              className={`truncate text-[15.5px] ${searchLabel ? "text-text" : "text-muted"}`}
+            >
+              {searchLabel ?? "Search a place"}
+            </span>
           </button>
-          <IconButton label={`Filters${filterCount ? ` (${filterCount} active)` : ""}`} onClick={() => setFilterOpen(true)} className="relative">
+          <IconButton
+            label={`Filters${filterCount ? ` (${filterCount} active)` : ""}`}
+            onClick={() => setFilterOpen(true)}
+            className="relative"
+          >
             <SlidersHorizontal className="size-[18px]" aria-hidden />
             {filterCount > 0 && (
               <span className="haven-pop absolute -right-0.5 -top-0.5 flex size-[18px] items-center justify-center rounded-full bg-text text-[10px] font-bold text-bg tnum ring-2 ring-bg">
@@ -154,26 +217,51 @@ export function MapScreen() {
               </button>
             ) : (
               <>
-                {activeCount > 0 ? <LiveBadge size="md" /> : <span className="ml-2 size-2 rounded-full bg-ok" aria-hidden />}
+                {activeCount > 0 ? (
+                  <LiveBadge size="md" />
+                ) : (
+                  <span
+                    className="ml-2 size-2 rounded-full bg-ok"
+                    aria-hidden
+                  />
+                )}
                 <span>
                   {activeCount} active
-                  {demoCount > 0 && <span className="font-medium text-faint"> · demo</span>}
+                  {demoCount > 0 && (
+                    <span className="font-medium text-faint"> · demo</span>
+                  )}
                 </span>
               </>
             )}
           </div>
           {QUICK.map((q) => {
-            const on = q.id === null ? filters.groups.length === 0 : filters.groups.length === 1 && filters.groups[0] === q.id;
+            const on =
+              q.id === null
+                ? filters.groups.length === 0
+                : filters.groups.length === 1 && filters.groups[0] === q.id;
             return (
               <button
                 key={q.label}
                 aria-pressed={on}
-                onClick={() => setFilters((f) => ({ ...f, groups: q.id === null ? [] : [q.id] }))}
+                onClick={() =>
+                  setFilters((f) => ({
+                    ...f,
+                    groups: q.id === null ? [] : [q.id],
+                  }))
+                }
                 className={`press inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold ${
-                  on ? "bg-text text-bg shadow-[0_4px_14px_-4px_rgba(0,0,0,0.5)]" : "glass text-text/90"
+                  on
+                    ? "bg-text text-bg shadow-[0_4px_14px_-4px_rgba(0,0,0,0.5)]"
+                    : "glass text-text/90"
                 }`}
               >
-                {q.color && <span className="size-2 rounded-full" style={{ background: q.color }} aria-hidden />}
+                {q.color && (
+                  <span
+                    className="size-2 rounded-full"
+                    style={{ background: q.color }}
+                    aria-hidden
+                  />
+                )}
                 {q.label}
               </button>
             );
@@ -198,7 +286,11 @@ export function MapScreen() {
             <button
               type="button"
               onClick={() => mapRef.current?.toggle3D()}
-              aria-label={camera.pitch > 5 ? "Switch to flat 2D view" : "Switch to 3D view"}
+              aria-label={
+                camera.pitch > 5
+                  ? "Switch to flat 2D view"
+                  : "Switch to 3D view"
+              }
               className="press flex size-12 items-center justify-center text-[13px] font-extrabold tracking-[0.02em]"
             >
               {camera.pitch > 5 ? "2D" : "3D"}
@@ -217,16 +309,33 @@ export function MapScreen() {
                     style={{ transform: `rotate(${-camera.bearing}deg)` }}
                     aria-hidden
                   />
-                  <span className="text-[8.5px] font-bold leading-none text-muted">N</span>
+                  <span className="text-[8.5px] font-bold leading-none text-muted">
+                    N
+                  </span>
                 </button>
               </>
             )}
           </div>
-          <IconButton label={position ? "Center on my location" : "Use my location"} onClick={locate} className="pointer-events-auto">
+          <Link
+            href="/safety/walk"
+            transitionTypes={["nav-forward"]}
+            aria-label="Start a Safe Walk"
+            className="glass press pointer-events-auto flex size-12 items-center justify-center rounded-full text-brand"
+          >
+            <Footprints className="size-[20px]" aria-hidden />
+          </Link>
+          <IconButton
+            label={position ? "Center on my location" : "Use my location"}
+            onClick={locate}
+            className="pointer-events-auto"
+          >
             {status === "locating" ? (
               <Spinner className="size-[18px]" />
             ) : (
-              <LocateFixed className={`size-[18px] ${position ? "text-brand" : ""}`} aria-hidden />
+              <LocateFixed
+                className={`size-[18px] ${position ? "text-brand" : ""}`}
+                aria-hidden
+              />
             )}
           </IconButton>
 
@@ -240,9 +349,14 @@ export function MapScreen() {
           {showPrompt && (
             <div className="glass haven-rise pointer-events-auto w-full rounded-[22px] p-4">
               <div className="flex items-start gap-3">
-                <Navigation className="mt-0.5 size-5 shrink-0 text-brand" aria-hidden />
+                <Navigation
+                  className="mt-0.5 size-5 shrink-0 text-brand"
+                  aria-hidden
+                />
                 <div className="min-w-0 flex-1">
-                  <p className="text-[15px] font-semibold tracking-[-0.01em]">See what&apos;s near you</p>
+                  <p className="text-[15px] font-semibold tracking-[-0.01em]">
+                    See what&apos;s near you
+                  </p>
                   <p className="mt-0.5 text-[13.5px] leading-snug text-muted">
                     {status === "denied"
                       ? "Location is blocked in your browser settings. You can still search a place."
@@ -252,11 +366,17 @@ export function MapScreen() {
               </div>
               <div className="mt-3 flex gap-2">
                 {status === "prompt" && (
-                  <button onClick={request} className="press h-11 flex-1 rounded-full bg-text text-[14.5px] font-semibold text-bg">
+                  <button
+                    onClick={request}
+                    className="press h-11 flex-1 rounded-full bg-text text-[14.5px] font-semibold text-bg"
+                  >
                     Use my location
                   </button>
                 )}
-                <button onClick={() => setPromptDismissed(true)} className="press h-11 rounded-full bg-white/[0.06] px-5 text-[14.5px] font-medium text-muted">
+                <button
+                  onClick={() => setPromptDismissed(true)}
+                  className="press h-11 rounded-full bg-white/[0.06] px-5 text-[14.5px] font-medium text-muted"
+                >
                   Not now
                 </button>
               </div>
@@ -275,8 +395,19 @@ export function MapScreen() {
           mapRef.current?.flyTo(p, 15);
         }}
       />
-      <LayersSheet open={layersOpen} onClose={() => setLayersOpen(false)} value={mode} onChange={chooseMode} />
-      <FilterSheet open={filterOpen} onClose={() => setFilterOpen(false)} value={filters} onChange={setFilters} viewer={viewer} />
+      <LayersSheet
+        open={layersOpen}
+        onClose={() => setLayersOpen(false)}
+        value={mode}
+        onChange={chooseMode}
+      />
+      <FilterSheet
+        open={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        value={filters}
+        onChange={setFilters}
+        viewer={viewer}
+      />
     </div>
   );
 }
