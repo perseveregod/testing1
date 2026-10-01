@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import useSWR from "swr";
-import { Check, CircleSlash, Flag, MessageSquarePlus, Share2 } from "lucide-react";
+import { Check, CircleSlash, Flag, MapPin, MessageSquarePlus, Share2 } from "lucide-react";
 import { apiSend, errorMessage, fetcher } from "@/lib/client/api";
 import { shareIncident } from "@/lib/client/share";
 import { getCategory } from "@/lib/categories";
+import { useAffects } from "@/lib/client/affects";
 import { formatDistance } from "@/lib/geo";
 import { dateTime, timeAgo } from "@/lib/time";
 import type { IncidentDetail } from "@/lib/types";
@@ -33,6 +34,8 @@ export function IncidentDetailScreen({ id }: { id: string }) {
   const [infoOpen, setInfoOpen] = useState(false);
   const [flagOpen, setFlagOpen] = useState(false);
   const incident = data?.incident;
+  const affectsOf = useAffects();
+  const affects = incident ? affectsOf(incident) : null;
 
   async function vote(kind: "confirm" | "ended") {
     setBusy(kind);
@@ -139,6 +142,12 @@ export function IncidentDetailScreen({ id }: { id: string }) {
             <SeverityLabel severity={incident.severity} />
             <span className="text-[13px] text-muted">{incident.approximateAddress}</span>
           </div>
+          {affects && (
+            <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-brand/15 px-3 py-1.5 text-[13.5px] font-semibold text-brand tnum">
+              <MapPin className="size-4" aria-hidden />
+              {formatDistance(affects.distanceMi)} from {affects.label}
+            </p>
+          )}
           {!ended && incident.endedCount > 0 && incident.source.kind === "user" && (
             <p className="mt-2 text-[13px] text-muted tnum">
               {incident.endedCount} of {incident.endedVotesNeeded} people needed say it&apos;s over

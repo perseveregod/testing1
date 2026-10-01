@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronDown,
   Layers,
+  ListChecks,
   LocateFixed,
   Navigation2,
   Search,
@@ -15,6 +16,7 @@ import { setMapTone } from "@/lib/client/mapTone";
 import { STATE_STYLE, strings, type StormKind } from "@/lib/storm";
 import { STORM_CATEGORIES } from "@/lib/categories";
 import { OfficialSourcesSheet } from "@/components/storm/StormBanner";
+import { StormPrepSheet } from "@/components/storm/StormPrepSheet";
 import { StormIcon } from "@/components/storm/StormIcon";
 import { NearbyPeek } from "@/components/map/NearbyPeek";
 import { useClock } from "@/lib/client/safewalk";
@@ -160,6 +162,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [prepOpen, setPrepOpen] = useState(false);
   const [filters, setFilters] = useState<MapFilters>(DEFAULT_FILTERS);
   const [searchLabel, setSearchLabel] = useState<string | null>(() => peekMapFocus()?.label ?? null);
   const [promptDismissed] = useState(promptWasDismissed);
@@ -362,6 +365,10 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
                     </Chip>
                   );
                 })}
+                <Chip onClick={() => setPrepOpen(true)}>
+                  <ListChecks className="size-3.5" aria-hidden />
+                  {storm.lang === "es" ? "Prepárese" : "Prepare"}
+                </Chip>
                 <a href={`tel:${EMERGENCY_NUMBER}`} className="press inline-flex h-9 shrink-0 items-center rounded-full bg-live px-3.5 text-[13px] font-bold text-white">
                   {EMERGENCY_NUMBER}
                 </a>
@@ -495,6 +502,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
         }}
       />
       <OfficialSourcesSheet open={sourcesOpen} onClose={() => setSourcesOpen(false)} />
+      <StormPrepSheet open={prepOpen} onClose={() => setPrepOpen(false)} />
       <LayersSheet
         open={layersOpen}
         onClose={() => setLayersOpen(false)}

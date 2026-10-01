@@ -4,6 +4,7 @@ import { formatDistance } from "@/lib/geo";
 import { timeAgo } from "@/lib/time";
 import type { PublicIncident } from "@/lib/types";
 import { isLive, LiveBadge, OriginBadge } from "./Badges";
+import { useAffects } from "@/lib/client/affects";
 import { CategoryIcon } from "./CategoryIcon";
 
 /** Official dispatch feeds (city 911 data, weather) read as compact two-line rows. */
@@ -78,6 +79,7 @@ export function foldDuplicates(items: PublicIncident[]): PublicIncident[] {
 /** One incident as a list row: glyph, title, place, and a two-line preview. */
 export function IncidentRow({ incident, distanceMi }: { incident: PublicIncident; distanceMi: number | null }) {
   const def = getCategory(incident.category);
+  const affects = useAffects()(incident);
   const ended = incident.status === "resolved";
   const active = incident.status === "active";
   const live = isLive(incident);
@@ -118,7 +120,11 @@ export function IncidentRow({ incident, distanceMi }: { incident: PublicIncident
             <span className="text-faint"> · </span>
             {incident.approximateAddress || "Approximate location"}
           </span>
-          {distanceMi != null && <span className="shrink-0 text-faint tnum">· {formatDistance(distanceMi)}</span>}
+          {affects ? (
+            <span className="shrink-0 font-semibold text-brand tnum">· {formatDistance(affects.distanceMi)} from {affects.label}</span>
+          ) : (
+            distanceMi != null && <span className="shrink-0 text-faint tnum">· {formatDistance(distanceMi)}</span>
+          )}
         </p>
         {incident.description && (
           <p className={`mt-1.5 line-clamp-2 text-[14.5px] leading-[1.45] ${ended ? "text-faint" : "text-text/75"}`}>

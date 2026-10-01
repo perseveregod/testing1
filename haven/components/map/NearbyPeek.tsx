@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ChevronRight, ChevronUp } from "lucide-react";
 import { distanceFrom, NEAR_RADIUS_MI } from "@/lib/client/hooks";
+import { useAffects } from "@/lib/client/affects";
 import { formatDistance, type LatLng } from "@/lib/geo";
 import { timeAgo } from "@/lib/time";
 import type { Lang } from "@/lib/storm";
@@ -43,6 +44,7 @@ export function NearbyPeek({
   storm?: { lang: Lang } | null;
 }) {
   const [open, setOpen] = useState(false);
+  const affectsOf = useAffects();
   const active = items.filter((i) => i.status !== "resolved" && i.category !== "missing_pet");
   const sorted = position
     ? [...active].sort((a, b) => (distanceFrom(position, a) ?? 0) - (distanceFrom(position, b) ?? 0))
@@ -132,6 +134,7 @@ export function NearbyPeek({
             {rows.map((i) => {
               const d = distanceFrom(position, i);
               const live = isLive(i, now);
+              const a = affectsOf(i);
               return (
                 <li key={i.id}>
                   <button
@@ -143,7 +146,7 @@ export function NearbyPeek({
                       <span className="block truncate text-[14.5px] font-semibold tracking-[-0.01em]">{i.title}</span>
                       <span className="block truncate text-[12.5px] text-muted tnum">
                         {live && <span className="mr-1.5 font-bold text-live">LIVE</span>}
-                        {d != null && `${formatDistance(d)} · `}
+                        {a ? <span className="font-semibold text-brand">{formatDistance(a.distanceMi)} from {a.label} · </span> : d != null && `${formatDistance(d)} · `}
                         {now > 0 ? timeAgo(i.createdAt, now) : ""}
                       </span>
                     </span>
