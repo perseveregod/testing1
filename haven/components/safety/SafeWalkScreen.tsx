@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { BellRing, Check, Volume2, MessageSquare, Phone, Plus, Share2, ShieldCheck, Trash2, UserPlus } from "lucide-react";
 import {
   cleanPhone,
@@ -17,7 +17,7 @@ import {
   type ActiveWalk,
   type TrustedContact,
 } from "@/lib/client/safewalk";
-import { primeAlarm, startAlarm, stopAlarm } from "@/lib/client/alarm";
+import { primeAlarm, startAlarm, stopAlarm, useAlarmBlocked } from "@/lib/client/alarm";
 import { EMERGENCY_NUMBER } from "@/lib/client/defaults";
 import { useLocation } from "@/components/providers/LocationProvider";
 import { useToast } from "@/components/providers/ToastProvider";
@@ -35,7 +35,7 @@ export function SafeWalkScreen() {
   const [destination, setDestination] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [soundBlocked, setSoundBlocked] = useState(false);
+  const soundBlocked = useAlarmBlocked();
   const wake = useRef<WakeLockLike | null>(null);
 
   const update = setSafeWalk;
@@ -46,17 +46,7 @@ export function SafeWalkScreen() {
   const overdue = walk != null && now > 0 && remaining <= 0;
   const alerting = overdue && -remaining >= GRACE_MS;
 
-  // Missed check-in: siren (and vibration where the phone allows it) until they respond.
-  useEffect(() => {
-    if (!overdue) return;
-    const title = document.title;
-    document.title = "⚠️ Check in! · Haven";
-    void startAlarm().then((ok) => setSoundBlocked(!ok));
-    return () => {
-      stopAlarm();
-      document.title = title;
-    };
-  }, [overdue]);
+  // The siren itself is run app-wide by SafeWalkWatcher.
 
   async function keepScreenOn() {
     try {
@@ -158,7 +148,7 @@ export function SafeWalkScreen() {
                 </p>
                 {soundBlocked && (
                   <button
-                    onClick={() => void startAlarm().then((ok) => setSoundBlocked(!ok))}
+                    onClick={() => void startAlarm()}
                     className="press mt-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-white/10 px-4 text-[14px] font-semibold"
                   >
                     <Volume2 className="size-4" aria-hidden /> Sound the alarm

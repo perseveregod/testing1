@@ -5,7 +5,28 @@
 //
 // Vibration works on Android. iPhone browsers don't allow websites to vibrate.
 
+import { useSyncExternalStore } from "react";
+
 let el: HTMLAudioElement | null = null;
+let blocked = false;
+const blockedListeners = new Set<() => void>();
+
+function setBlocked(v: boolean) {
+  if (blocked === v) return;
+  blocked = v;
+  blockedListeners.forEach((l) => l());
+}
+
+function subscribeBlocked(cb: () => void) {
+  blockedListeners.add(cb);
+  return () => blockedListeners.delete(cb);
+}
+
+/** True when the browser refused to play the siren (e.g. after a reload, before any tap). */
+export function useAlarmBlocked(): boolean {
+  return useSyncExternalStore(subscribeBlocked, () => blocked, () => false);
+}
+
 let buzz: ReturnType<typeof setInterval> | null = null;
 let primed = false;
 
@@ -89,13 +110,16 @@ export async function startAlarm(): Promise<boolean> {
     a.muted = false;
     a.volume = 1;
     await a.play();
+    setBlocked(false);
     return true;
   } catch {
+    setBlocked(true);
     return false;
   }
 }
 
 export function stopAlarm() {
+  setBlocked(false);
   if (buzz) {
     clearInterval(buzz);
     buzz = null;

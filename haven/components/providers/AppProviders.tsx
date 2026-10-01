@@ -7,6 +7,7 @@ import { apiSend, fetcher } from "@/lib/client/api";
 import { useAlertPrefs, useNotifications } from "@/lib/client/hooks";
 import { LocationProvider, useLocation } from "./LocationProvider";
 import { ToastProvider } from "./ToastProvider";
+import { SafeWalkWatcher } from "@/components/safety/SafeWalkWatcher";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
@@ -16,6 +17,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
           {children}
           <NearMeSync />
           <NotificationWatcher />
+          <SafeWalkWatcher />
         </LocationProvider>
       </ToastProvider>
     </SWRConfig>
