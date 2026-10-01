@@ -19,6 +19,7 @@ import { PlacesSection } from "./PlacesSection";
 import { InstallRow } from "@/components/onboarding/InstallRow";
 import { SignInSheet } from "./SignInSheet";
 import { HowItWorksSheet } from "./HowItWorksSheet";
+import { Skyline } from "@/components/houston/Skyline";
 
 export function ProfileScreen() {
   const { viewer, mutate } = useViewer();
@@ -143,7 +144,11 @@ export function ProfileScreen() {
         <div className="mt-8">
           <EmergencyNote inline />
         </div>
-        <p className="mt-5 pb-2 text-center text-[12px] text-faint">{t("profile.footer")}</p>
+        <div className="mt-8 text-faint/70">
+          <Skyline className="h-auto w-full" />
+        </div>
+        <p className="mt-3 text-center text-[13px] font-semibold text-muted">{t("profile.madeIn")}</p>
+        <p className="mt-1 pb-2 text-center text-[12px] text-faint">{t("profile.footer")}</p>
       </div>
       <SignInSheet open={signIn} onClose={() => setSignIn(false)} />
       <HowItWorksSheet open={how} onClose={() => setHow(false)} />

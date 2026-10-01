@@ -8,6 +8,7 @@ import { shareIncident } from "@/lib/client/share";
 import { useAffects } from "@/lib/client/affects";
 import { useT } from "@/lib/client/lang";
 import { formatDistance } from "@/lib/geo";
+import { neighborhoodLabel } from "@/lib/houston";
 import { dateTime } from "@/lib/time";
 import type { IncidentDetail } from "@/lib/types";
 import { useLocation } from "@/components/providers/LocationProvider";
@@ -101,6 +102,7 @@ export function IncidentDetailScreen({ id }: { id: string }) {
   const ended = incident.status === "resolved";
   const lastUpdate = incident.updates.at(-1)?.createdAt ?? incident.updatedAt;
   const heading = title(incident);
+  const hood = neighborhoodLabel({ lat: incident.latitude, lng: incident.longitude }, incident.approximateAddress);
 
   return (
     <main className="min-h-dvh pb-nav">
@@ -142,7 +144,7 @@ export function IncidentDetailScreen({ id }: { id: string }) {
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
             <StatusPill status={incident.status} />
             <SeverityLabel severity={incident.severity} />
-            <span className="text-[13px] text-muted">{incident.approximateAddress}</span>
+            <span className="text-[13px] text-muted">{hood ? `${hood} · ${incident.approximateAddress}` : incident.approximateAddress}</span>
           </div>
           {affects && (
             <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-brand/15 px-3 py-1.5 text-[13.5px] font-semibold text-brand tnum">

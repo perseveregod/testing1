@@ -9,6 +9,7 @@ import { AppIconMark } from "@/components/brand/AppIconMark";
 import { useT } from "@/lib/client/lang";
 import { usePush } from "@/lib/client/push";
 import { InstallSheet } from "./InstallSheet";
+import { Skyline } from "@/components/houston/Skyline";
 
 // First-run welcome: three short screens, shown once per device.
 
@@ -100,6 +101,12 @@ export function WelcomeFlow() {
             {t(s.title)}
           </h1>
           <p className="mt-3 text-[17px] leading-[1.5] text-muted">{t(s.body)}</p>
+          {step === 0 && (
+            <>
+              <p className="mt-4 text-[14px] font-semibold text-brand">{t("welcome.houston")}</p>
+              <Skyline className="mt-6 h-auto w-full text-white/[0.16]" />
+            </>
+          )}
           {locationStep && (
             <p className="mt-6 rounded-[16px] bg-surface px-4 py-3 text-[14px] leading-snug text-muted">
               {t("welcome.note", { n: EMERGENCY_NUMBER })}

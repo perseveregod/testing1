@@ -7,6 +7,7 @@ import { DEFAULT_CENTER } from "@/lib/client/defaults";
 import { activeLabel, distanceFrom, nearYouParams, useIncidents, useViewer, type InitialIncidents } from "@/lib/client/hooks";
 import { errorMessage } from "@/lib/client/api";
 import { useT } from "@/lib/client/lang";
+import { neighborhoodFor } from "@/lib/houston";
 import type { Key } from "@/lib/i18n";
 import { useLocation } from "@/components/providers/LocationProvider";
 import {
@@ -45,6 +46,7 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
   // Mount a short list first; the rest comes on request. Keeps the tab instant.
   const [limit, setLimit] = useState(30);
   const center = position ?? DEFAULT_CENTER;
+  const hood = position ? neighborhoodFor(position) : null;
   const isGroup = filter !== "nearby" && filter !== "newest";
 
   // Same query (and cache entry) as the map's count, so the tab opens with
@@ -102,6 +104,12 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
       />
       <PullToRefresh onRefresh={refresh}>
         <div className="relative mx-auto max-w-lg px-4">
+          {position && hood && (
+            <p className="mb-1 mt-1 flex min-h-8 items-center gap-2 text-[13.5px] text-muted">
+              <Navigation className="size-4 shrink-0 text-brand" aria-hidden />
+              {t("near.hoodWithin", { hood, n: 5 })}
+            </p>
+          )}
           {!position && (
             <button
               onClick={request}
@@ -153,7 +161,7 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
                     aria-hidden
                   />
                 }
-                title={t("feed.quiet")}
+                title={hood ? t("near.quietIn", { hood }) : t("feed.quiet")}
                 body={isGroup ? t("feed.quietCategory") : t("feed.quietAll")}
                 action={
                   <ButtonLink

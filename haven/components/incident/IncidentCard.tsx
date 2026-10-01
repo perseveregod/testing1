@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { formatDistance } from "@/lib/geo";
+import { neighborhoodLabel } from "@/lib/houston";
 import type { Key } from "@/lib/i18n";
 import type { PublicIncident } from "@/lib/types";
 import { isLive, LiveBadge, OriginBadge } from "./Badges";
@@ -83,6 +84,7 @@ export function foldDuplicates(items: PublicIncident[]): PublicIncident[] {
 export function IncidentRow({ incident, distanceMi }: { incident: PublicIncident; distanceMi: number | null }) {
   const { t, timeAgo, title, cat } = useT();
   const { def, short } = cat(incident.category);
+  const hood = neighborhoodLabel({ lat: incident.latitude, lng: incident.longitude }, incident.approximateAddress);
   const affects = useAffects()(incident);
   const ended = incident.status === "resolved";
   const active = incident.status === "active";
@@ -122,6 +124,7 @@ export function IncidentRow({ incident, distanceMi }: { incident: PublicIncident
           <span className="truncate">
             <span style={{ color: ended ? undefined : def.color }}>{short}</span>
             <span className="text-faint"> · </span>
+            {hood && <>{hood}<span className="text-faint"> · </span></>}
             {incident.approximateAddress || t("inc.approx")}
           </span>
           {affects ? (

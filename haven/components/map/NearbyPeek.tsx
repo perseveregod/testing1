@@ -7,6 +7,7 @@ import { distanceFrom, NEAR_RADIUS_MI } from "@/lib/client/hooks";
 import { useAffects } from "@/lib/client/affects";
 import { useT } from "@/lib/client/lang";
 import { formatDistance, type LatLng } from "@/lib/geo";
+import { neighborhoodFor } from "@/lib/houston";
 import type { Lang } from "@/lib/storm";
 import type { PublicIncident } from "@/lib/types";
 import { CategoryIcon } from "@/components/incident/CategoryIcon";
@@ -68,7 +69,10 @@ export function NearbyPeek({
       ? t("near.stormHint")
       : t("near.stormWindow")
     : position
-      ? t("near.withinYou", { n: NEAR_RADIUS_MI })
+      ? (() => {
+          const hood = neighborhoodFor(position);
+          return hood ? t("near.hoodWithin", { hood, n: NEAR_RADIUS_MI }) : t("near.withinYou", { n: NEAR_RADIUS_MI });
+        })()
       : t("near.withinCenter", { n: NEAR_RADIUS_MI });
 
   return (

@@ -13,6 +13,7 @@ import { getCategory, FILTER_GROUPS } from "@/lib/categories";
 import { DEFAULT_CENTER } from "@/lib/client/defaults";
 import { distanceFrom, NEAR_RADIUS_MI, useNearYou, type InitialIncidents } from "@/lib/client/hooks";
 import { useT } from "@/lib/client/lang";
+import { neighborhoodFor } from "@/lib/houston";
 import { formatRemaining, useClock, useSafeWalk } from "@/lib/client/safewalk";
 import { RESOURCE_AREA, RESOURCES } from "@/lib/resources";
 import { formatDistance } from "@/lib/geo";
@@ -43,6 +44,7 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
   const now = useClock(walk != null);
   const overdue = walk != null && now > 0 && now > walk.endsAt;
   const { t, es } = useT();
+  const hood = position ? neighborhoodFor(position) : null;
 
   const briefing = useMemo(() => {
     // Same number as the Map and Feed: everything still active, pets included.
@@ -123,7 +125,7 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
           <section className="mt-8" aria-labelledby="briefing">
             <div className="mb-2.5 flex items-baseline justify-between px-1">
               <h2 id="briefing" className="text-[13px] font-semibold text-muted">
-                {t("safety.nearby")}
+                {hood ? t("near.hoodNow", { hood }) : t("safety.nearby")}
               </h2>
               <span className="text-[12.5px] text-faint tnum">{t("safety.window", { n: NEAR_RADIUS_MI })}</span>
             </div>

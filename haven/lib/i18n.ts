@@ -89,6 +89,7 @@ const D = {
   "welcome.install.body": ["Full screen, faster, and the only way iPhone lets a web app notify you. Ten seconds, from the Share button.", "Pantalla completa, más rápido, y la única forma en que iPhone deja que una app web le avise. Diez segundos, desde el botón Compartir."],
   "welcome.note": ["Haven doesn't contact emergency services. If someone is in danger, call {n}.", "Haven no contacta a los servicios de emergencia. Si alguien está en peligro, llame al {n}."],
   "welcome.turnOnAlerts": ["Turn on alerts", "Activar alertas"],
+  "welcome.houston": ["Made in Houston, for Houston. From the Heights to Pearland.", "Hecho en Houston, para Houston. De los Heights a Pearland."],
 
   // ---- map -------------------------------------------------------------------
   "map.search": ["Search Houston", "Buscar en Houston"],
@@ -114,6 +115,9 @@ const D = {
   "near.active": ["{n} active incidents", "{n} incidentes activos"],
   "near.active1": ["1 active incident", "1 incidente activo"],
   "near.withinYou": ["Within {n} mi of you", "A menos de {n} mi de usted"],
+  "near.hoodWithin": ["{hood} · within {n} mi", "{hood} · a menos de {n} mi"],
+  "near.quietIn": ["All quiet in {hood}", "Todo tranquilo en {hood}"],
+  "near.hoodNow": ["{hood} right now", "{hood} ahora mismo"],
   "near.withinCenter": ["Within {n} mi of central Houston", "A menos de {n} mi del centro de Houston"],
   "near.loadError": ["Couldn't load incidents · Retry", "No se cargaron los incidentes · Reintentar"],
   "near.seeAll": ["See everything nearby", "Ver todo lo cercano"],
@@ -337,6 +341,7 @@ const D = {
   "profile.guidelines": ["Safety & community guidelines", "Normas de seguridad y comunidad"],
   "profile.privacy": ["Privacy", "Privacidad"],
   "profile.footer": ["Haven · community safety information, not an emergency service", "Haven · información de seguridad comunitaria, no un servicio de emergencia"],
+  "profile.madeIn": ["Made in Houston", "Hecho en Houston"],
   "profile.reports": ["Your reports", "Sus reportes"],
   "profile.reportsFooter": ["Showing the last 24 hours.", "Se muestran las últimas 24 horas."],
   "profile.noReports": ["Nothing reported in the last 24 hours", "Nada reportado en las últimas 24 horas"],
