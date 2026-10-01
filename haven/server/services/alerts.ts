@@ -4,6 +4,7 @@ import { distanceMiles, formatDistance, METERS_PER_MILE } from "@/lib/geo";
 import { limitsFor, PLAN_LIMITS } from "@/lib/plans";
 import type { AlertPreferences, IncidentRecord, NotificationItem, PlanId } from "@/lib/types";
 import { getStore } from "../store";
+import { sendPush } from "../push";
 import { config } from "../config";
 
 // Decides who hears about a new incident. A person is notified at most once
@@ -122,9 +123,15 @@ export async function dispatchAlerts(inc: IncidentRecord, excludeUserId: string 
   }
 
   if (!out.size) return 0;
-  // Delivery: notifications land in the in-app inbox (polled by clients).
-  // A push provider (Web Push / APNs / FCM) plugs in here later.
-  return store.insertNotifications([...out.values()]);
+  // Delivery: the in-app inbox always; a system notification on every device
+  // that has turned push on (no-op until VAPID keys are configured).
+  const items = [...out.values()];
+  const inserted = await store.insertNotifications(items);
+  if (inserted > 0) {
+    // Only what was new (the store skips repeats for the same incident).
+    void sendPush(items).catch((err) => console.warn("[haven] push dispatch failed", err));
+  }
+  return inserted;
 }
 
 /**

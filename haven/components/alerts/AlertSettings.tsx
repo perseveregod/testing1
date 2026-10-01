@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { BellRing, MapPin } from "lucide-react";
+import { useState } from "react";
+import { Bell, BellRing, MapPin, Smartphone } from "lucide-react";
 import { EVERYDAY_CATEGORIES } from "@/lib/categories";
 import { apiSend, errorMessage } from "@/lib/client/api";
 import { useAlertPrefs, usePlaces, useViewer } from "@/lib/client/hooks";
@@ -10,7 +10,10 @@ import type { AlertPreferences, CategoryId } from "@/lib/types";
 import { useLocation } from "@/components/providers/LocationProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { Chip, Group, Row, Segmented, Toggle } from "@/components/ui/Controls";
+import { usePush, type PushStatus } from "@/lib/client/push";
+import { InstallSheet } from "@/components/onboarding/InstallSheet";
 import { Skeleton } from "@/components/ui/States";
+import { Button } from "@/components/ui/Button";
 
 export function AlertSettings() {
   const { prefs, mutate, isLoading } = useAlertPrefs();
@@ -174,29 +177,61 @@ function QuietHours({ prefs, allowed, onSave }: { prefs: AlertPreferences; allow
 }
 
 function BrowserNotifications() {
-  const [perm, setPerm] = useState<NotificationPermission | "unsupported" | null>(null);
-  useEffect(() => {
-    queueMicrotask(() => setPerm(typeof Notification === "undefined" ? "unsupported" : Notification.permission));
-  }, []);
-  if (perm === null || perm === "granted") return null;
+  const push = usePush();
+  const toast = useToast();
+  const [installOpen, setInstallOpen] = useState(false);
+  if (push.status === "loading") return null;
+
+  const copy: Record<Exclude<PushStatus, "loading">, { title: string; body: string }> = {
+    on: { title: "Push notifications are on", body: `Alerts reach this device even when Haven is closed.${push.devices > 1 ? ` ${push.devices} devices in total.` : ""}` },
+    off: { title: "Push notifications", body: "Get alerts on this device even when Haven is closed. Only incidents near your places, nothing else." },
+    install: { title: "Add Haven to your Home Screen", body: "On iPhone, notifications only work from the Home Screen. Takes ten seconds." },
+    setup: { title: "Push is being set up", body: "Alerts show in this inbox for now. Device notifications switch on once the push keys are configured." },
+    denied: { title: "Notifications are blocked", body: "You said no in the browser prompt. To change it: Settings › Haven › Notifications. Alerts still land in this inbox." },
+    unsupported: { title: "Device notifications", body: "This browser can't show notifications. Alerts still land in this inbox." },
+  };
+  const c = copy[push.status];
+
   return (
     <div className="mt-4 flex items-start gap-3 rounded-card bg-surface p-4">
-      <BellRing className="mt-0.5 size-5 shrink-0 text-brand" aria-hidden />
-      <div className="flex-1">
-        <p className="text-[15px] font-semibold tracking-[-0.01em]">Device notifications</p>
-        <p className="mt-0.5 text-[13.5px] leading-snug text-muted">
-          {perm === "unsupported"
-            ? "This browser can't show notifications. On iPhone, add Haven to your Home Screen first."
-            : perm === "denied"
-              ? "Notifications are blocked for this site. You'll still see alerts in your inbox."
-              : "Get a heads-up on this device when an alert arrives while Haven is open in the background."}
-        </p>
-        {perm === "default" && (
-          <button onClick={async () => setPerm(await Notification.requestPermission())} className="press mt-3 h-10 rounded-full bg-text px-4 text-[14px] font-semibold text-bg">
-            Turn on
-          </button>
-        )}
+      <span className={`mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full ${push.status === "on" ? "bg-ok/15 text-ok" : "bg-brand/15 text-brand"}`}>
+        {push.status === "on" ? <BellRing className="size-[18px]" aria-hidden /> : push.status === "install" ? <Smartphone className="size-[18px]" aria-hidden /> : <Bell className="size-[18px]" aria-hidden />}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[15px] font-semibold tracking-[-0.01em]">{c.title}</p>
+        <p className="mt-0.5 text-[13.5px] leading-snug text-muted">{c.body}</p>
+        {push.error && <p className="mt-1 text-[13px] text-danger">{push.error}</p>}
+        <div className="mt-3 flex flex-wrap gap-2">
+          {push.status === "off" && (
+            <Button size="sm" onClick={push.enable} loading={push.busy}>
+              Turn on
+            </Button>
+          )}
+          {push.status === "on" && (
+            <>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={async () => {
+                  const n = await push.sendTest().catch(() => 0);
+                  toast(n > 0 ? "Sent. It should arrive in a moment." : "Nothing sent. Try turning push off and on.", n > 0 ? "success" : "error");
+                }}
+              >
+                Send a test
+              </Button>
+              <Button size="sm" variant="ghost" onClick={push.disable} loading={push.busy}>
+                Turn off on this device
+              </Button>
+            </>
+          )}
+          {push.status === "install" && (
+            <Button size="sm" onClick={() => setInstallOpen(true)}>
+              Show me how
+            </Button>
+          )}
+        </div>
       </div>
+      <InstallSheet open={installOpen} onClose={() => setInstallOpen(false)} />
     </div>
   );
 }

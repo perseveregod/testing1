@@ -110,6 +110,15 @@ export interface EventQuery {
   limit: number;
 }
 
+export interface PushSubscriptionRecord {
+  endpoint: string;
+  userId: string;
+  p256dh: string;
+  auth: string;
+  userAgent: string | null;
+  createdAt: string;
+}
+
 export interface Store {
   readonly kind: "local" | "supabase";
 
@@ -188,6 +197,12 @@ export interface Store {
   flagCommunityItem(kind: "event" | "comment", id: string, userId: string): Promise<number>;
   countEventsSince(userId: string, since: string): Promise<number>;
   countEventCommentsSince(userId: string, since: string): Promise<number>;
+
+  // push subscriptions (one device = one endpoint; a user may have several)
+  savePushSubscription(rec: PushSubscriptionRecord): Promise<void>;
+  deletePushSubscription(endpoint: string): Promise<void>;
+  listPushSubscriptions(userIds: string[]): Promise<PushSubscriptionRecord[]>;
+  countPushSubscriptions(userId: string): Promise<number>;
 
   // data sources
   listSources(): Promise<DataSource[]>;

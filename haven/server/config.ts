@@ -73,6 +73,15 @@ export const config = {
       return !env.STRIPE_SECRET_KEY && (!isProduction || env.HAVEN_ENABLE_TEST_CHECKOUT === "1");
     },
   },
+  push: {
+    /** Web Push (VAPID). Generate once with `npx web-push generate-vapid-keys`. */
+    publicKey: env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "",
+    privateKey: env.VAPID_PRIVATE_KEY ?? "",
+    subject: env.VAPID_SUBJECT || (env.HAVEN_CONTACT_EMAIL ? `mailto:${env.HAVEN_CONTACT_EMAIL}` : "mailto:hello@haven.app"),
+    get enabled(): boolean {
+      return Boolean(this.publicKey && this.privateKey);
+    },
+  },
   sources: {
     /**
      * Comma list of adapters to ingest. "demo" seeds labeled demo incidents;

@@ -17,6 +17,7 @@ import type {
   EventCommentRecord,
   EventQuery,
   EventRecord,
+  PushSubscriptionRecord,
   IncidentQuery,
   PlaceCandidate,
   ReportRecord,
@@ -46,6 +47,7 @@ interface Data {
   eventComments: EventCommentRecord[];
   rsvps: { eventId: string; userId: string; createdAt: string }[];
   communityFlags: { kind: "event" | "comment"; id: string; userId: string; createdAt: string }[];
+  pushSubscriptions: PushSubscriptionRecord[];
 }
 
 const empty = (): Data => ({
@@ -66,6 +68,7 @@ const empty = (): Data => ({
   eventComments: [],
   rsvps: [],
   communityFlags: [],
+  pushSubscriptions: [],
 });
 
 const MAX_NOTIFICATIONS_PER_USER = 200;
@@ -432,6 +435,24 @@ export class LocalStore implements Store {
   }
   async countEventCommentsSince(userId: string, since: string) {
     return this.data.eventComments.filter((c) => c.userId === userId && c.createdAt >= since).length;
+  }
+
+  // push ---------------------------------------------------------------------
+  async savePushSubscription(rec: PushSubscriptionRecord) {
+    this.data.pushSubscriptions = this.data.pushSubscriptions.filter((p) => p.endpoint !== rec.endpoint);
+    this.data.pushSubscriptions.push({ ...rec });
+    this.save();
+  }
+  async deletePushSubscription(endpoint: string) {
+    this.data.pushSubscriptions = this.data.pushSubscriptions.filter((p) => p.endpoint !== endpoint);
+    this.save();
+  }
+  async listPushSubscriptions(userIds: string[]) {
+    const ids = new Set(userIds);
+    return this.data.pushSubscriptions.filter((p) => ids.has(p.userId)).map((p) => ({ ...p }));
+  }
+  async countPushSubscriptions(userId: string) {
+    return this.data.pushSubscriptions.filter((p) => p.userId === userId).length;
   }
 
   // sources ---------------------------------------------------------------

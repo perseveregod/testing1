@@ -21,6 +21,7 @@ import type {
   EventCommentRecord,
   EventQuery,
   EventRecord,
+  PushSubscriptionRecord,
   IncidentQuery,
   PlaceCandidate,
   ReportRecord,
@@ -749,6 +750,44 @@ export class SupabaseStore implements Store {
       .eq("user_id", userId)
       .gte("created_at", since);
     community(res);
+    return res.count ?? 0;
+  }
+
+  // push ---------------------------------------------------------------------
+  async savePushSubscription(rec: PushSubscriptionRecord) {
+    check(
+      await this.db.from("push_subscriptions").upsert(
+        {
+          endpoint: rec.endpoint,
+          user_id: rec.userId,
+          p256dh: rec.p256dh,
+          auth: rec.auth,
+          user_agent: rec.userAgent,
+          created_at: rec.createdAt,
+        },
+        { onConflict: "endpoint" },
+      ),
+    );
+  }
+  async deletePushSubscription(endpoint: string) {
+    check(await this.db.from("push_subscriptions").delete().eq("endpoint", endpoint));
+  }
+  async listPushSubscriptions(userIds: string[]) {
+    if (!userIds.length) return [];
+    const res = await this.db.from("push_subscriptions").select().in("user_id", userIds);
+    if (res.error) return []; // table not created yet: nobody is subscribed
+    return (res.data as Row[]).map((r) => ({
+      endpoint: String(r.endpoint),
+      userId: String(r.user_id),
+      p256dh: String(r.p256dh),
+      auth: String(r.auth),
+      userAgent: str(r.user_agent),
+      createdAt: iso(r.created_at),
+    }));
+  }
+  async countPushSubscriptions(userId: string) {
+    const res = await this.db.from("push_subscriptions").select("endpoint", { count: "exact", head: true }).eq("user_id", userId);
+    if (res.error) return 0;
     return res.count ?? 0;
   }
 

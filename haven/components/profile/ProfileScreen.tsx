@@ -16,6 +16,7 @@ import { PageHeader } from "@/components/nav/PageHeader";
 import { Group, Row } from "@/components/ui/Controls";
 import { Skeleton } from "@/components/ui/States";
 import { PlacesSection } from "./PlacesSection";
+import { InstallRow } from "@/components/onboarding/InstallRow";
 import { SignInSheet } from "./SignInSheet";
 
 export function ProfileScreen() {
@@ -106,6 +107,7 @@ export function ProfileScreen() {
           />
         </Group>
         <PlacesSection />
+        <InstallRow />
         <MyReports />
         <SourcesSection />
 

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { List, Map as MapIcon, Plus, ShieldHalf, UserRound, UsersRound, Zap } from "lucide-react";
 import { useNotifications } from "@/lib/client/hooks";
 import { useMapTone } from "@/lib/client/mapTone";
+import { useAppBadge } from "@/lib/client/push";
 import { requestStormReport, useStormPrefs } from "@/lib/client/stormMode";
 
 const TABS = [
@@ -19,6 +20,7 @@ const TABS = [
 export function BottomNav() {
   const path = usePathname();
   const { unread } = useNotifications();
+  useAppBadge(unread);
   // On the map in Storm Mode, the one big button files a storm report.
   const storm = useStormPrefs();
   const onMap = path === "/";
