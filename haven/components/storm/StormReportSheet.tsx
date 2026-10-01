@@ -102,8 +102,10 @@ export function StormReportSheet({
       <div className="space-y-4 pb-1">
         {(["power", "flooding", "place"] as StormKind[]).map((k) => (
           <section key={k}>
-            <p className="mb-2 flex items-center gap-2 text-[13px] font-semibold text-muted">
-              <CategoryGlyph category={k} animated={false} className="size-4" />
+            <p className="mb-2 flex items-center gap-2 text-[13.5px] font-bold text-text/90">
+              <span className="flex size-7 items-center justify-center rounded-full bg-surface-2">
+                <CategoryGlyph category={k} animated={false} className="size-4" />
+              </span>
               {t[`kind_${k}`]}
             </p>
             {k === "place" && (
@@ -141,14 +143,24 @@ export function StormReportSheet({
                       setKind(k);
                       setState(s);
                     }}
-                    className="press flex min-h-[54px] items-center justify-center rounded-2xl px-3 text-center text-[14.5px] font-bold leading-tight"
+                    className="press relative flex min-h-[76px] flex-col items-start justify-between overflow-hidden rounded-[18px] p-3 text-left transition-[background-color,box-shadow] duration-150"
                     style={{
                       background: on ? style.color : "var(--surface-2)",
-                      color: on ? (s === "closed" ? "#fff" : "#0b0c0f") : "var(--text)",
-                      boxShadow: on ? "none" : `inset 0 0 0 1.5px ${style.color}55`,
+                      color: on ? (s === "closed" || s === "flooded" ? "#fff" : "#0b0c0f") : "var(--text)",
+                      boxShadow: on ? `0 8px 22px -8px ${style.color}` : "inset 0 0 0 1px rgba(255,255,255,0.06)",
                     }}
                   >
-                    {stateLabel(s, lang)}
+                    <span
+                      className="flex size-7 items-center justify-center rounded-full text-[13px] font-black leading-none"
+                      style={{
+                        background: on ? "rgba(255,255,255,0.28)" : `color-mix(in srgb, ${style.color} 22%, transparent)`,
+                        color: on ? "inherit" : style.color,
+                      }}
+                      aria-hidden
+                    >
+                      {style.bad ? "✕" : "✓"}
+                    </span>
+                    <span className="mt-2 text-[15px] font-bold leading-tight tracking-[-0.01em]">{stateLabel(s, lang)}</span>
                   </button>
                 );
               })}
