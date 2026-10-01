@@ -11,14 +11,15 @@ import {
 } from "lucide-react";
 import { setStormPrefs, useStormPrefs, useStormReportTick } from "@/lib/client/stormMode";
 import { peekMapFocus, takeMapFocus } from "@/lib/client/mapFocus";
+import { setMapTone } from "@/lib/client/mapTone";
 import { STATE_STYLE, strings, type StormKind } from "@/lib/storm";
 import { STORM_CATEGORIES } from "@/lib/categories";
-import { StormBanner } from "@/components/storm/StormBanner";
+import { OfficialSourcesSheet } from "@/components/storm/StormBanner";
 import { StormIcon } from "@/components/storm/StormIcon";
 import { NearbyPeek } from "@/components/map/NearbyPeek";
 import { useClock } from "@/lib/client/safewalk";
 import { StormReportSheet } from "@/components/storm/StormReportSheet";
-import { DEFAULT_CENTER } from "@/lib/client/defaults";
+import { DEFAULT_CENTER, EMERGENCY_NUMBER } from "@/lib/client/defaults";
 import { errorMessage } from "@/lib/client/api";
 import { distanceFrom, useIncidents, useNearYou, useViewer, type InitialIncidents } from "@/lib/client/hooks";
 import type { LatLng } from "@/lib/geo";
@@ -102,6 +103,29 @@ function queryArea(
   };
 }
 
+/** A quick-filter pill over the map: panel material, solid when selected. */
+function Chip({
+  on,
+  tint,
+  className = "",
+  children,
+  ...rest
+}: { on?: boolean; tint?: string } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      type="button"
+      aria-pressed={on}
+      className={`press inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold ${
+        on ? "bg-text text-bg" : tint ? "" : "panel text-text"
+      } ${className}`}
+      style={tint ? { background: tint, color: "#1b1300" } : undefined}
+      {...rest}
+    >
+      {children}
+    </button>
+  );
+}
+
 /** Round floating control over the map. 44 px, glass. */
 function MapControl({
   label,
@@ -135,6 +159,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [sourcesOpen, setSourcesOpen] = useState(false);
   const [filters, setFilters] = useState<MapFilters>(DEFAULT_FILTERS);
   const [searchLabel, setSearchLabel] = useState<string | null>(() => peekMapFocus()?.label ?? null);
   const [promptDismissed] = useState(promptWasDismissed);
@@ -261,9 +286,13 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
   // The chrome follows the map: light panels over the day style.
   // Decided on the client only (now is 0 during server render and hydration).
   const tone = now > 0 && resolveMode(mode, new Date(now)) === "day" ? "light" : "dark";
+  useEffect(() => {
+    setMapTone(tone);
+    return () => setMapTone("dark");
+  }, [tone]);
 
   return (
-    <div className="fixed inset-0 overflow-hidden bg-bg" data-tone={tone}>
+    <div className="fixed inset-0 overflow-hidden bg-bg" data-tone={tone} style={{ "--map-bottom-inset": `${bottomH}px` } as React.CSSProperties}>
       <IncidentMap
         ref={mapRef}
         incidents={items}
@@ -277,133 +306,104 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
       />
       {/* Soft gradients so the controls read over the map. */}
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-bg/85 via-bg/35 to-transparent"
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-bg/85 via-bg/35 to-transparent"
+        className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-bg/70 to-transparent"
         aria-hidden
       />
 
-      {/* Top: search, filters, one status line, quick chips */}
+      {/* Top: one search pill, then loose chips. Nothing else over the map. */}
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 z-20 px-3"
+        className="pointer-events-none absolute inset-x-0 top-0 z-20 px-4"
         style={{ paddingTop: "calc(var(--safe-top) + 8px)" }}
       >
-        <div className="panel pointer-events-auto mx-auto max-w-lg rounded-[22px] p-2">
-        <div className="flex h-11 items-center gap-1 rounded-[14px] bg-text/[0.06] pr-1">
-          <button
-            onClick={() => setSearchOpen(true)}
-            className="press flex h-11 min-w-0 flex-1 items-center gap-2.5 rounded-[14px] pl-3.5 pr-2 text-left"
-          >
-            <Search className="size-[18px] shrink-0 text-muted" aria-hidden />
-            <span className={`truncate text-[15.5px] ${searchLabel ? "text-text" : "text-muted"}`}>
-              {searchLabel ?? "Search location…"}
-            </span>
-          </button>
-          <button
-            type="button"
-            aria-label={storm.on ? `${st.stormMode}: ${st.on}` : `${st.stormMode}: ${st.off}`}
-            aria-pressed={storm.on}
-            onClick={() => {
-              setSelectedId(null);
-              setStormPrefs({ on: !storm.on });
-            }}
-            className={`press relative flex size-10 shrink-0 items-center justify-center rounded-full ${
-              storm.on ? "storm-on text-white" : "text-text"
-            }`}
-          >
-            <StormIcon className="size-[22px]" active={storm.on} bolt={storm.on ? "#FFD34D" : "#FFC233"} />
-          </button>
-        </div>
-        <div
-          className="no-scrollbar flex items-center gap-1.5 overflow-x-auto pt-2"
-          role="toolbar"
-          aria-label="Quick filters"
-        >
-          {!storm.on && (
+        <div className="mx-auto max-w-lg">
+          <div className="panel pointer-events-auto flex h-12 items-center gap-1 rounded-full pl-1 pr-1.5">
             <button
-              onClick={() => setFilterOpen(true)}
-              aria-label={`All filters${filterCount ? ` (${filterCount} active)` : ""}`}
-              className={`press inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold ${
-                filterCount > 0 ? "bg-text text-bg" : "bg-text/[0.06] text-text"
+              onClick={() => setSearchOpen(true)}
+              className="press flex h-full min-w-0 flex-1 items-center gap-2.5 rounded-full pl-3 text-left"
+            >
+              <Search className="size-[18px] shrink-0 text-muted" aria-hidden />
+              <span className={`truncate text-[16px] ${searchLabel ? "text-text" : "text-muted"}`}>
+                {searchLabel ?? "Search Houston"}
+              </span>
+            </button>
+            <button
+              type="button"
+              aria-label={storm.on ? `${st.stormMode}: ${st.on}` : `${st.stormMode}: ${st.off}`}
+              aria-pressed={storm.on}
+              onClick={() => {
+                setSelectedId(null);
+                setStormPrefs({ on: !storm.on });
+              }}
+              className={`press flex size-9 shrink-0 items-center justify-center rounded-full transition-colors duration-200 ${
+                storm.on ? "bg-[#ffc233] text-[#1b1300]" : "text-muted hover:text-text"
               }`}
             >
-              <SlidersHorizontal className="size-3.5" aria-hidden />
-              {filterCount > 0 ? `Filters · ${filterCount}` : "Incidents"}
-              <ChevronDown className="size-3.5 opacity-70" aria-hidden />
+              <StormIcon className="size-[21px]" active={storm.on} bolt={storm.on ? "#1b1300" : "#FFC233"} />
             </button>
-          )}
-          {storm.on &&
-            ([null, "power", "flooding", "place"] as (StormKind | null)[]).map((k) => {
-              const on = stormFilter === k;
-              const dot = k === "power" ? STATE_STYLE.out.color : k === "flooding" ? STATE_STYLE.flooded.color : k === "place" ? STATE_STYLE.open.color : null;
-              return (
-                <button
-                  key={k ?? "all"}
-                  aria-pressed={on}
-                  onClick={() => setStormFilter(k)}
-                  className={`press inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold ${
-                    on ? "bg-text text-bg" : "bg-text/[0.06] text-text"
-                  }`}
-                >
-                  {dot && <span className="size-2 rounded-full" style={{ background: dot }} aria-hidden />}
-                  {k ? st[`kind_${k}`] : st.filterAll}
-                </button>
-              );
-            })}
-          {!storm.on && QUICK.map((q) => {
-            const on =
-              q.id === null
-                ? filters.groups.length === 0
-                : filters.groups.length === 1 && filters.groups[0] === q.id;
-            return (
-              <button
-                key={q.label}
-                aria-pressed={on}
-                onClick={() =>
-                  setFilters((f) => ({
-                    ...f,
-                    groups: q.id === null ? [] : [q.id],
-                  }))
-                }
-                className={`press inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold ${
-                  on ? "bg-text text-bg" : "bg-text/[0.06] text-text"
-                }`}
-              >
-                {q.color && (
-                  <span
-                    className="size-2 rounded-full"
-                    style={{ background: q.color }}
-                    aria-hidden
-                  />
-                )}
-                {q.label}
-              </button>
-            );
-          })}
-        </div>
-        </div>
+          </div>
 
-        {storm.on && (
-          <div className="mx-auto mt-2 max-w-lg px-1">
-            <StormBanner />
+          <div
+            className="no-scrollbar pointer-events-auto -mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-2 pt-2.5"
+            role="toolbar"
+            aria-label={storm.on ? st.stormMode : "Quick filters"}
+          >
+            {storm.on ? (
+              <>
+                <Chip onClick={() => setSourcesOpen(true)} tint="#ffc233" aria-label={st.officialSources}>
+                  <StormIcon className="size-4" active bolt="#1b1300" cloud="#1b1300" />
+                  {st.bannerShort} · {st.officialSourcesShort}
+                </Chip>
+                {([null, "power", "flooding", "place"] as (StormKind | null)[]).map((k) => {
+                  const dot = k === "power" ? STATE_STYLE.out.color : k === "flooding" ? STATE_STYLE.flooded.color : k === "place" ? STATE_STYLE.open.color : null;
+                  return (
+                    <Chip key={k ?? "all"} on={stormFilter === k} onClick={() => setStormFilter(k)}>
+                      {dot && <span className="size-2 rounded-full" style={{ background: dot }} aria-hidden />}
+                      {k ? st[`kind_${k}`] : st.filterAll}
+                    </Chip>
+                  );
+                })}
+                <a href={`tel:${EMERGENCY_NUMBER}`} className="press inline-flex h-9 shrink-0 items-center rounded-full bg-live px-3.5 text-[13px] font-bold text-white">
+                  {EMERGENCY_NUMBER}
+                </a>
+                <Chip onClick={() => setStormPrefs({ lang: storm.lang === "en" ? "es" : "en" })} aria-label={storm.lang === "en" ? "Cambiar a español" : "Switch to English"}>
+                  {storm.lang === "en" ? "ES" : "EN"}
+                </Chip>
+              </>
+            ) : (
+              <>
+                <Chip on={filterCount > 0} onClick={() => setFilterOpen(true)} aria-label={`All filters${filterCount ? ` (${filterCount} active)` : ""}`}>
+                  <SlidersHorizontal className="size-3.5" aria-hidden />
+                  {filterCount > 0 ? `Filters · ${filterCount}` : "Filters"}
+                  <ChevronDown className="size-3.5 opacity-60" aria-hidden />
+                </Chip>
+                {QUICK.map((q) => {
+                  const on = q.id === null ? filters.groups.length === 0 : filters.groups.length === 1 && filters.groups[0] === q.id;
+                  return (
+                    <Chip key={q.label} on={on} onClick={() => setFilters((f) => ({ ...f, groups: q.id === null ? [] : [q.id] }))}>
+                      {q.color && <span className="size-2 rounded-full" style={{ background: q.color }} aria-hidden />}
+                      {q.label}
+                    </Chip>
+                  );
+                })}
+              </>
+            )}
           </div>
-        )}
-        {weatherAlert && (
-          <div className="pointer-events-auto mx-auto mt-2 flex max-w-lg px-4">
-            <div className="glass inline-flex min-h-11 items-center gap-2 rounded-full py-1 pl-3.5 pr-1 text-[13px] font-semibold">
-              <StormIcon className="size-5" active bolt="#FFC233" />
-              <span>{st.suggest}</span>
-              <button
-                onClick={() => setStormPrefs({ on: true })}
-                className="press inline-flex min-h-9 items-center rounded-full bg-[#ff2d20] px-3 text-[12.5px] font-bold text-white"
-              >
-                {st.turnOn}
-              </button>
+
+          {weatherAlert && (
+            <div className="pointer-events-auto flex">
+              <div className="panel inline-flex min-h-11 items-center gap-2 rounded-full py-1 pl-3.5 pr-1 text-[13px] font-semibold">
+                <StormIcon className="size-5" active bolt="#FFC233" />
+                <span>{st.suggest}</span>
+                <button
+                  onClick={() => setStormPrefs({ on: true })}
+                  className="press inline-flex min-h-9 items-center rounded-full bg-[#ffc233] px-3 text-[12.5px] font-bold text-[#1b1300]"
+                >
+                  {st.turnOn}
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Right: map controls. Pinned above the tab bar; they step aside while a card is up. */}
@@ -414,11 +414,11 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
         >
           <div className="mx-auto flex max-w-lg justify-end px-4 pb-3">
             <div className="pointer-events-auto flex flex-col items-end gap-2.5">
-              <MapControl label="Map style" onClick={() => setLayersOpen(true)} className="glass rounded-full">
+              <MapControl label="Map style" onClick={() => setLayersOpen(true)} className="panel rounded-full">
                 <Layers className="size-[18px]" aria-hidden />
               </MapControl>
               {Math.abs(camera.bearing - (camera.pitch > 5 ? BEARING_3D : 0)) > 2 && (
-                <MapControl label="Point the map north" onClick={() => mapRef.current?.resetNorth()} className="glass haven-pop rounded-full">
+                <MapControl label="Point the map north" onClick={() => mapRef.current?.resetNorth()} className="panel haven-pop rounded-full">
                   <Navigation2
                     className="size-[16px] fill-live text-live transition-transform duration-150"
                     style={{ transform: `rotate(${-camera.bearing}deg)` }}
@@ -429,7 +429,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
               <MapControl
                 label={position ? "Center on my location" : "Use my location"}
                 onClick={locate}
-                className="glass rounded-full"
+                className="panel rounded-full"
               >
                 {status === "locating" ? (
                   <Spinner className="size-[18px]" />
@@ -494,6 +494,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
           void mutate().then(() => setSelectedId(id));
         }}
       />
+      <OfficialSourcesSheet open={sourcesOpen} onClose={() => setSourcesOpen(false)} />
       <LayersSheet
         open={layersOpen}
         onClose={() => setLayersOpen(false)}

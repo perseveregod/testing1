@@ -1,45 +1,9 @@
 "use client";
 
-import { ExternalLink, Radio } from "lucide-react";
-import { StormIcon } from "./StormIcon";
-import { useState } from "react";
-import { setStormPrefs, useStormPrefs } from "@/lib/client/stormMode";
+import { ExternalLink } from "lucide-react";
+import { useStormPrefs } from "@/lib/client/stormMode";
 import { OFFICIAL_SOURCES, strings } from "@/lib/storm";
-import { EMERGENCY_NUMBER } from "@/lib/client/defaults";
 import { Sheet } from "@/components/ui/Sheet";
-
-/** The always-visible Storm Mode safety banner, with the official sources and language switch. */
-export function StormBanner() {
-  const { lang } = useStormPrefs();
-  const t = strings(lang);
-  const [sourcesOpen, setSourcesOpen] = useState(false);
-  return (
-    <>
-      <div role="note" className="panel pointer-events-auto flex items-center gap-2 rounded-full py-1 pl-3 pr-1">
-        <StormIcon className="size-5 shrink-0 text-text" active />
-        <p className="min-w-0 flex-1 truncate text-[12.5px] font-semibold text-text/90">{t.bannerShort}</p>
-        <button
-          onClick={() => setSourcesOpen(true)}
-          className="press inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-text/[0.07] px-2.5 text-[12px] font-semibold text-text"
-        >
-          <Radio className="size-3.5 text-[#FFC233]" aria-hidden />
-          {t.officialSourcesShort}
-        </button>
-        <a href={`tel:${EMERGENCY_NUMBER}`} className="press inline-flex h-8 shrink-0 items-center rounded-full bg-live px-2.5 text-[12px] font-bold text-white">
-          {EMERGENCY_NUMBER}
-        </a>
-        <button
-          onClick={() => setStormPrefs({ lang: lang === "en" ? "es" : "en" })}
-          aria-label={lang === "en" ? "Cambiar a español" : "Switch to English"}
-          className="press inline-flex h-8 shrink-0 items-center rounded-full px-2 text-[12px] font-semibold text-muted"
-        >
-          {lang === "en" ? "ES" : "EN"}
-        </button>
-      </div>
-      <OfficialSourcesSheet open={sourcesOpen} onClose={() => setSourcesOpen(false)} />
-    </>
-  );
-}
 
 export function OfficialSourcesSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { lang } = useStormPrefs();

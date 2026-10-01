@@ -6,15 +6,14 @@ import { ChevronRight, ChevronUp } from "lucide-react";
 import { distanceFrom, NEAR_RADIUS_MI } from "@/lib/client/hooks";
 import { formatDistance, type LatLng } from "@/lib/geo";
 import { timeAgo } from "@/lib/time";
+import type { Lang } from "@/lib/storm";
 import type { PublicIncident } from "@/lib/types";
 import { CategoryIcon } from "@/components/incident/CategoryIcon";
 import { isLive } from "@/components/incident/Badges";
-import type { Lang } from "@/lib/storm";
 
 /**
- * The map's bottom bar: the one shared count ("7 active · 5 mi") and, pulled
- * up, the nearest active incidents. Collapsed it is one slim row, so the map
- * stays the point of the screen.
+ * The map's bottom sheet, docked above the tab bar. Collapsed it is one row:
+ * the shared count and where it applies. Pulled up, the nearest incidents.
  */
 export function NearbyPeek({
   items,
@@ -38,9 +37,9 @@ export function NearbyPeek({
   position: LatLng | null;
   now: number;
   onPick: (id: string) => void;
-  /** When set, the bar offers "Use my location" instead of naming the default area. */
+  /** When set, the sheet offers "Locate me" instead of naming the default area. */
   onLocate?: (() => void) | null;
-  /** Storm Mode: the number is storm reports, and a Report button sits on the right. */
+  /** Storm Mode: the count is storm reports from the last 6 hours. */
   storm?: { lang: Lang } | null;
 }) {
   const [open, setOpen] = useState(false);
@@ -49,72 +48,87 @@ export function NearbyPeek({
     ? [...active].sort((a, b) => (distanceFrom(position, a) ?? 0) - (distanceFrom(position, b) ?? 0))
     : [...active].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const rows = open ? sorted.slice(0, 5) : [];
+  const es = storm?.lang === "es";
 
-  const n = String(activeCount).padStart(2, "0");
-  const title = storm ? (storm.lang === "es" ? "Reportes de tormenta" : "Storm reports") : "Nearby active incidents";
-  const sub = storm
+  if (loading && items.length === 0) return null;
+
+  const title = storm
     ? activeCount === 0
-      ? storm.lang === "es"
-        ? "Sea el primero en reportar luz, inundación o un lugar abierto"
-        : "Be the first to report power, flooding or an open place"
-      : storm.lang === "es"
-        ? "Últimas 6 h · cerca de usted"
-        : "Last 6h · near you"
-    : `Within ${NEAR_RADIUS_MI} mi`;
+      ? es
+        ? "Sin reportes de tormenta"
+        : "No storm reports yet"
+      : es
+        ? `${activeCount} ${activeCount === 1 ? "reporte" : "reportes"} de tormenta`
+        : `${activeCount} storm ${activeCount === 1 ? "report" : "reports"}`
+    : `${activeCount} active ${activeCount === 1 ? "incident" : "incidents"}`;
+  const where = storm
+    ? activeCount === 0
+      ? es
+        ? "Toque ⚡ para reportar luz, inundación o un lugar abierto"
+        : "Tap ⚡ to report power, flooding or an open place"
+      : es
+        ? "Últimas 6 h"
+        : "Last 6 hours"
+    : position
+      ? `Within ${NEAR_RADIUS_MI} mi of you`
+      : `Within ${NEAR_RADIUS_MI} mi of central Houston`;
+
   return (
-    <section aria-label={title} className={`pointer-events-auto ${open ? "glass-sheet overflow-hidden rounded-[22px]" : ""}`}>
-      <div className={`flex items-end gap-3 ${open ? "px-4 pb-2 pt-4" : "px-1 pb-1"}`}>
+    <section aria-label={title} className="panel pointer-events-auto overflow-hidden rounded-[22px]">
       <button
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        disabled={loading || Boolean(error) || active.length === 0}
-        className="flex min-w-0 flex-1 items-end gap-3 text-left"
+        disabled={Boolean(error) || active.length === 0}
+        className="relative flex min-h-[60px] w-full items-center gap-3 px-4 pb-2.5 pt-3.5 text-left"
       >
-        {loading ? null : error ? (
-          <span className="pb-2 text-[13.5px] text-danger" onClick={onRetry} role="button">
-            Couldn&apos;t load · Retry
+        <span className="absolute left-1/2 top-1.5 h-1 w-8 -translate-x-1/2 rounded-full bg-text/20" aria-hidden />
+        {error ? (
+          <span className="text-[14px] text-danger" onClick={onRetry} role="button">
+            Couldn&apos;t load incidents · Retry
           </span>
         ) : (
           <>
             <span
-              className={`text-[52px] font-extrabold leading-[0.9] tracking-[-0.04em] tnum ${activeCount > 0 ? (storm ? "text-[#FFC233]" : "text-live") : "text-text"}`}
-              style={{ textShadow: "0 2px 12px var(--halo)" }}
-            >
-              {n}
-            </span>
-            <span className="min-w-0 pb-0.5">
-              <span className="flex items-center gap-1.5 text-[14px] font-semibold leading-tight text-text" style={{ textShadow: "0 1px 6px var(--halo)" }}>
+              className={`size-2.5 shrink-0 rounded-full ${activeCount > 0 ? (storm ? "bg-[#ffc233]" : "bg-live") : "bg-ok"}`}
+              aria-hidden
+            />
+            <span className="min-w-0 flex-1">
+              <span className="flex items-center gap-2 text-[16px] font-semibold leading-tight tracking-[-0.01em] tnum">
                 {title}
-                {active.length > 0 && (
-                  <ChevronUp className={`size-4 shrink-0 text-faint transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
+                {allDemo && (
+                  <span className="rounded-[4px] bg-text/[0.08] px-1.5 py-px text-[10px] font-bold uppercase tracking-[0.06em] text-muted">
+                    Demo
+                  </span>
                 )}
               </span>
-              <span className="flex flex-wrap items-center gap-x-1.5 text-[12.5px] leading-tight text-muted" style={{ textShadow: "0 1px 6px var(--halo)" }}>
-                {sub}
-                {storm ? null : onLocate && !position ? (
-                  <span
-                    role="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onLocate();
-                    }}
-                    className="font-semibold text-brand"
-                  >
-                    · Locate me
-                  </span>
-                ) : (
-                  <span>· {position ? "of you" : "of central Houston"}</span>
+              <span className="mt-0.5 block truncate text-[13px] leading-tight text-muted">
+                {where}
+                {!storm && onLocate && !position && (
+                  <>
+                    {" · "}
+                    <span
+                      role="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onLocate();
+                      }}
+                      className="font-semibold text-brand"
+                    >
+                      Locate me
+                    </span>
+                  </>
                 )}
-                {allDemo && <span className="rounded-[3px] bg-text/[0.1] px-1 text-[9.5px] font-bold uppercase tracking-wide text-text/70">Demo</span>}
               </span>
             </span>
+            {active.length > 0 && (
+              <ChevronUp className={`size-5 shrink-0 text-faint transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
+            )}
           </>
         )}
       </button>
-      </div>
       {open && (
         <>
-          <ul className="px-2 pb-1">
+          <ul className="border-t border-line px-2 pb-1 pt-1">
             {rows.map((i) => {
               const d = distanceFrom(position, i);
               const live = isLive(i, now);
@@ -139,13 +153,15 @@ export function NearbyPeek({
               );
             })}
           </ul>
-          <Link
-            href="/feed"
-            transitionTypes={["tab"]}
-            className="flex min-h-11 items-center justify-center border-t border-line text-[13.5px] font-semibold text-brand"
-          >
-            See everything nearby
-          </Link>
+          {!storm && (
+            <Link
+              href="/feed"
+              transitionTypes={["tab"]}
+              className="flex min-h-11 items-center justify-center border-t border-line text-[13.5px] font-semibold text-brand"
+            >
+              See everything nearby
+            </Link>
+          )}
         </>
       )}
     </section>

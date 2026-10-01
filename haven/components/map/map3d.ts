@@ -13,11 +13,14 @@ export type MapMode = "auto" | "night" | "day" | "satellite";
 export type ResolvedMode = Exclude<MapMode, "auto">;
 
 export const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY ?? "";
-export const DAY_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
+// Positron: light gray land, white roads, quiet labels. The calm look the
+// big map apps use, instead of the saturated "bright" cartography.
+export const DAY_STYLE_URL = "https://tiles.openfreemap.org/styles/positron";
 
 /** Camera used for the "3D" view. */
 export const PITCH_3D = 58;
-export const BEARING_3D = -18;
+// North-up: rotated maps read as disoriented, and a compass control appears.
+export const BEARING_3D = 0;
 
 /** Daytime between 6:30 and 19:30 local time. */
 export function isDaytime(d: Date): boolean {
@@ -72,7 +75,7 @@ export function enhanceStyle(m: MlMap, mode: ResolvedMode) {
         paint: {
           "fill-extrusion-color": night
             ? ["interpolate", ["linear"], ["coalesce", ["get", "render_height"], 0], 0, "#161a24", 40, "#1d2433", 120, "#27324a", 250, "#33425f"]
-            : ["interpolate", ["linear"], ["coalesce", ["get", "render_height"], 0], 0, "#e9e4dc", 40, "#ddd8d0", 120, "#cfd5de", 250, "#bfc9d8"],
+            : ["interpolate", ["linear"], ["coalesce", ["get", "render_height"], 0], 0, "#e4e7ec", 40, "#d9dde4", 120, "#ccd2db", 250, "#bec6d2"],
           "fill-extrusion-height": grownHeight("render_height"),
           "fill-extrusion-base": grownHeight("render_min_height"),
           // Opaque extrusions skip the expensive depth-sorted transparency pass.
@@ -105,9 +108,9 @@ export function enhanceStyle(m: MlMap, mode: ResolvedMode) {
           "atmosphere-blend": ["interpolate", ["linear"], ["zoom"], 0, 1, 6, 0.6, 10, 0],
         }
       : {
-          "sky-color": "#7fb8f5",
-          "horizon-color": "#dbe9fa",
-          "fog-color": "#eef3f9",
+          "sky-color": "#c9dcf2",
+          "horizon-color": "#e9eff7",
+          "fog-color": "#f1f4f8",
           "sky-horizon-blend": 0.55,
           "horizon-fog-blend": 0.75,
           "fog-ground-blend": 0.9,
@@ -186,6 +189,31 @@ export function tuneNightStyle(m: MlMap) {
     if (l.type === "symbol" && m.getLayer(l.id) && l.layout && "text-field" in l.layout) {
       m.setPaintProperty(l.id, "text-color", "#97a0b0");
       m.setPaintProperty(l.id, "text-halo-color", "#080a0f");
+      m.setPaintProperty(l.id, "text-halo-width", 1.2);
+    }
+  }
+}
+
+/** Day tuning for the Positron base: a touch cooler, with quieter labels. */
+export function tuneDayStyle(m: MlMap) {
+  const set = (id: string, prop: string, value: unknown) => {
+    if (m.getLayer(id)) m.setPaintProperty(id, prop, value);
+  };
+  set("background", "background-color", "#f2f3f5");
+  set("water", "fill-color", "#cddff0");
+  set("waterway", "line-color", "#cddff0");
+  set("park", "fill-color", "#dfe9dc");
+  set("landcover_wood", "fill-color", "#dfe9dc");
+  set("landuse_residential", "fill-color", "#eceef1");
+  set("highway_minor", "line-color", "#ffffff");
+  set("highway_major_inner", "line-color", "#ffffff");
+  set("highway_major_casing", "line-color", "#d9dde3");
+  set("highway_motorway_inner", "line-color", "#fbfbfc");
+  set("highway_motorway_casing", "line-color", "#d4d9e0");
+  for (const l of m.getStyle().layers ?? []) {
+    if (l.type === "symbol" && m.getLayer(l.id) && l.layout && "text-field" in l.layout) {
+      m.setPaintProperty(l.id, "text-color", "#5b6372");
+      m.setPaintProperty(l.id, "text-halo-color", "#f2f3f5");
       m.setPaintProperty(l.id, "text-halo-width", 1.2);
     }
   }

@@ -1,16 +1,15 @@
 import { PageTransition } from "@/components/nav/PageTransition";
 import type { Metadata } from "next";
 import { FeedScreen } from "@/components/feed/FeedScreen";
-import { initialIncidents } from "@/server/services/initial";
 
 export const metadata: Metadata = { title: "Feed" };
-export const dynamic = "force-dynamic";
 
-export default async function FeedPage() {
-  const initial = await initialIncidents(5, 200);
+// Static shell: the tab opens instantly and the list fills from the client's
+// cache (the map has already fetched the same "near you" query).
+export default function FeedPage() {
   return (
     <PageTransition>
-      <FeedScreen initial={initial} />
+      <FeedScreen />
     </PageTransition>
   );
 }

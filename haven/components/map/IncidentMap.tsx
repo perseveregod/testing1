@@ -30,6 +30,7 @@ import {
   resolveMode,
   styleUrlFor,
   tuneNightStyle,
+  tuneDayStyle,
   type MapMode,
   type ResolvedMode,
 } from "./map3d";
@@ -290,7 +291,7 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
         bearing: BEARING_3D,
         maxPitch: 72,
         // Always visible (not collapsed) so the OpenStreetMap / OpenFreeMap credit is shown per license.
-        attributionControl: { compact: false },
+        attributionControl: { compact: true },
         fadeDuration: 0,
       });
       map.current = m;
@@ -309,6 +310,7 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
       });
       m.on("style.load", () => {
         if (resolved.current === "night") tuneNightStyle(m);
+        if (resolved.current === "day") tuneDayStyle(m);
         try {
           enhanceStyle(m, resolved.current);
         } catch (err) {
@@ -372,6 +374,15 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
         (m.getSource(ACTIVITY) as GeoJSONSource | undefined)?.setData(
           activityGeoJson(latest.current),
         );
+        // The colored glow under pins reads as light on the night map and as a
+        // smudge on the day map, so it is nearly off there.
+        m.setPaintProperty(
+          "incidents-glow",
+          "circle-opacity",
+          resolved.current === "day"
+            ? ["match", ["get", "sevRank"], 3, 0.16, 2, 0.12, 1, 0.08, 0.05]
+            : ["match", ["get", "sevRank"], 3, 0.5, 2, 0.4, 1, 0.3, 0.2],
+        );
         drawUserRef.current();
         // A style swap drops sources; restore the current incidents.
         (m.getSource(SOURCE) as GeoJSONSource).setData(
@@ -382,7 +393,14 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
         );
         setReady(true);
         // Tiles arrive after "load"; keep the placeholder until the first full paint.
-        const done = () => setPainted(true);
+        const done = () => {
+          setPainted(true);
+          // The compact attribution opens itself once the sources are in; fold
+          // it to the ⓘ (it still opens on tap, and shows in full when tapped).
+          m.getContainer()
+            .querySelector(".maplibregl-ctrl-attrib")
+            ?.classList.remove("maplibregl-compact-show");
+        };
         m.once("idle", done);
         setTimeout(done, 4000);
         emitViewport();
@@ -500,11 +518,12 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
       if (!userMarker.current) {
         const el = document.createElement("div");
         el.setAttribute("aria-label", "Your location");
+        // Calm, like the big map apps: a crisp dot inside a faint accuracy halo.
         el.innerHTML =
-          '<span style="position:absolute;inset:0;border-radius:9999px;background:rgba(61,139,255,.35)" class="haven-pulse"></span>' +
-          '<span style="position:absolute;inset:4px;border-radius:9999px;background:#3d8bff;border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.5)"></span>';
+          '<span style="position:absolute;inset:0;border-radius:9999px;background:rgba(61,139,255,.14)"></span>' +
+          '<span style="position:absolute;inset:11px;border-radius:9999px;background:#3d8bff;border:3px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.35)"></span>';
         el.style.cssText =
-          "position:relative;width:24px;height:24px;pointer-events:none;z-index:4";
+          "position:relative;width:44px;height:44px;pointer-events:none;z-index:4";
         userMarker.current = new ml.Marker({ element: el })
           .setLngLat([p.lng, p.lat])
           .addTo(m);
@@ -817,7 +836,7 @@ function StormPin({
       className="haven-marker haven-pop relative flex items-center justify-center"
       style={{
         width: size,
-        height: size + 7,
+        height: size,
         opacity: selected ? 1 : Math.max(0.45, fade),
       }}
     >
@@ -853,7 +872,7 @@ function StormPin({
         />
         {/* Good news gets a check, bad news an x: readable without color. */}
         <span
-          className="absolute -bottom-1 -left-1 flex size-[17px] items-center justify-center rounded-full bg-white text-[11px] font-black leading-none text-[#0b0c0f]"
+          className="absolute -bottom-1 -left-1 flex size-[17px] items-center justify-center rounded-full bg-[#15181f] text-[10px] font-black leading-none text-white ring-[1.5px] ring-white/80"
           aria-hidden
         >
           {style.bad ? "✕" : "✓"}
@@ -867,18 +886,6 @@ function StormPin({
           {confirms}
         </span>
       )}
-      <span
-        className="absolute left-1/2 -translate-x-1/2"
-        style={{
-          bottom: 0,
-          width: 0,
-          height: 0,
-          borderLeft: "6px solid transparent",
-          borderRight: "6px solid transparent",
-          borderTop: "8px solid #fff",
-        }}
-        aria-hidden
-      />
     </button>
   );
 }

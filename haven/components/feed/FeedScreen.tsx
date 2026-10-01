@@ -42,21 +42,21 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
   const center = position ?? DEFAULT_CENTER;
   const isGroup = filter !== "nearby" && filter !== "newest";
 
+  // Same query (and cache entry) as the map's count, so the tab opens with
+  // data already in hand; distance ordering happens here, not on the server.
   const { items, error, isLoading, mutate } = useIncidents(
-    nearYouParams(center, {
-      sort: filter === "nearby" && position ? "distance" : "newest",
-      categories: isGroup ? categoriesInGroup(filter) : undefined,
-    }),
+    nearYouParams(center, { categories: isGroup ? categoriesInGroup(filter) : undefined }),
     initial,
   );
 
   const sorted = useMemo(() => {
     // One row per event, live ones first (nearest or newest), then what ended.
     const folded = foldDuplicates(items);
+    const byDistance = filter === "nearby" && position;
     return [...folded].sort(
       (a, b) =>
         Number(a.status === "resolved") - Number(b.status === "resolved") ||
-        (filter === "nearby" && position ? 0 : b.createdAt.localeCompare(a.createdAt)),
+        (byDistance ? (distanceFrom(position, a) ?? 0) - (distanceFrom(position, b) ?? 0) : b.createdAt.localeCompare(a.createdAt)),
     );
   }, [items, filter, position]);
 
