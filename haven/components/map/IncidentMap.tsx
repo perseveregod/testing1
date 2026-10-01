@@ -426,26 +426,45 @@ function PointMarker({
   onClick: () => void;
 }) {
   const def = getCategory(category);
+  const label = `${def.label}, ${["low", "moderate", "high", "critical"][severity] ?? "unknown"} severity${ended ? ", ended" : ""}`;
+  const press = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onClick();
+  };
+
+  // Ended incidents recede to a small gray dot so live ones own the map.
+  if (ended && !selected) {
+    return (
+      <button type="button" onClick={press} aria-label={label} className="haven-marker relative flex size-4 items-center justify-center">
+        <span className="size-3 rounded-full border-2 border-white/80 bg-[#6b7280] shadow-[0_1px_4px_rgba(0,0,0,.5)]" />
+      </button>
+    );
+  }
+
   const color = ended ? "#6b7280" : def.color;
-  // Recency: full size for 2h, then shrinks and fades toward 24h.
-  const fade = ended ? 0.6 : age <= 2 ? 1 : Math.max(0.55, 1 - ((age - 2) / 22) * 0.45);
-  const base = severity >= 3 ? 40 : severity >= 2 ? 36 : severity >= 1 ? 32 : 28;
-  const size = selected ? 44 : Math.round(base * (0.85 + 0.15 * fade));
-  // Severity also changes shape: critical is a rounded square, high gets a "!" badge.
-  const radius = severity >= 3 && !ended ? "28%" : "9999px";
+  // Recency: full strength for 2h, then fades gently (never below 75%) toward 24h.
+  const fade = age <= 2 ? 1 : Math.max(0.75, 1 - ((age - 2) / 22) * 0.25);
+  const size = selected ? 48 : [34, 36, 40, 44][Math.max(0, Math.min(3, severity))];
+  // Severity also changes shape: critical is a rounded square.
+  const radius = severity >= 3 ? "30%" : "9999px";
+  const fresh = age < 1 && severity >= 1;
   return (
     <button
       type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick();
-      }}
-      aria-label={`${def.label}, ${["low", "moderate", "high", "critical"][severity] ?? "unknown"} severity${ended ? ", ended" : ""}`}
+      onClick={press}
+      aria-label={label}
       aria-pressed={selected}
       className="haven-marker haven-pop relative flex items-center justify-center"
-      style={{ width: size, height: size + 6, opacity: selected ? 1 : fade }}
+      style={{ width: size, height: size + 7, opacity: selected ? 1 : fade }}
     >
-      {/* Pin head: solid category color with a white glyph, like a maps app. */}
+      {fresh && !selected && (
+        <span
+          className="haven-pulse absolute left-1/2 top-0 -translate-x-1/2 rounded-full"
+          style={{ width: size, height: size, background: `color-mix(in srgb, ${color} 55%, transparent)` }}
+          aria-hidden
+        />
+      )}
+      {/* Pin head: solid category color with a white glyph and a dark outer ring for contrast. */}
       <span
         className="absolute left-1/2 top-0 flex -translate-x-1/2 items-center justify-center"
         style={{
@@ -454,18 +473,18 @@ function PointMarker({
           borderRadius: radius,
           background: color,
           color: "#fff",
-          border: `${selected ? 3 : 2}px solid #fff`,
+          border: "2.5px solid #fff",
           boxShadow: selected
-            ? `0 0 0 6px color-mix(in srgb, ${color} 30%, transparent), 0 6px 16px rgba(0,0,0,.45)`
-            : "0 3px 10px rgba(0,0,0,.4)",
+            ? `0 0 0 6px color-mix(in srgb, ${color} 35%, transparent), 0 8px 20px rgba(0,0,0,.55)`
+            : "0 0 0 1px rgba(0,0,0,.35), 0 4px 12px rgba(0,0,0,.5)",
           transition: "width 160ms, height 160ms, box-shadow 160ms",
         }}
       >
-        <CategoryGlyph category={category} animated={false} style={{ width: size * 0.55, height: size * 0.55 }} />
+        <CategoryGlyph category={category} animated={false} style={{ width: size * 0.56, height: size * 0.56 }} />
       </span>
-      {severity >= 2 && !ended && (
+      {severity >= 2 && (
         <span
-          className="absolute -right-0.5 -top-1 flex size-4 items-center justify-center rounded-full bg-white text-[11px] font-black leading-none text-[#0b0c0f]"
+          className="absolute -right-1 -top-1 flex size-[18px] items-center justify-center rounded-full bg-white text-[12px] font-black leading-none text-[#0b0c0f] shadow-[0_1px_3px_rgba(0,0,0,.5)]"
           aria-hidden
         >
           !
@@ -474,14 +493,7 @@ function PointMarker({
       {/* Pin point */}
       <span
         className="absolute left-1/2 -translate-x-1/2"
-        style={{
-          bottom: 0,
-          width: 0,
-          height: 0,
-          borderLeft: "5px solid transparent",
-          borderRight: "5px solid transparent",
-          borderTop: "7px solid #fff",
-        }}
+        style={{ bottom: 0, width: 0, height: 0, borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderTop: "8px solid #fff" }}
         aria-hidden
       />
     </button>

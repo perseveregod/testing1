@@ -75,8 +75,12 @@ export function PlacesSection() {
         }
       >
         {isLoading ? (
-          <div className="py-4">
-            <Skeleton className="h-10 w-full" />
+          <div className="flex min-h-[60px] items-center gap-3.5 py-3" aria-busy="true" aria-label="Loading saved places">
+            <Skeleton className="size-9 shrink-0 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-3.5 w-1/3" />
+              <Skeleton className="h-3 w-2/3" />
+            </div>
           </div>
         ) : places.length === 0 ? (
           <button onClick={() => setAdding(true)} className="flex min-h-[60px] w-full items-center gap-3.5 py-3 text-left active:opacity-60">

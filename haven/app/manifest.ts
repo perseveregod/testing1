@@ -7,8 +7,16 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Nearby incidents, community reports and alerts. No subscription.",
     start_url: "/",
     display: "standalone",
-    background_color: "#0a0d13",
-    theme_color: "#0a0d13",
-    icons: [{ src: "/icon.svg", sizes: "any", type: "image/svg+xml" }],
+    // Shown as the splash background while the installed app opens.
+    background_color: "#07080a",
+    theme_color: "#07080a",
+    orientation: "portrait",
+    categories: ["news", "navigation", "lifestyle"],
+    icons: [
+      { src: "/icon.svg", sizes: "any", type: "image/svg+xml" },
+      { src: "/icons/192", sizes: "192x192", type: "image/png" },
+      { src: "/icons/512", sizes: "512x512", type: "image/png" },
+      { src: "/icons/512", sizes: "512x512", type: "image/png", purpose: "maskable" },
+    ],
   };
 }

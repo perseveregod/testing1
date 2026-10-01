@@ -168,7 +168,8 @@ export const houstonActiveAdapter: SourceAdapter = {
         externalId,
         category: rule.category,
         title: rule.title,
-        description: `${unit} dispatched for "${titleCase(row.type)}"${row.combined ? " with a combined fire and police response" : ""}. From the City of Houston active incidents page; details may change as crews report in.`,
+        // Short and specific; the source note lives in the attribution line.
+        description: `${unit} dispatched for "${titleCase(row.type)}"${row.combined ? ", with police" : ""}.`,
         latitude: p.lat,
         longitude: p.lng,
         approximateAddress: displayAddress(row),

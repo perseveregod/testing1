@@ -8,7 +8,10 @@ import { distanceFrom, useIncidents, useViewer, type InitialIncidents } from "@/
 import { errorMessage } from "@/lib/client/api";
 import { useLocation } from "@/components/providers/LocationProvider";
 import {
+  DispatchRow,
   IncidentRow,
+  isDispatch,
+  timeSection,
   pickTopIncident,
   TopIncidentCard,
 } from "@/components/incident/IncidentCard";
@@ -51,13 +54,14 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
   }, initial);
 
   const sorted = useMemo(() => {
-    // Ended incidents sink below active ones in "Nearby".
-    if (filter !== "nearby") return items;
+    // Ended incidents sink below active ones when sorted by distance. In time
+    // order they stay where they happened, so the section headers stay true.
+    if (filter !== "nearby" || !position) return items;
     return [...items].sort(
       (a, b) =>
         Number(a.status === "resolved") - Number(b.status === "resolved"),
     );
-  }, [items, filter]);
+  }, [items, filter, position]);
 
   const activeCount = items.filter((i) => i.status !== "resolved").length;
   const allDemo = items.length > 0 && items.every((i) => i.isDemo);
@@ -66,6 +70,8 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
     () => (isGroup ? null : pickTopIncident(items)),
     [items, isGroup],
   );
+  // Sorted by time (not distance) whenever we don't have the person's location.
+  const byTime = !(filter === "nearby" && position);
   const rest = useMemo(
     () => (top ? sorted.filter((i) => i.id !== top.id) : sorted),
     [sorted, top],
@@ -166,17 +172,29 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
                 }
               />
             ) : (
-              rest.map((i, idx) => (
-                <div
-                  key={i.id}
-                  style={{ "--i": Math.min(idx, 10) } as React.CSSProperties}
-                >
-                  <IncidentRow
-                    incident={i}
-                    distanceMi={distanceFrom(position, i)}
-                  />
-                </div>
-              ))
+              rest.map((i, idx) => {
+                // Section headers only when the list is in time order.
+                const section = byTime ? timeSection(i.createdAt) : null;
+                const prev = idx > 0 ? rest[idx - 1] : null;
+                const showHeader = section != null && (!prev || timeSection(prev.createdAt) !== section);
+                return (
+                  <div
+                    key={i.id}
+                    style={{ "--i": Math.min(idx, 10) } as React.CSSProperties}
+                  >
+                    {showHeader && (
+                      <h2 className="-mx-4 bg-transparent px-4 pb-1 pt-5 text-[12.5px] font-semibold uppercase tracking-[0.08em] text-faint">
+                        {section}
+                      </h2>
+                    )}
+                    {isDispatch(i) ? (
+                      <DispatchRow incident={i} distanceMi={distanceFrom(position, i)} />
+                    ) : (
+                      <IncidentRow incident={i} distanceMi={distanceFrom(position, i)} />
+                    )}
+                  </div>
+                );
+              })
             )}
           </div>
 

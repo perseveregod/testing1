@@ -84,6 +84,8 @@ export function enhanceStyle(m: MlMap, mode: ResolvedMode) {
     );
   }
 
+  hideBaseClutter(m);
+
   m.setLight({
     anchor: "viewport",
     color: night ? "#b8c8ff" : "#ffffff",
@@ -185,6 +187,22 @@ export function tuneNightStyle(m: MlMap) {
       m.setPaintProperty(l.id, "text-color", "#97a0b0");
       m.setPaintProperty(l.id, "text-halo-color", "#080a0f");
       m.setPaintProperty(l.id, "text-halo-width", 1.2);
+    }
+  }
+}
+
+/**
+ * Hides the base map's own points of interest, transit stops, one-way arrows
+ * and similar icons so incident pins are the only markers competing for
+ * attention. Street, place and water names stay.
+ */
+export function hideBaseClutter(m: MlMap) {
+  const noisy = new Set(["poi", "aerodrome_label", "mountain_peak"]);
+  for (const l of m.getStyle().layers ?? []) {
+    if (l.type !== "symbol" || !m.getLayer(l.id)) continue;
+    const sourceLayer = (l as { "source-layer"?: string })["source-layer"] ?? "";
+    if (noisy.has(sourceLayer) || /poi|transit|station|oneway|one_way|arrow|airport|shield/i.test(l.id)) {
+      m.setLayoutProperty(l.id, "visibility", "none");
     }
   }
 }

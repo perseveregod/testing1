@@ -8,6 +8,7 @@ import {
   Navigation2,
   Search,
   SlidersHorizontal,
+  X,
 } from "lucide-react";
 import { DEFAULT_CENTER } from "@/lib/client/defaults";
 import { distanceFrom, useIncidents, useViewer, type InitialIncidents } from "@/lib/client/hooks";
@@ -39,9 +40,20 @@ function savedMode(): MapMode {
   try {
     const v =
       typeof window === "undefined" ? null : localStorage.getItem(MODE_KEY);
-    return v === "night" || v === "day" || v === "satellite" ? v : "auto";
+    // Night is the default look; Automatic, Day and Satellite are opt-in.
+    return v === "auto" || v === "day" || v === "satellite" ? v : "night";
   } catch {
-    return "auto";
+    return "night";
+  }
+}
+
+const PROMPT_KEY = "haven.locationPromptDismissed";
+
+function promptWasDismissed(): boolean {
+  try {
+    return typeof window !== "undefined" && localStorage.getItem(PROMPT_KEY) === "1";
+  } catch {
+    return false;
   }
 }
 
@@ -116,7 +128,15 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
   const [filterOpen, setFilterOpen] = useState(false);
   const [filters, setFilters] = useState<MapFilters>(DEFAULT_FILTERS);
   const [searchLabel, setSearchLabel] = useState<string | null>(null);
-  const [promptDismissed, setPromptDismissed] = useState(false);
+  const [promptDismissed, setPromptDismissedState] = useState(promptWasDismissed);
+  const setPromptDismissed = useCallback((v: boolean) => {
+    setPromptDismissedState(v);
+    try {
+      if (v) localStorage.setItem(PROMPT_KEY, "1");
+    } catch {
+      // Storage blocked: it stays dismissed for this visit.
+    }
+  }, []);
   const [mode, setMode] = useState<MapMode>(savedMode);
   const [layersOpen, setLayersOpen] = useState(false);
   const [camera, setCamera] = useState<Camera>({
@@ -168,7 +188,9 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
     !selected &&
     !position &&
     !promptDismissed &&
-    (status === "prompt" || status === "denied" || status === "unavailable");
+    // Only offer when the browser can still ask. When it's blocked, the locate
+    // button and the welcome screens explain it; no nagging card on the map.
+    status === "prompt";
 
   const loading = isLoading || (isValidating && !items.length);
 
@@ -299,7 +321,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
       </div>
 
       {/* Right: map controls. Pinned above the tab bar; they step aside while a card is up. */}
-      {!selected && !showPrompt && (
+      {!selected && (
         <div className="pointer-events-none absolute inset-x-0 z-20 bottom-nav-offset">
           <div className="mx-auto flex max-w-lg justify-end px-4 pb-3">
             <div className="pointer-events-auto flex flex-col items-end gap-2.5">
@@ -358,37 +380,21 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
           />
 
           {showPrompt && (
-            <div className="glass haven-rise pointer-events-auto rounded-card p-4">
-              <div className="flex items-start gap-3">
-                <Navigation
-                  className="mt-0.5 size-5 shrink-0 text-brand"
-                  aria-hidden
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="text-[15px] font-semibold tracking-[-0.01em]">
-                    See what&apos;s near you
-                  </p>
-                  <p className="mt-0.5 text-[13.5px] leading-snug text-muted">
-                    {status === "denied"
-                      ? "Location is blocked in your browser settings. You can still search a place."
-                      : "Your location stays on your device and is only used to show distances."}
-                  </p>
-                </div>
-              </div>
-              <div className="mt-3 flex gap-2">
-                {status === "prompt" && (
-                  <button
-                    onClick={request}
-                    className="press h-11 flex-1 rounded-full bg-text text-[14.5px] font-semibold text-bg"
-                  >
-                    Use my location
-                  </button>
-                )}
+            <div className="flex justify-center">
+              <div className="glass haven-rise pointer-events-auto inline-flex h-11 items-center gap-1 rounded-full pl-1 pr-1">
+                <button
+                  onClick={request}
+                  className="press inline-flex h-9 items-center gap-2 rounded-full bg-brand px-4 text-[14px] font-semibold text-white"
+                >
+                  <Navigation className="size-4" aria-hidden />
+                  See what&apos;s near you
+                </button>
                 <button
                   onClick={() => setPromptDismissed(true)}
-                  className="press h-11 flex-1 rounded-full bg-white/[0.08] px-4 text-[14.5px] font-medium text-text"
+                  aria-label="Not now"
+                  className="press inline-flex size-11 items-center justify-center rounded-full text-muted"
                 >
-                  Not now
+                  <X className="size-4" aria-hidden />
                 </button>
               </div>
             </div>

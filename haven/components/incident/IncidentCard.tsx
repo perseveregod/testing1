@@ -6,6 +6,59 @@ import type { PublicIncident } from "@/lib/types";
 import { isLive, LiveBadge, OriginBadge } from "./Badges";
 import { CategoryIcon } from "./CategoryIcon";
 
+/** Official dispatch feeds (city 911 data, weather) read as compact two-line rows. */
+export function isDispatch(i: PublicIncident): boolean {
+  return !i.isDemo && (i.source.kind === "open_data" || i.source.kind === "weather");
+}
+
+/**
+ * A city dispatch as a compact row: what, where, when. No boilerplate text;
+ * the full source note is one tap away on the incident page.
+ */
+export function DispatchRow({ incident, distanceMi }: { incident: PublicIncident; distanceMi: number | null }) {
+  const def = getCategory(incident.category);
+  const ended = incident.status === "resolved";
+  const live = isLive(incident);
+  return (
+    <Link
+      href={`/incidents/${incident.id}`}
+      transitionTypes={["nav-forward"]}
+      className="relative -mx-4 flex min-h-[60px] items-center gap-3 px-4 py-2.5 transition-colors active:bg-white/[0.03]"
+    >
+      <CategoryIcon category={incident.category} size="sm" muted={ended} />
+      <div className="min-w-0 flex-1">
+        <p className={`flex min-w-0 items-center gap-1.5 text-[15px] font-semibold tracking-[-0.01em] ${ended ? "text-muted" : ""}`}>
+          {live && <LiveBadge />}
+          <span className="truncate">{incident.title}</span>
+        </p>
+        <p className="truncate text-[13px] text-muted">
+          {ended && <span className="text-faint">Ended · </span>}
+          {incident.approximateAddress || "Approximate location"}
+          {distanceMi != null && <span className="text-faint tnum"> · {formatDistance(distanceMi)}</span>}
+        </p>
+      </div>
+      <div className="flex shrink-0 flex-col items-end gap-1">
+        <span className="text-[12.5px] text-faint tnum">{timeAgo(incident.createdAt)}</span>
+        <span className="text-[10px] font-semibold uppercase tracking-[0.06em]" style={{ color: ended ? "var(--faint)" : def.color }}>
+          {def.short}
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+/** Time buckets for the feed: newest first, with readable section headers. */
+export function timeSection(createdAt: string, now = Date.now()): string {
+  const mins = (now - new Date(createdAt).getTime()) / 60_000;
+  if (mins < 60) return "Last hour";
+  const d = new Date(createdAt);
+  const today = new Date(now);
+  if (d.toDateString() === today.toDateString()) return "Earlier today";
+  const y = new Date(now - 86_400_000);
+  if (d.toDateString() === y.toDateString()) return "Yesterday";
+  return "Older";
+}
+
 /** One incident as a list row: glyph, title, place, and a two-line preview. */
 export function IncidentRow({ incident, distanceMi }: { incident: PublicIncident; distanceMi: number | null }) {
   const def = getCategory(incident.category);
