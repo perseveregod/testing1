@@ -171,10 +171,10 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
   const layerPrefs = useLayerPrefs();
   const [pickedCamera, setPickedCamera] = useState<PickedCamera | null>(null);
   const camCenter = useMemo(() => position ?? DEFAULT_CENTER, [position]);
-  // A static snapshot built at deploy time (scripts/fetch-alpr.mjs): served
-  // from the CDN, so the layer is instant and never waits on Overpass.
+  // A static snapshot rendered at build time and refreshed every few hours
+  // (app/layers/alpr-houston): instant, never waits on Overpass.
   const { data: camData } = useSWR<{ cameras: { id: string; lat: number; lng: number; operator: string | null; manufacturer: string | null; direction: number | null; note: string | null }[]; updatedAt: string | null }>(
-    layerPrefs.cameras ? "/data/alpr-houston.json" : null,
+    layerPrefs.cameras ? "/layers/alpr-houston" : null,
     fetcher,
     { revalidateOnFocus: false, dedupingInterval: 3_600_000 },
   );
