@@ -59,6 +59,25 @@ function savedMode(): MapMode {
 }
 
 const PROMPT_KEY = "haven.locationPromptDismissed";
+const OPENED_KEY = "haven.opened.v1";
+const COLD_AFTER_MS = 15 * 60_000;
+
+/** True once per cold open: the first time in a while, and the first time this page load asks. */
+let coldOpenAnswer: boolean | null = null;
+function coldOpen(): boolean {
+  if (coldOpenAnswer != null) return coldOpenAnswer;
+  if (typeof window === "undefined") return false;
+  try {
+    const last = Number(localStorage.getItem(OPENED_KEY) ?? 0);
+    // The very first run belongs to the welcome screens, not the lights.
+    const welcomed = localStorage.getItem("haven.welcomed.v1") === "1";
+    coldOpenAnswer = welcomed && Date.now() - last > COLD_AFTER_MS;
+    localStorage.setItem(OPENED_KEY, String(Date.now()));
+  } catch {
+    coldOpenAnswer = true;
+  }
+  return coldOpenAnswer;
+}
 
 function promptWasDismissed(): boolean {
   try {
@@ -197,8 +216,10 @@ export function MapScreen({ initial, active = true }: { initial?: InitialInciden
     }
   }, []);
   const flewToUser = useRef(false);
-  // Cold start: open from above with the city's lights blinking on, then fly in.
-  const [introDone, setIntroDone] = useState(false);
+  // Cold start: open from above with the city's lights blinking on, then fly
+  // in. A reopen within 15 minutes skips it and lands on you at once.
+  const [intro] = useState(() => coldOpen());
+  const [introDone, setIntroDone] = useState(() => !coldOpen());
   const [lit, setLit] = useState<number | null>(null);
   const onLights = useCallback((n: number | null) => setLit(n), []);
   const onIntroDone = useCallback(() => setIntroDone(true), []);
@@ -283,7 +304,7 @@ export function MapScreen({ initial, active = true }: { initial?: InitialInciden
   useEffect(() => {
     if (introDone && position && !flewToUser.current) {
       flewToUser.current = true;
-      mapRef.current?.flyTo(position, 14, { duration: 2600 });
+      mapRef.current?.flyTo(position, 14, { duration: 1800 });
     }
   }, [position, introDone]);
 
@@ -344,7 +365,7 @@ export function MapScreen({ initial, active = true }: { initial?: InitialInciden
         onViewportChange={setViewport}
         mode={mode}
         onCameraChange={setCamera}
-        intro
+        intro={intro}
         active={active}
         onLights={onLights}
         onIntroDone={onIntroDone}

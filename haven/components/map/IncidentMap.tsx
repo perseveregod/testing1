@@ -439,7 +439,8 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
         );
         setReady(true);
         setStyleEpoch((n) => n + 1);
-        // Tiles arrive after "load"; keep the placeholder until the first full paint.
+        // Show the map as soon as it can draw anything; tiles stream in under
+        // the lights. Waiting for every tile cost a phone four seconds of grid.
         const done = () => {
           setPainted(true);
           // The compact attribution opens itself once the sources are in; fold
@@ -449,7 +450,8 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
             ?.classList.remove("maplibregl-compact-show");
         };
         m.once("idle", done);
-        setTimeout(done, 4000);
+        m.once("load", done);
+        setTimeout(done, 900);
         emitViewport();
       });
       m.on("moveend", () => {
@@ -567,8 +569,8 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
     }
     booted.current = true;
     const total = latest.current.filter((i) => i.status !== "resolved").length;
-    // About two seconds for the whole city, however many lights there are.
-    const step = total > 0 ? Math.max(40, Math.min(170, 2200 / total)) : 0;
+    // About 1.3 seconds for the whole city, however many lights there are.
+    const step = total > 0 ? Math.max(30, Math.min(120, 1300 / total)) : 0;
     let k = 0;
     onLightsRef.current?.(0);
     let timer: ReturnType<typeof setTimeout> | null = null;
@@ -590,7 +592,7 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
       onLightsRef.current?.(Math.min(k, total));
       if (k >= total) {
         // Hold on the lit city for a beat before flying in.
-        timer = setTimeout(finish, 1000);
+        timer = setTimeout(finish, 550);
         return;
       }
       timer = setTimeout(next, step);
@@ -598,7 +600,7 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
     m.on("mousedown", finish);
     m.on("touchstart", finish);
     m.on("wheel", finish);
-    timer = setTimeout(total > 0 ? next : finish, 500);
+    timer = setTimeout(total > 0 ? next : finish, 250);
     return () => {
       if (timer) clearTimeout(timer);
       m.off("mousedown", finish);
