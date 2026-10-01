@@ -44,7 +44,11 @@ export function useNotifications() {
 }
 
 export function usePricing() {
-  const { data, error } = useSWR<{ pricing: PricingInfo }>("/api/billing/pricing", fetcher, {
+  // Price depends on who's signed in (a .edu email gets the student price),
+  // so refetch when the account or its email changes. No email in the URL.
+  const { viewer } = useViewer();
+  const key: [string, string] = ["/api/billing/pricing", `${viewer?.id ?? ""}:${viewer?.email ? "verified" : "guest"}:${viewer?.email?.length ?? 0}`];
+  const { data, error } = useSWR<{ pricing: PricingInfo }>(key, ([url]: [string, string]) => fetcher(url), {
     revalidateOnFocus: false,
   });
   return { pricing: data?.pricing ?? null, error };

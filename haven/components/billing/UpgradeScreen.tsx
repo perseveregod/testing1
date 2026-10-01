@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Check, Minus } from "lucide-react";
+import { Check, Minus, GraduationCap } from "lucide-react";
 import { apiSend, ApiClientError, errorMessage } from "@/lib/client/api";
 import { usePricing, useViewer } from "@/lib/client/hooks";
 import { useToast } from "@/components/providers/ToastProvider";
@@ -84,6 +84,22 @@ export function UpgradeScreen() {
               <Skeleton className="mx-auto h-12 w-36" />
             )}
           </div>
+          {pricing?.student && (
+            <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-brand/15 px-3 py-1 text-[13px] font-semibold text-brand">
+              <GraduationCap className="size-4" aria-hidden />
+              Student price · {pricing.student.percentOff}% off{" "}
+              <span className="font-normal text-muted line-through">{pricing.student.fullFormatted}</span>
+            </p>
+          )}
+          {pricing && !pricing.student && !owned && (
+            <p className="mx-auto mt-3 flex max-w-[300px] items-start justify-center gap-2 text-[13px] leading-snug text-muted">
+              <GraduationCap className="mt-0.5 size-4 shrink-0 text-brand" aria-hidden />
+              <span>
+                Student? Sign in with your <span className="font-semibold text-text">.edu</span> email and it&apos;s{" "}
+                <span className="font-semibold text-text">{pricing.studentFormatted}</span>.
+              </span>
+            </p>
+          )}
           {pricing?.mode === "test" && <p className="mt-3 text-[12.5px] text-faint">Test mode · no real payment is taken</p>}
         </div>
 

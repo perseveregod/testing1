@@ -22,6 +22,7 @@ import { DemoTag, isLive, LiveBadge } from "@/components/incident/Badges";
 import { CategoryIcon } from "@/components/incident/CategoryIcon";
 import { DemoNotice } from "@/components/incident/DemoNotice";
 import { EmergencyNote } from "@/components/EmergencyNote";
+import { CampusCard } from "@/components/safety/CampusCard";
 import { PageHeader } from "@/components/nav/PageHeader";
 import { RowSkeleton } from "@/components/ui/States";
 import { PullToRefresh } from "@/components/ui/PullToRefresh";
@@ -108,6 +109,10 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
               <ChevronRight className={`size-5 shrink-0 ${overdue ? "text-white/80" : "text-faint"}`} aria-hidden />
             </div>
           </Link>
+
+          <div className="mt-3">
+            <CampusCard />
+          </div>
 
           <div className="mt-3">
             <EmergencyNote compact />

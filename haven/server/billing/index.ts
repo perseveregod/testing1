@@ -25,7 +25,28 @@ function format(amountCents: number, currency: string) {
   );
 }
 
-export async function getPricing(): Promise<PricingInfo> {
+/** A verified .edu address (emails only reach the account after code sign-in). */
+export function isStudentEmail(email: string | null | undefined): boolean {
+  return Boolean(email && /@([a-z0-9-]+\.)+edu$/i.test(email.trim()));
+}
+
+/** Pricing for this person: students with a verified .edu email get the student price. */
+export async function getPricing(user?: Pick<UserRecord, "email"> | null): Promise<PricingInfo> {
+  const base = await getBasePricing();
+  if (!isStudentEmail(user?.email)) return base;
+  const amountCents = Math.min(config.billing.studentAmountCents, base.amountCents);
+  return {
+    ...base,
+    amountCents,
+    formatted: format(amountCents, base.currency),
+    student: {
+      fullFormatted: base.formatted,
+      percentOff: Math.round((1 - amountCents / base.amountCents) * 100),
+    },
+  };
+}
+
+async function getBasePricing(): Promise<PricingInfo> {
   if (priceCache.value && Date.now() - priceCache.at < 10 * 60_000) return priceCache.value;
   let amountCents = config.billing.lifetimeAmountCents;
   let currency = config.billing.currency;
@@ -45,6 +66,8 @@ export async function getPricing(): Promise<PricingInfo> {
     currency,
     formatted: format(amountCents, currency),
     mode: s ? "stripe" : "test",
+    student: null,
+    studentFormatted: format(Math.min(config.billing.studentAmountCents, amountCents), currency),
   };
   priceCache.value = value;
   priceCache.at = Date.now();
@@ -68,8 +91,9 @@ export async function createCheckout(user: UserRecord, origin: string): Promise<
   }
   const base = config.appUrlConfigured ? config.appUrl : origin;
 
-  const pricing = await getPricing();
-  const lineItem: Stripe.Checkout.SessionCreateParams.LineItem = config.billing.stripePriceId
+  const pricing = await getPricing(user);
+  // Students pay the student amount, so they always get an inline price.
+  const lineItem: Stripe.Checkout.SessionCreateParams.LineItem = config.billing.stripePriceId && !pricing.student
     ? { price: config.billing.stripePriceId, quantity: 1 }
     : {
         quantity: 1,
@@ -77,7 +101,7 @@ export async function createCheckout(user: UserRecord, origin: string): Promise<
           currency: pricing.currency,
           unit_amount: pricing.amountCents,
           product_data: {
-            name: "Haven Lifetime",
+            name: pricing.student ? "Haven Lifetime (student)" : "Haven Lifetime",
             description: "One payment. No monthly subscription. Unlocks premium features permanently.",
           },
         },
@@ -87,7 +111,7 @@ export async function createCheckout(user: UserRecord, origin: string): Promise<
     line_items: [lineItem],
     customer_email: user.email,
     client_reference_id: user.id,
-    metadata: { userId: user.id, plan: "lifetime" },
+    metadata: { userId: user.id, plan: "lifetime", student: pricing.student ? "1" : "0" },
     success_url: `${base}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${base}/upgrade?canceled=1`,
   });
@@ -145,7 +169,7 @@ export async function confirmCheckout(sessionId: string, user: UserRecord) {
 export async function completeTestCheckout(user: UserRecord) {
   if (!config.billing.testCheckoutEnabled) throw new ApiError(404, "Not found", "not_found");
   if (!user.email) throw new ApiError(400, "Verify your email first.", "email_required");
-  const pricing = await getPricing();
+  const pricing = await getPricing(user);
   await getStore().grantEntitlement({
     userId: user.id,
     plan: "lifetime",

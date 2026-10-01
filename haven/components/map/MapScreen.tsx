@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { setStormPrefs, useStormPrefs } from "@/lib/client/stormMode";
+import { peekMapFocus, takeMapFocus } from "@/lib/client/mapFocus";
 import { STATE_STYLE, strings, type StormKind } from "@/lib/storm";
 import { STORM_CATEGORIES } from "@/lib/categories";
 import { StormBanner } from "@/components/storm/StormBanner";
@@ -134,7 +135,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [filters, setFilters] = useState<MapFilters>(DEFAULT_FILTERS);
-  const [searchLabel, setSearchLabel] = useState<string | null>(null);
+  const [searchLabel, setSearchLabel] = useState<string | null>(() => peekMapFocus()?.label ?? null);
   const [promptDismissed, setPromptDismissedState] = useState(promptWasDismissed);
   const setPromptDismissed = useCallback((v: boolean) => {
     setPromptDismissedState(v);
@@ -209,6 +210,16 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
     if (storm.on && position) points.push(position);
     if (mapRef.current?.fitTo(points)) framed.current[frameKey] = true;
   }, [items, position, viewport, frameKey, storm.on]);
+
+  // "On the map" from another tab (e.g. a campus): go there instead of framing.
+  useEffect(() => {
+    if (!viewport || !peekMapFocus()) return;
+    const f = takeMapFocus();
+    if (!f) return;
+    flewToUser.current = true;
+    framed.current.all = true;
+    mapRef.current?.flyTo(f.point, 15);
+  }, [viewport]);
 
   // Jump to the person's location the first time we learn it.
   useEffect(() => {

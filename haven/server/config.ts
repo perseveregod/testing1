@@ -65,6 +65,8 @@ export const config = {
     /** Optional: a Stripe Price id. When unset, price comes from the two values below. */
     stripePriceId: env.STRIPE_LIFETIME_PRICE_ID ?? "",
     lifetimeAmountCents: num("LIFETIME_PRICE_CENTS", 1000),
+    /** Lifetime price for verified .edu emails (default: half off). */
+    studentAmountCents: num("STUDENT_PRICE_CENTS", 500),
     currency: (env.LIFETIME_PRICE_CURRENCY || "usd").toLowerCase(),
     /** The fake checkout is only ever available outside production unless forced. */
     get testCheckoutEnabled() {
