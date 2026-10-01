@@ -11,6 +11,7 @@ export type CategoryId =
   | "suspicious"
   | "severe_weather"
   | "public_safety"
+  | "missing_pet"
   | "other";
 
 export type Severity = "low" | "moderate" | "high" | "critical";

@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ViewTransition } from "react";
-import { Bell, List, Map as MapIcon, Plus, UserRound } from "lucide-react";
+import { Bell, List, Map as MapIcon, Plus, ShieldHalf, UserRound } from "lucide-react";
 import { useNotifications } from "@/lib/client/hooks";
 
 const TABS = [
   { href: "/", label: "Map", icon: MapIcon },
   { href: "/feed", label: "Feed", icon: List },
   { href: "/report", label: "Report", icon: Plus, primary: true },
+  { href: "/safety", label: "Safety", icon: ShieldHalf },
   { href: "/alerts", label: "Alerts", icon: Bell },
   { href: "/profile", label: "Profile", icon: UserRound },
 ] as const;
@@ -24,7 +25,7 @@ export function BottomNav() {
         className="fixed inset-x-0 bottom-0 z-40 bg-bg/80 shadow-[inset_0_1px_0_var(--line)] backdrop-blur-2xl backdrop-saturate-150"
         style={{ paddingBottom: "var(--safe-bottom)" }}
       >
-        <ul className="mx-auto grid h-[var(--nav-h)] max-w-lg grid-cols-5">
+        <ul className="mx-auto grid h-[var(--nav-h)] max-w-lg grid-cols-6">
           {TABS.map((t) => {
             const active =
               t.href === "/" ? path === "/" : path.startsWith(t.href);

@@ -380,6 +380,18 @@ export function OtherIcon(p: IconProps) {
   );
 }
 
+export function PetIcon(p: IconProps) {
+  return (
+    <Svg {...p} label="Missing pet">
+      <ellipse cx="12" cy="15.6" rx="4.4" ry="3.6" fill="currentColor" />
+      <ellipse cx="6" cy="10.4" rx="1.7" ry="2.2" fill="currentColor" opacity={0.9} />
+      <ellipse cx="18" cy="10.4" rx="1.7" ry="2.2" fill="currentColor" opacity={0.9} />
+      <ellipse cx="9.4" cy="6.6" rx="1.7" ry="2.3" fill="currentColor" opacity={0.9} />
+      <ellipse cx="14.6" cy="6.6" rx="1.7" ry="2.3" fill="currentColor" opacity={0.9} />
+    </Svg>
+  );
+}
+
 export const ANIMATED_ICONS: Record<
   CategoryId,
   (p: IconProps) => React.JSX.Element
@@ -392,6 +404,7 @@ export const ANIMATED_ICONS: Record<
   suspicious: SuspiciousIcon,
   severe_weather: WeatherIcon,
   public_safety: SafetyIcon,
+  missing_pet: PetIcon,
   other: OtherIcon,
 };
 

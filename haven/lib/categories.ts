@@ -116,6 +116,19 @@ export const CATEGORIES: readonly CategoryDef[] = [
     hint: "Gas leaks, evacuations, outages, shelter notices",
   },
   {
+    id: "missing_pet",
+    label: "Missing Pet",
+    short: "Pet",
+    color: "#E58BFF",
+    group: "other",
+    defaultSeverity: "low",
+    // Lost pets stay posted for days, not hours.
+    staleAfterHours: 72,
+    dedupeRadiusM: 300,
+    dedupeWindowMin: 720,
+    hint: "Lost or found dogs, cats and other pets",
+  },
+  {
     id: "other",
     label: "Other",
     short: "Other",

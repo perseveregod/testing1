@@ -39,6 +39,7 @@ const SEEDS: Seed[] = [
   { category: "fire", title: "Vehicle fire", description: "Car fire in a parking lot. Firefighters have it under control.", north: -4600, east: -1200, minutesAgo: 48, severity: "moderate", area: "Museum District" },
   { category: "medical", title: "Medical response", description: "Medics responding near the ballpark.", north: 200, east: 900, minutesAgo: 3, severity: "moderate", area: "Minute Maid Park" },
   { category: "road_hazard", title: "Flooded underpass", description: "Standing water in the underpass. Do not drive through flooded roads.", north: 300, east: 100, minutesAgo: 65, severity: "moderate", area: "Downtown, Main St" },
+  { category: "missing_pet", title: "Lost dog: brown lab mix", description: "Friendly brown lab mix with a red collar, last seen near the park. Don't chase; note where you saw him and add an update.", north: -2900, east: -2600, minutesAgo: 110, severity: "low", area: "Montrose, near Menil Park" },
 ];
 
 export const demoAdapter: SourceAdapter = {
