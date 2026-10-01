@@ -30,7 +30,7 @@ const QUERY = `[out:json][timeout:60];
 );
 out body;`;
 
-interface OverpassElement {
+export interface OverpassElement {
   type: string;
   id: number;
   lat?: number;

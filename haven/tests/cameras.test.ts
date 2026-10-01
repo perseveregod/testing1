@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { alprCameras, parseOverpass, resetAlprCacheForTests } from "@/server/sources/cameras";
+import { alprCameras, parseOverpass, resetAlprCacheForTests, type OverpassElement } from "@/server/sources/cameras";
 
-const sample = {
+const sample: { elements: OverpassElement[] } = {
   elements: [
     { type: "node", id: 1, lat: 29.80, lon: -95.40, tags: { man_made: "surveillance", "surveillance:type": "ALPR", manufacturer: "Flock Safety", operator: "Houston Police Department", direction: "180" } },
     { type: "node", id: 2, lat: 29.70, lon: -95.30, tags: { man_made: "surveillance", "camera:type": "ALPR", "camera:direction": "45;225" } },
