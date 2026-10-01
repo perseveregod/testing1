@@ -89,3 +89,24 @@ textarea { resize: vertical; min-height: 96px; }
   .nav .btn { padding: 8px 12px; font-size: 14px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* ----- shared: eyebrow, footer, legal pages ----- */
+.eyebrow { font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--brand); margin-bottom: 10px; }
+.site-footer { border-top: 1px solid var(--line); padding-block: 28px; margin-top: 64px; font-size: 14px; color: var(--muted); }
+.site-footer .wrap { display: flex; flex-wrap: wrap; gap: 8px 22px; align-items: center; }
+.site-footer a { color: var(--muted); text-decoration: none; }
+.site-footer a:hover { color: var(--ink); text-decoration: underline; }
+
+.legal { max-width: 720px; padding-block: 24px 16px; }
+.legal h1 { font-size: clamp(32px, 4vw, 44px); margin-bottom: 6px; }
+.legal h2 { font-size: 20px; margin: 32px 0 10px; }
+.legal p, .legal li { color: var(--ink); }
+.legal p + p { margin-top: 10px; }
+.legal ul { padding-left: 20px; margin: 10px 0; }
+.legal li { margin-bottom: 8px; }
+.legal .summary { margin-top: 24px; padding: 16px 18px; border-radius: var(--radius); background: var(--brand-soft); }
+.data-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 15px; display: block; overflow-x: auto; }
+.data-table th, .data-table td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.data-table th { font-weight: 600; color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; }
+.check { display: flex; gap: 10px; align-items: flex-start; font-weight: 400; font-size: 14px; }
+.check input { width: auto; margin-top: 3px; accent-color: var(--brand); }

@@ -5,80 +5,183 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ReplyDesk</title>
 <meta name="description" content="Reply to every Google and Yelp review in your own voice, in seconds. Free for 15 replies a month.">
+<meta property="og:title" content="ReplyDesk: reply to every review in your voice">
+<meta property="og:description" content="AI-drafted replies to Google and Yelp reviews. You approve every word. Free for 15 replies a month.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;600&display=swap">
 <link rel="stylesheet" href="/style.css">
 <style>
-  .hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 48px; align-items: start; padding-block: 40px 64px; }
-  .hero h1 { font-size: clamp(36px, 5.4vw, 60px); font-weight: 800; }
-  .hero h1 em { font-style: normal; color: var(--brand); }
-  .hero .lede { font-size: 19px; color: var(--muted); margin-top: 18px; max-width: 34em; }
-  .hero .cta { display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
-  .proof { display: flex; gap: 22px; margin-top: 32px; flex-wrap: wrap; }
-  .proof div { font-size: 14px; color: var(--muted); max-width: 14em; }
-  .proof b { display: block; font: 800 26px var(--font-display); color: var(--ink); }
-
-  .demo h2 { font-size: 20px; margin-bottom: 4px; }
-  .demo .fields { margin-top: 16px; }
-  #demoOut { margin-top: 16px; }
-  #demoOut[hidden] { display: none; }
-
-  section.band { padding-block: 64px; border-top: 1px solid var(--line); }
-  section.band > .wrap > h2 { font-size: clamp(28px, 3.6vw, 40px); max-width: 20em; }
-  .points { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; margin-top: 32px; }
-  .points h3 { font-size: 19px; margin-bottom: 6px; }
-
-  .pricing { display: grid; grid-template-columns: repeat(2, minmax(0, 340px)); gap: 20px; margin-top: 32px; }
-  .plan h3 { font-size: 20px; }
-  .plan .price { font: 800 44px var(--font-display); margin-top: 8px; }
-  .plan .price span { font: 400 16px var(--font-body); color: var(--muted); }
-  .plan ul { padding-left: 18px; margin: 16px 0 20px; color: var(--muted); }
-  .plan ul li { margin-bottom: 6px; }
-  .plan.pro { border: 2px solid var(--brand); }
-  .plan .btn { width: 100%; }
-
-  .faq { margin-top: 24px; max-width: 46em; }
-  .faq details { border-bottom: 1px solid var(--line); padding-block: 14px; }
-  .faq summary { font-weight: 600; cursor: pointer; }
-  .faq p { margin-top: 8px; color: var(--muted); }
-
-  footer { padding-block: 32px; color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); }
-
-  @media (max-width: 860px) {
-    .hero { grid-template-columns: 1fr; gap: 32px; padding-top: 16px; }
-    .points { grid-template-columns: 1fr; }
-    .pricing { grid-template-columns: 1fr; }
+  /* Layout: hero with a live product mock, then alternating full-width bands. */
+  .top { position: relative; overflow: hidden; }
+  .top::before {
+    content: ""; position: absolute; inset: -40% -10% auto auto; width: 70vw; height: 70vw; max-width: 900px; max-height: 900px;
+    background: radial-gradient(closest-side, color-mix(in srgb, var(--star) 22%, transparent), transparent 70%);
+    pointer-events: none; z-index: 0;
   }
+  .top::after {
+    content: ""; position: absolute; inset: auto auto -30% -20%; width: 60vw; height: 60vw; max-width: 760px; max-height: 760px;
+    background: radial-gradient(closest-side, color-mix(in srgb, var(--brand) 16%, transparent), transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+  .top > * { position: relative; z-index: 1; }
+
+  .hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 56px; align-items: center; padding-block: 40px 88px; }
+  .pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); font-size: 14px; color: var(--muted); }
+  .pill b { color: var(--star); font-weight: 600; letter-spacing: 1px; }
+  .hero h1 { font-size: clamp(40px, 6vw, 68px); font-weight: 800; margin-top: 18px; letter-spacing: -0.025em; }
+  .hero h1 .hl { position: relative; white-space: nowrap; color: var(--brand); }
+  .hero h1 .hl::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0.06em; height: 0.18em; background: var(--star); opacity: 0.45; border-radius: 4px; z-index: -1; }
+  .hero .lede { font-size: 19px; color: var(--muted); margin-top: 20px; max-width: 32em; }
+  .cta { display: flex; gap: 12px; margin-top: 30px; flex-wrap: wrap; }
+  .btn.lg { padding: 14px 22px; font-size: 17px; border-radius: 10px; }
+  .assure { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 18px; font-size: 14px; color: var(--muted); }
+  .assure span::before { content: "✓"; color: var(--brand); font-weight: 700; margin-right: 6px; }
+
+  /* product mock */
+  .mock { position: relative; }
+  .gcard { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 22px; box-shadow: 0 30px 60px -30px rgba(18, 38, 29, 0.35), 0 2px 6px rgba(18, 38, 29, 0.06); }
+  .gcard .who { display: flex; align-items: center; gap: 12px; }
+  .avatar { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; color: #fff; flex: none; }
+  .gcard .name { font-weight: 600; }
+  .gcard .meta { font-size: 13px; color: var(--muted); }
+  .gcard .rev { margin-top: 12px; min-height: 4.6em; }
+  .owner { margin-top: 16px; padding: 14px 16px; border-radius: 12px; background: var(--brand-soft); position: relative; }
+  .owner .label { font-size: 13px; font-weight: 600; color: var(--brand); display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .owner .text { min-height: 6.2em; white-space: pre-wrap; }
+  .caret { display: inline-block; width: 2px; height: 1em; background: var(--brand); vertical-align: -2px; margin-left: 1px; animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .tag { position: absolute; top: -12px; right: 18px; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: var(--ink); color: var(--bg); }
+  .dots { display: flex; gap: 6px; justify-content: center; margin-top: 16px; }
+  .dots button { width: 8px; height: 8px; border-radius: 50%; border: 0; background: var(--line); cursor: pointer; padding: 0; }
+  .dots button[aria-current=true] { background: var(--brand); width: 22px; border-radius: 4px; }
+  .mock-note { text-align: center; font-size: 12px; color: var(--muted); margin-top: 8px; }
+
+  section.band { padding-block: 80px; }
+  section.band.alt { background: var(--surface); border-block: 1px solid var(--line); }
+  .band-head { max-width: 40em; }
+  .band-head h2 { font-size: clamp(30px, 3.8vw, 44px); font-weight: 800; letter-spacing: -0.02em; }
+  .band-head p { color: var(--muted); font-size: 18px; margin-top: 12px; }
+
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 40px; counter-reset: step; }
+  .step { padding: 24px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg); }
+  .step::before { counter-increment: step; content: counter(step); display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: var(--brand); color: var(--brand-ink); font: 800 18px var(--font-display); margin-bottom: 16px; }
+  .step h3 { font-size: 20px; margin-bottom: 6px; }
+  .step p { color: var(--muted); }
+
+  .try { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 40px; align-items: start; }
+  .try form { display: grid; gap: 14px; }
+  .out { min-height: 100%; display: flex; flex-direction: column; gap: 12px; }
+  .out .placeholder { color: var(--muted); display: grid; place-items: center; text-align: center; min-height: 220px; border: 2px dashed var(--line); border-radius: 12px; padding: 24px; }
+
+  .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px 28px; margin-top: 40px; }
+  .feature svg { width: 28px; height: 28px; color: var(--brand); margin-bottom: 12px; }
+  .feature h3 { font-size: 19px; margin-bottom: 6px; }
+  .feature p { color: var(--muted); }
+
+  .pricing { display: grid; grid-template-columns: repeat(2, minmax(0, 380px)); gap: 20px; margin-top: 40px; }
+  .plan { padding: 28px; border-radius: 16px; }
+  .plan h3 { font-size: 20px; }
+  .plan .price { font: 800 52px var(--font-display); margin-top: 6px; letter-spacing: -0.02em; }
+  .plan .price span { font: 400 16px var(--font-body); color: var(--muted); letter-spacing: 0; }
+  .plan ul { list-style: none; padding: 0; margin: 18px 0 24px; display: grid; gap: 10px; }
+  .plan li::before { content: "✓"; color: var(--brand); font-weight: 700; margin-right: 10px; }
+  .plan.pro { border: 2px solid var(--brand); position: relative; }
+  .plan.pro .tag { right: 24px; background: var(--brand); color: var(--brand-ink); }
+  .plan .btn { width: 100%; }
+  .plan .fine { font-size: 13px; color: var(--muted); margin-top: 12px; }
+
+  .faq { margin-top: 32px; max-width: 760px; }
+  .faq details { border-bottom: 1px solid var(--line); padding-block: 18px; }
+  .faq summary { font-weight: 600; font-size: 17px; cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+  .faq summary::after { content: "+"; font: 600 22px/1 var(--font-display); color: var(--brand); }
+  .faq details[open] summary::after { content: "−"; }
+  .faq p { margin-top: 10px; color: var(--muted); max-width: 62ch; }
+
+  .final { background: var(--brand); color: var(--brand-ink); border-radius: 20px; padding: 56px 32px; text-align: center; margin-block: 80px 0; }
+  .final h2 { font-size: clamp(28px, 4vw, 42px); font-weight: 800; }
+  .final p { opacity: 0.85; margin-top: 10px; font-size: 18px; }
+  .final .btn { background: var(--brand-ink); color: var(--brand); margin-top: 24px; }
+
+  @media (max-width: 900px) {
+    .hero { grid-template-columns: 1fr; gap: 40px; padding-top: 20px; padding-bottom: 56px; }
+    .steps, .features { grid-template-columns: 1fr; }
+    .try { grid-template-columns: 1fr; }
+    .pricing { grid-template-columns: 1fr; }
+    section.band { padding-block: 56px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .caret { display: none; } }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <nav class="nav">
-    <a class="logo" href="/"><i>★</i>ReplyDesk</a>
-    <span class="spacer"></span>
-    <a class="btn link" href="/app#login">Log in</a>
-    <a class="btn" href="/app#signup">Start free</a>
-  </nav>
+<div class="top">
+  <div class="wrap">
+    <nav class="nav">
+      <a class="logo" href="/"><i>★</i>ReplyDesk</a>
+      <span class="spacer"></span>
+      <a class="btn link" href="#pricing">Pricing</a>
+      <a class="btn link" href="/app#login">Log in</a>
+      <a class="btn" href="/app#signup">Start free</a>
+    </nav>
 
-  <header class="hero">
-    <div>
-      <h1>Reply to every review. <em>In your voice.</em> In seconds.</h1>
-      <p class="lede">Paste a Google or Yelp review and get a thoughtful, on-brand reply you can post right away. Five-star thank-yous, three-star follow-ups, and calm answers to the one-star rants.</p>
-      <div class="cta">
-        <a class="btn" href="/app#signup">Get 15 free replies a month</a>
-        <a class="btn ghost" href="#pricing">See pricing</a>
+    <header class="hero">
+      <div>
+        <span class="pill"><b>★★★★★</b> For restaurants, salons, clinics and shops</span>
+        <h1>Reply to every review in <span class="hl">your voice</span>.</h1>
+        <p class="lede">Paste a Google or Yelp review and get a thoughtful, on-brand reply in seconds. Warm thank-yous for the five-star reviews and calm, professional answers to the one-star rants.</p>
+        <div class="cta">
+          <a class="btn lg" href="/app#signup">Start free: 15 replies a month</a>
+          <a class="btn ghost lg" href="#try">Try it now</a>
+        </div>
+        <div class="assure"><span>No card needed</span><span>You approve every reply</span><span>Cancel anytime</span></div>
       </div>
-      <div class="proof">
-        <div><b>~10 sec</b>per reply instead of 10 minutes of staring at a blank box</div>
-        <div><b>Every rating</b>handled with the right tone, including the angry ones</div>
+
+      <div class="mock" aria-label="Example of a review and an AI-drafted reply">
+        <div class="gcard">
+          <span class="tag">Example</span>
+          <div class="who">
+            <div class="avatar" id="mAvatar"></div>
+            <div>
+              <div class="name" id="mName"></div>
+              <div class="meta"><span class="stars" id="mStars"></span> · <span id="mWhen"></span></div>
+            </div>
+          </div>
+          <p class="rev" id="mReview"></p>
+          <div class="owner">
+            <div class="label"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 17l-5-5 5-5"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>Response from the owner</div>
+            <p class="text" id="mReply"></p>
+          </div>
+        </div>
+        <div class="dots" id="mDots"></div>
+        <p class="mock-note">Sample reviews and replies for illustration.</p>
       </div>
+    </header>
+  </div>
+</div>
+
+<section class="band alt">
+  <div class="wrap">
+    <div class="band-head">
+      <p class="eyebrow">How it works</p>
+      <h2>From review to reply in under a minute.</h2>
     </div>
+    <div class="steps">
+      <div class="step"><h3>Set your voice once</h3><p>Add your business name, tone, sign-off and anything worth mentioning, like specials, booking links or a contact for problems.</p></div>
+      <div class="step"><h3>Paste a review</h3><p>Copy it from Google or Yelp, or import a batch from a spreadsheet. The worst reviews get flagged so you answer them first.</p></div>
+      <div class="step"><h3>Edit, copy, post</h3><p>Read the draft, tweak anything, and paste it into Google or Yelp. Nothing goes public until you post it.</p></div>
+    </div>
+  </div>
+</section>
 
-    <form class="card demo" id="demo" autocomplete="off">
-      <h2>Try it on a real review</h2>
-      <p class="muted small">No account needed. Paste one of your own reviews.</p>
-      <div class="fields">
+<section class="band" id="try">
+  <div class="wrap">
+    <div class="band-head">
+      <p class="eyebrow">Try it free</p>
+      <h2>Paste one of your real reviews.</h2>
+      <p>No account needed. See exactly what you'd get.</p>
+    </div>
+    <div class="try">
+      <form class="card" id="demo" autocomplete="off">
         <div class="two">
           <div class="field"><label for="dBiz">Your business</label><input id="dBiz" placeholder="Rosa's Taqueria"></div>
           <div class="field"><label for="dName">Reviewer name</label><input id="dName" placeholder="Jamie L."></div>
@@ -88,63 +191,169 @@
           <label for="dBody">Review</label>
           <textarea id="dBody" required>Waited almost 40 minutes for our food on a Tuesday night and nobody told us why. The carnitas were honestly great once they came, but the wait killed it.</textarea>
         </div>
-        <button class="btn" id="dGo" type="submit">Write my reply</button>
+        <button class="btn lg" id="dGo" type="submit">Write my reply</button>
         <p class="msg" id="dMsg" role="status"></p>
-      </div>
-      <div id="demoOut" hidden>
-        <div class="reply-box" id="dReply"></div>
-        <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
-          <button class="btn ghost small" type="button" id="dCopy">Copy reply</button>
-          <a class="btn small" href="/app#signup">Save time on every review</a>
+        <p class="muted small">The review is sent to our AI provider to write the reply and isn't saved. See our <a href="/privacy">Privacy Policy</a>.</p>
+      </form>
+      <div class="card out" aria-live="polite">
+        <div class="placeholder" id="dEmpty">Your reply will appear here.</div>
+        <div id="demoOut" hidden>
+          <div class="owner"><div class="label">Draft reply</div><p class="text" id="dReply"></p></div>
+          <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
+            <button class="btn ghost small" type="button" id="dCopy">Copy reply</button>
+            <a class="btn small" href="/app#signup">Save it and do the rest</a>
+          </div>
+          <p class="muted small" style="margin-top:10px">AI drafts can contain mistakes. Always read before posting.</p>
         </div>
       </div>
-    </form>
-  </header>
-</div>
+    </div>
+  </div>
+</section>
 
-<section class="band">
+<section class="band alt">
   <div class="wrap">
-    <h2>Customers read your replies before they ever walk in.</h2>
-    <div class="points">
-      <div><h3>Reply to all of them</h3><p class="muted">Businesses that answer reviews look cared-for, and customers notice. Most owners mean to and never get around to it.</p></div>
-      <div><h3>Stay calm on the bad ones</h3><p class="muted">One-star reviews get a sincere, non-defensive reply that moves the conversation offline. No arguing in public.</p></div>
-      <div><h3>Sound like you</h3><p class="muted">Set your tone, sign-off and things worth mentioning once. Every reply follows them, and you can edit before posting.</p></div>
+    <div class="band-head">
+      <p class="eyebrow">Why owners use it</p>
+      <h2>The replies you mean to write, actually written.</h2>
+    </div>
+    <div class="features">
+      <div class="feature">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+        <h3>Calm on the bad ones</h3><p>One-star reviews get a sincere, non-defensive reply that moves the conversation offline. No arguing in public.</p>
+      </div>
+      <div class="feature">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        <h3>Sounds like you</h3><p>Choose warm, professional, playful or short. Every reply uses your sign-off and mentions a real detail from the review.</p>
+      </div>
+      <div class="feature">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <h3>You stay in control</h3><p>Nothing posts automatically. Edit any draft, rewrite it, or throw it away.</p>
+      </div>
+      <div class="feature">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h18v18H3z"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+        <h3>Catch up in one sitting</h3><p>Import your backlog from a spreadsheet and work through it with filters for Needs reply, Ready to post and Posted.</p>
+      </div>
+      <div class="feature">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/></svg>
+        <h3>Any language</h3><p>A review in Spanish gets a reply in Spanish, and the same goes for French and many more.</p>
+      </div>
+      <div class="feature">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <h3>Private by default</h3><p>No ad trackers, no selling data. Export or delete everything from your account whenever you want.</p>
+      </div>
     </div>
   </div>
 </section>
 
 <section class="band" id="pricing">
   <div class="wrap">
-    <h2>Simple pricing. Cancel anytime.</h2>
+    <div class="band-head">
+      <p class="eyebrow">Pricing</p>
+      <h2>Less than one lunch a month.</h2>
+      <p>Start free. Upgrade when replying to every review becomes a habit.</p>
+    </div>
     <div class="pricing">
       <div class="card plan">
         <h3>Free</h3>
         <div class="price">$0 <span>/ month</span></div>
-        <ul><li>15 AI replies a month</li><li>Your tone and sign-off</li><li>CSV import</li></ul>
+        <ul><li>15 AI replies a month</li><li>Your tone and sign-off</li><li>Spreadsheet import</li><li>Any language</li></ul>
         <a class="btn ghost" href="/app#signup">Start free</a>
+        <p class="fine">No card needed.</p>
       </div>
       <div class="card plan pro">
+        <span class="tag">Most popular</span>
         <h3>Pro</h3>
         <div class="price">$9 <span>/ month</span></div>
-        <ul><li>300 AI replies a month</li><li>Everything in Free</li><li>Cancel anytime</li></ul>
+        <ul><li>300 AI replies a month</li><li>Everything in Free</li><li>Cancel anytime in two clicks</li><li>7-day refund on any charge</li></ul>
         <a class="btn" href="/app#signup">Start free, upgrade anytime</a>
+        <p class="fine">Renews monthly at $9 plus tax until you cancel. See <a href="/terms">Terms</a> and <a href="/refunds">Refund Policy</a>.</p>
       </div>
-    </div>
-
-    <div class="faq">
-      <details><summary>Does it post to Google for me?</summary><p>Not yet. You copy the reply and paste it into Google Business Profile or Yelp. It takes a few seconds, and you get a final look before anything goes public.</p></details>
-      <details><summary>Will replies all sound the same?</summary><p>No. Each reply mentions specifics from that review, and you can rewrite or edit any of them.</p></details>
-      <details><summary>Can I cancel?</summary><p>Yes, anytime from your account. You keep Pro until the end of the billing period.</p></details>
     </div>
   </div>
 </section>
 
-<footer><div class="wrap">ReplyDesk · Built for owners who'd rather be running their business.</div></footer>
+<section class="band alt">
+  <div class="wrap">
+    <div class="band-head"><p class="eyebrow">Questions</p><h2>Good to know.</h2></div>
+    <div class="faq">
+      <details><summary>Does it post to Google or Yelp for me?</summary><p>No. You copy the reply and paste it yourself, so you always get a final read before anything goes public.</p></details>
+      <details><summary>Can I trust what the AI writes?</summary><p>The drafts are usually ready to post, but AI can get things wrong, so always read before posting. ReplyDesk is told never to make up discounts, policies or promises you haven't given it.</p></details>
+      <details><summary>Will every reply sound the same?</summary><p>No. Each reply picks up specifics from that review, follows your chosen tone, and can be rewritten with one click.</p></details>
+      <details><summary>What happens to my data?</summary><p>Review text is sent to our AI provider only to write your reply. We don't sell data or run ad trackers, and you can export or delete everything from your account. Details are in our <a href="/privacy">Privacy Policy</a>.</p></details>
+      <details><summary>I run a medical or dental practice. Anything special?</summary><p>Yes. Never confirm that a reviewer is a patient or mention their care in a public reply. ReplyDesk drafts replies that move the conversation offline, but check every reply against your own privacy obligations.</p></details>
+      <details><summary>How do I cancel?</summary><p>Click <em>Manage billing</em> in the app and cancel. You keep Pro until the end of the month you paid for, and if you change your mind within 7 days of a charge, we'll refund it.</p></details>
+    </div>
+
+    <div class="final">
+      <h2>Your next review is coming. Be ready.</h2>
+      <p>15 free replies every month. No card needed.</p>
+      <a class="btn lg" href="/app#signup">Create your free account</a>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer" style="margin-top:0"><div class="wrap"><span>© {{YEAR}} {{COMPANY_NAME}}</span><a href="/terms">Terms</a><a href="/privacy">Privacy</a><a href="/refunds">Refunds</a><span>{{CONTACT_EMAIL}}</span><span>Not affiliated with Google or Yelp.</span></div></footer>
 
 <script src="/common.js"></script>
 <script>
-  const stars = RD.starPicker(document.getElementById("dStars"), 3);
   const $ = (id) => document.getElementById(id);
+
+  // ----- hero example carousel -----
+  const EXAMPLES = [
+    { name: "Marco P.", initial: "M", color: "#c2410c", rating: 5, when: "2 days ago",
+      review: "Best al pastor in town, hands down. The salsa bar is unreal and the staff remembered my order from last week.",
+      reply: "Marco, this made our week! We love having you back, and we'll keep your usual ready. Next time, try the salsa macha on the al pastor. Trust us.\n\n— Rosa & the team" },
+    { name: "Priya S.", initial: "P", color: "#7c3aed", rating: 3, when: "1 week ago",
+      review: "Cut was good but I waited 25 minutes past my appointment time with no heads up.",
+      reply: "Hi Priya, thank you for the honest feedback, and we're glad you liked the cut. Waiting 25 minutes without a word isn't okay. We're now texting clients when we're running behind so it doesn't happen again.\n\n— Studio Nine" },
+    { name: "Dana K.", initial: "D", color: "#0f766e", rating: 1, when: "3 hours ago",
+      review: "Waited 45 minutes and my order was wrong. Not coming back.",
+      reply: "Dana, we're truly sorry. A long wait and a wrong order is not the experience we want for anyone. We'd like to make this right: please email rosa@example.com so we can talk directly.\n\n— Rosa" },
+  ];
+  let idx = 0, typing = null, rotate = null;
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const dots = EXAMPLES.map((_, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.setAttribute("aria-label", `Example ${i + 1}`);
+    b.onclick = () => { show(i); restart(); };
+    $("mDots").append(b);
+    return b;
+  });
+  function show(i) {
+    idx = i;
+    const ex = EXAMPLES[i];
+    $("mAvatar").textContent = ex.initial;
+    $("mAvatar").style.background = ex.color;
+    $("mName").textContent = ex.name;
+    $("mStars").textContent = RD.stars(ex.rating);
+    $("mWhen").textContent = ex.when;
+    $("mReview").textContent = ex.review;
+    dots.forEach((d, j) => d.setAttribute("aria-current", String(j === i)));
+    clearInterval(typing);
+    const out = $("mReply");
+    if (reduced) { out.textContent = ex.reply; return; }
+    let n = 0;
+    out.textContent = "";
+    const caret = document.createElement("span"); caret.className = "caret";
+    typing = setInterval(() => {
+      n = Math.min(ex.reply.length, n + 3);
+      out.textContent = ex.reply.slice(0, n);
+      out.append(caret);
+      if (n >= ex.reply.length) clearInterval(typing);
+    }, 30);
+  }
+  function restart() { clearInterval(rotate); if (!reduced) rotate = setInterval(() => show((idx + 1) % EXAMPLES.length), 9000); }
+  show(0); restart();
+  if (new URLSearchParams(location.search).has("deleted")) {
+    const n = document.createElement("p");
+    n.className = "banner"; n.setAttribute("role", "status");
+    n.style.cssText = "padding:12px 16px;background:var(--brand-soft);text-align:center";
+    n.textContent = "Your account and data have been deleted. Any subscription was cancelled.";
+    document.body.prepend(n);
+  }
+
+  // ----- live demo -----
+  const stars = RD.starPicker($("dStars"), 3);
   $("demo").addEventListener("submit", async (e) => {
     e.preventDefault();
     $("dGo").disabled = true;
@@ -157,6 +366,7 @@
         body: { businessName: $("dBiz").value, reviewer: $("dName").value, rating: stars.get(), body: $("dBody").value },
       });
       $("dReply").textContent = reply;
+      $("dEmpty").hidden = true;
       $("demoOut").hidden = false;
     } catch (err) {
       $("dMsg").className = "msg err";

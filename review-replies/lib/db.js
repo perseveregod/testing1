@@ -50,6 +50,10 @@ function open(file) {
   const db = new DatabaseSync(file);
   db.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;");
   db.exec(SCHEMA);
+  // Migration: record when each user accepted which version of the terms.
+  const cols = db.prepare("PRAGMA table_info(users)").all().map((c) => c.name);
+  if (!cols.includes("terms_accepted_at")) db.exec("ALTER TABLE users ADD COLUMN terms_accepted_at INTEGER");
+  if (!cols.includes("terms_version")) db.exec("ALTER TABLE users ADD COLUMN terms_version TEXT");
   return db;
 }
 
@@ -58,8 +62,10 @@ const monthKey = (now = new Date()) => now.toISOString().slice(0, 7);
 function makeStore(db) {
   const q = (sql) => db.prepare(sql);
   return {
-    createUser(email, passwordHash) {
-      const r = q("INSERT INTO users (email, password_hash, created_at) VALUES (?, ?, ?)").run(email, passwordHash, Date.now());
+    createUser(email, passwordHash, termsVersion = null) {
+      const now = Date.now();
+      const r = q("INSERT INTO users (email, password_hash, created_at, terms_accepted_at, terms_version) VALUES (?, ?, ?, ?, ?)")
+        .run(email, passwordHash, now, termsVersion ? now : null, termsVersion);
       const id = Number(r.lastInsertRowid);
       q("INSERT INTO businesses (user_id) VALUES (?)").run(id);
       return id;
@@ -79,6 +85,18 @@ function makeStore(db) {
                 WHERE sessions.token = ? AND sessions.expires_at > ?`).get(token, Date.now());
     },
     deleteSession: (token) => q("DELETE FROM sessions WHERE token = ?").run(token),
+
+    // Permanently removes the user and, via ON DELETE CASCADE, everything they own.
+    deleteUser: (id) => q("DELETE FROM users WHERE id = ?").run(id),
+    exportData(userId) {
+      const u = q("SELECT email, plan, created_at, terms_accepted_at, terms_version FROM users WHERE id = ?").get(userId);
+      return {
+        account: u,
+        business: q("SELECT name, kind, tone, signoff, notes FROM businesses WHERE user_id = ?").get(userId),
+        reviews: q("SELECT reviewer, rating, body, reply, status, created_at FROM reviews WHERE user_id = ? ORDER BY created_at").all(userId),
+        usage: q("SELECT month, count FROM usage WHERE user_id = ? ORDER BY month").all(userId),
+      };
+    },
 
     business: (userId) => q("SELECT name, kind, tone, signoff, notes FROM businesses WHERE user_id = ?").get(userId),
     saveBusiness(userId, b) {

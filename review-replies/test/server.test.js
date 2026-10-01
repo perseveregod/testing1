@@ -41,10 +41,10 @@ test("pages are served", async () => {
 test("full flow: signup, voice, review, reply, quota, isolation", async () => {
   const c = client();
   assert.strictEqual((await c("GET", "/api/me")).status, 401);
-  const signup = await c("POST", "/api/signup", { email: "owner@shop.co", password: "password123" });
+  const signup = await c("POST", "/api/signup", { email: "owner@shop.co", password: "password123", agreeToTerms: true });
   assert.strictEqual(signup.status, 201);
   assert.strictEqual(signup.body.quota.limit, 15);
-  assert.strictEqual((await c("POST", "/api/signup", { email: "OWNER@shop.co", password: "password123" })).status, 409);
+  assert.strictEqual((await c("POST", "/api/signup", { email: "OWNER@shop.co", password: "password123", agreeToTerms: true })).status, 409);
 
   await c("PUT", "/api/business", { name: "Rosa's", tone: "warm", signoff: "— Rosa" });
   const added = await c("POST", "/api/reviews", { rating: 5, reviewer: "Jamie L.", body: "Best tacos!" });
@@ -63,7 +63,7 @@ test("full flow: signup, voice, review, reply, quota, isolation", async () => {
 
   // another user can't touch it
   const other = client();
-  await other("POST", "/api/signup", { email: "other@shop.co", password: "password123" });
+  await other("POST", "/api/signup", { email: "other@shop.co", password: "password123", agreeToTerms: true });
   assert.strictEqual((await other("POST", `/api/reviews/${id}/reply`, {})).status, 404);
   assert.strictEqual((await other("GET", "/api/reviews")).body.reviews.length, 0);
 
@@ -76,14 +76,14 @@ test("full flow: signup, voice, review, reply, quota, isolation", async () => {
   // logout ends the session
   await c("POST", "/api/logout", {});
   assert.strictEqual((await c("GET", "/api/me")).status, 401);
-  const login = await c("POST", "/api/login", { email: "owner@shop.co", password: "password123" });
+  const login = await c("POST", "/api/login", { email: "owner@shop.co", password: "password123", agreeToTerms: true });
   assert.strictEqual(login.status, 200);
   assert.strictEqual((await c("POST", "/api/login", { email: "owner@shop.co", password: "nope12345" })).status, 401);
 });
 
 test("CSV import and CSRF protection", async () => {
   const c = client();
-  await c("POST", "/api/signup", { email: "csv@shop.co", password: "password123" });
+  await c("POST", "/api/signup", { email: "csv@shop.co", password: "password123", agreeToTerms: true });
   const r = await c("POST", "/api/reviews", { csv: "rating,reviewer,review\n4,Al,Nice\n9,Bo,Bad rating\n" });
   assert.strictEqual(r.body.added, 1);
   assert.strictEqual(r.body.skipped.length, 1);
@@ -93,7 +93,7 @@ test("CSV import and CSRF protection", async () => {
 
 test("signed Stripe webhook upgrades and downgrades the plan", async () => {
   const c = client();
-  const s = await c("POST", "/api/signup", { email: "pay@shop.co", password: "password123" });
+  const s = await c("POST", "/api/signup", { email: "pay@shop.co", password: "password123", agreeToTerms: true });
   assert.strictEqual(s.body.quota.plan, "free");
   const me = await c("GET", "/api/reviews"); // ensure session works
   assert.strictEqual(me.status, 200);
@@ -127,4 +127,47 @@ test("landing demo is rate limited", async () => {
     assert.strictEqual(r.status, 200);
   }
   assert.strictEqual((await c("POST", "/api/demo-reply", { rating: 2, body: "x" })).status, 429);
+});
+
+test("signup requires agreeing to the terms, and records it", async () => {
+  const c = client();
+  const r = await c("POST", "/api/signup", { email: "noconsent@shop.co", password: "password123" });
+  assert.strictEqual(r.status, 400);
+  assert.match(r.body.error, /Terms of Service/);
+  await c("POST", "/api/signup", { email: "consent@shop.co", password: "password123", agreeToTerms: true });
+  const data = (await c("GET", "/api/account/export")).body;
+  assert.strictEqual(data.account.terms_version, "2026-10-01");
+  assert.ok(data.account.terms_accepted_at > 0);
+});
+
+test("legal pages render with company details and security headers", async () => {
+  for (const p of ["/terms", "/privacy", "/refunds", "/", "/app"]) {
+    const res = await fetch(base + p);
+    const html = await res.text();
+    assert.strictEqual(res.status, 200, p);
+    assert.ok(!/\{\{\w+\}\}/.test(html), `unfilled placeholder on ${p}`);
+    assert.match(html, /ReplyDesk/);
+    assert.match(res.headers.get("content-security-policy"), /frame-ancestors 'none'/);
+    assert.strictEqual(res.headers.get("x-content-type-options"), "nosniff");
+  }
+  const terms = await (await fetch(base + "/terms")).text();
+  assert.match(terms, /Renews automatically every month|renews automatically every month/i);
+  assert.match(terms, /support@example\.com/);
+});
+
+test("users can export and permanently delete their data", async () => {
+  const c = client();
+  await c("POST", "/api/signup", { email: "leaver@shop.co", password: "password123", agreeToTerms: true });
+  await c("POST", "/api/reviews", { rating: 4, reviewer: "Al", body: "Nice place" });
+  const exp = await fetch(base + "/api/account/export", { headers: { cookie: "" } });
+  assert.strictEqual(exp.status, 401);
+  const data = (await c("GET", "/api/account/export")).body;
+  assert.strictEqual(data.account.email, "leaver@shop.co");
+  assert.strictEqual(data.reviews.length, 1);
+
+  assert.strictEqual((await c("POST", "/api/account/delete", { password: "wrongpass1" })).status, 401);
+  assert.strictEqual((await c("POST", "/api/account/delete", { password: "password123" })).status, 200);
+  assert.strictEqual((await c("GET", "/api/me")).status, 401);
+  const relog = await client()("POST", "/api/login", { email: "leaver@shop.co", password: "password123" });
+  assert.strictEqual(relog.status, 401);
 });

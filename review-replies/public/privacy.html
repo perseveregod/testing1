@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy · {{COMPANY_NAME}}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;600&display=swap">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="wrap">
+  <nav class="nav"><a class="logo" href="/"><i>★</i>ReplyDesk</a><span class="spacer"></span><a class="btn ghost small" href="/app">Open app</a></nav>
+  <main class="legal">
+    <p class="eyebrow">Legal</p>
+    <h1>Privacy Policy</h1>
+    <p class="muted">Effective {{EFFECTIVE_DATE}}</p>
+
+    <p class="summary"><strong>The short version:</strong> we collect only what we need to run ReplyDesk. We don't sell your data, we don't use advertising trackers, and we use one cookie, which keeps you logged in. Review text is sent to our AI provider to write replies. You can download or delete everything from the app at any time.</p>
+
+    <h2>1. Who we are</h2>
+    <p>{{COMPANY_NAME}} ("we", "us") runs ReplyDesk. For privacy questions or requests, email {{CONTACT_EMAIL}}.</p>
+
+    <h2>2. What we collect</h2>
+    <table class="data-table">
+      <thead><tr><th>Data</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>Email address and password (stored only as a one-way hash)</td><td>To create and secure your account and contact you about it</td></tr>
+        <tr><td>Business profile: name, type, tone, sign-off, notes</td><td>To write replies in your voice</td></tr>
+        <tr><td>Reviews you add (text, star rating, reviewer name) and the replies generated</td><td>To generate, store and show your replies</td></tr>
+        <tr><td>Monthly reply count</td><td>To apply plan limits</td></tr>
+        <tr><td>Subscription status and Stripe customer ID</td><td>To manage your plan. Stripe handles card details, and we never see your full card number.</td></tr>
+        <tr><td>IP address</td><td>Kept briefly in memory to limit abuse (such as password guessing). We don't store it in our database.</td></tr>
+      </tbody>
+    </table>
+    <p>If you try the demo on our homepage without an account, the review you paste is sent to our AI provider to write a sample reply, and we don't save it.</p>
+
+    <h2>3. Reviewer information</h2>
+    <p>Reviews you paste are public posts that may include customers' names. You decide which reviews to add, and we process them only on your behalf to write replies. For that data, you act as the "controller" and we act as your "processor" (or "service provider"). Don't add information beyond what appears in the public review.</p>
+
+    <h2>4. How we use data</h2>
+    <p>We use data only to provide, secure and improve the Service, to process payments, to communicate with you about your account, and to meet legal obligations. We don't sell personal information, we don't share it for cross-context behavioral advertising, and we don't use it to build advertising profiles.</p>
+
+    <h2>5. Who we share it with</h2>
+    <ul>
+      <li><strong>Anthropic</strong> (AI provider) receives review text, star rating, reviewer name and your business profile so it can write each reply. Anthropic's commercial terms say it doesn't train its models on API inputs or outputs by default.</li>
+      <li><strong>Stripe</strong> (payments) receives your email address and payment details when you subscribe.</li>
+      <li><strong>Our hosting provider</strong> stores the database and runs the app.</li>
+      <li><strong>Authorities</strong>, if the law requires it or to protect rights and safety.</li>
+      <li>A buyer or successor, if the business is sold or merged. They would remain bound by this policy.</li>
+    </ul>
+
+    <h2>6. Cookies</h2>
+    <p>We use one strictly necessary cookie (<code>rd_session</code>) to keep you logged in. We don't use analytics, advertising or tracking cookies. Our pages load fonts from Google Fonts, which receives your IP address the way any website request does.</p>
+
+    <h2>7. How long we keep data</h2>
+    <p>We keep your data while your account exists. When you delete your account, your data is removed from our active database right away. Any copies in backups are overwritten within 30 days. Stripe keeps payment records for as long as financial and tax laws require.</p>
+
+    <h2>8. Your rights</h2>
+    <p>From the app, under <em>Account</em>, you can download all your data or permanently delete your account at any time. You can also email {{CONTACT_EMAIL}} to access, correct or delete your data, or to ask us a question. We'll respond within 30 days.</p>
+    <ul>
+      <li><strong>EU, UK and similar regions:</strong> you have rights to access, correct, delete, restrict, object to, and move your data, and to complain to your local data protection authority. Our legal bases are performing our contract with you (running the Service), our legitimate interests (security and abuse prevention), and legal obligations (tax records).</li>
+      <li><strong>California and other US states:</strong> you have the right to know what we collect, to delete it, to correct it, and not to be treated differently for exercising these rights. We don't sell or share personal information as those laws define it.</li>
+    </ul>
+
+    <h2>9. Security</h2>
+    <p>Passwords are hashed with scrypt, sessions use secure, HTTP-only cookies, and all traffic is encrypted in transit. No system is perfectly secure. If a breach affects your data, we'll notify you as the law requires.</p>
+
+    <h2>10. International transfers</h2>
+    <p>We and our providers process data in the United States and possibly other countries. Where the law requires it, we rely on appropriate safeguards, such as standard contractual clauses, for these transfers.</p>
+
+    <h2>11. Children</h2>
+    <p>ReplyDesk is for businesses and isn't directed at anyone under 18. We don't knowingly collect children's data.</p>
+
+    <h2>12. Changes</h2>
+    <p>If we make material changes, we'll email you or show a notice in the app before they take effect.</p>
+
+    <h2>13. Contact</h2>
+    <p>{{COMPANY_NAME}} · {{CONTACT_EMAIL}}</p>
+  </main>
+</div>
+<footer class="site-footer"><div class="wrap"><span>© {{YEAR}} {{COMPANY_NAME}}</span><a href="/terms">Terms</a><a href="/privacy">Privacy</a><a href="/refunds">Refunds</a><span>{{CONTACT_EMAIL}}</span></div></footer>
+</body>
+</html>
