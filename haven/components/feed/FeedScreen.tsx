@@ -106,16 +106,16 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
             <button
               onClick={request}
               disabled={status === "denied" || status === "unavailable"}
-              className="press mb-2 mt-1 flex w-full items-center gap-3 rounded-2xl bg-surface px-4 py-3 text-left disabled:opacity-70"
+              className="press mb-1 mt-1 flex min-h-11 w-full items-center gap-2 text-left disabled:opacity-100"
             >
-              <Navigation
-                className="size-[18px] shrink-0 text-brand"
-                aria-hidden
-              />
-              <span className="text-[14px] leading-snug text-muted">
-                {status === "denied"
-                  ? "Location is off, so this shows the default area. Enable it in browser settings for distances."
-                  : "Showing the default area. Tap to use your location."}
+              <Navigation className="size-4 shrink-0 text-brand" aria-hidden />
+              <span className="truncate text-[13.5px] text-muted">
+                Showing central Houston
+                {status === "denied" || status === "unavailable" ? (
+                  <span className="text-faint"> · location is off in settings</span>
+                ) : (
+                  <span className="font-semibold text-brand"> · Use my location</span>
+                )}
               </span>
             </button>
           )}

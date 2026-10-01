@@ -166,6 +166,16 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
     initial,
   );
 
+  // Without the person's location, open framed on what's live right now
+  // instead of an empty downtown view. Runs once, on the first data.
+  const framed = useRef(false);
+  useEffect(() => {
+    if (framed.current || position || items.length === 0) return;
+    const live = items.filter((i) => i.status !== "resolved");
+    if (live.length === 0) return;
+    if (mapRef.current?.fitTo(live.map((i) => ({ lat: i.latitude, lng: i.longitude })))) framed.current = true;
+  }, [items, position, viewport]);
+
   // Jump to the person's location the first time we learn it.
   useEffect(() => {
     if (position && !flewToUser.current) {

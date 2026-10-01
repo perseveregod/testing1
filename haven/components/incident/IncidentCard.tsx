@@ -16,7 +16,6 @@ export function isDispatch(i: PublicIncident): boolean {
  * the full source note is one tap away on the incident page.
  */
 export function DispatchRow({ incident, distanceMi }: { incident: PublicIncident; distanceMi: number | null }) {
-  const def = getCategory(incident.category);
   const ended = incident.status === "resolved";
   const live = isLive(incident);
   return (
@@ -37,12 +36,7 @@ export function DispatchRow({ incident, distanceMi }: { incident: PublicIncident
           {distanceMi != null && <span className="text-faint tnum"> · {formatDistance(distanceMi)}</span>}
         </p>
       </div>
-      <div className="flex shrink-0 flex-col items-end gap-1">
-        <span className="text-[12.5px] text-faint tnum">{timeAgo(incident.createdAt)}</span>
-        <span className="text-[10px] font-semibold uppercase tracking-[0.06em]" style={{ color: ended ? "var(--faint)" : def.color }}>
-          {def.short}
-        </span>
-      </div>
+      <span className="shrink-0 self-start pt-0.5 text-[12.5px] text-faint tnum">{timeAgo(incident.createdAt)}</span>
     </Link>
   );
 }

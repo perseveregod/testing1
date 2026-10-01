@@ -2,7 +2,7 @@
 
 import { useCallback, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
-import { Bell, MapPinned, Navigation, ShieldCheck } from "lucide-react";
+import { LocateFixed, MapPinned, Navigation, ShieldCheck } from "lucide-react";
 import { EMERGENCY_NUMBER } from "@/lib/client/defaults";
 import { useLocation } from "@/components/providers/LocationProvider";
 import { AppIconMark } from "@/components/brand/AppIconMark";
@@ -49,7 +49,7 @@ const STEPS = [
     body: "Share from a safe distance. Haven shows only the block, never your exact spot, and removes names and personal details.",
   },
   {
-    icon: Bell,
+    icon: LocateFixed,
     color: "#ff9f0a",
     title: "See what's near you",
     body: "Allow location to see distances and what's closest. It stays on your device; Haven only uses it to sort and alert.",

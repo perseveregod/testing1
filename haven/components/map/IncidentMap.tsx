@@ -32,6 +32,9 @@ export interface MapHandle {
   toggle3D(): void;
   /** Turns the map back to north-up. */
   resetNorth(): void;
+  /** Frames a set of points (e.g. live incidents) with room for the overlays. */
+  /** Returns false if the map isn't ready yet. */
+  fitTo(points: LatLng[]): boolean;
 }
 
 export interface Camera {
@@ -114,6 +117,31 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
     },
     resetNorth() {
       map.current?.easeTo({ bearing: 0, duration: 600 });
+    },
+    fitTo(points) {
+      const m = map.current;
+      if (!m || points.length === 0) return false;
+      let [w, so, e, n] = [180, 90, -180, -90];
+      for (const p of points) {
+        w = Math.min(w, p.lng);
+        e = Math.max(e, p.lng);
+        so = Math.min(so, p.lat);
+        n = Math.max(n, p.lat);
+      }
+      m.fitBounds(
+        [
+          [w, so],
+          [e, n],
+        ],
+        {
+          padding: { top: 150, bottom: 170, left: 50, right: 80 },
+          maxZoom: 14.5,
+          pitch: m.getPitch() > 5 ? 45 : 0,
+          bearing: m.getBearing(),
+          duration: 1200,
+        },
+      );
+      return true;
     },
   }));
 

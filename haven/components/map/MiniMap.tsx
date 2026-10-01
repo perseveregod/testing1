@@ -120,9 +120,11 @@ export function MiniMap({
             <span className="mt-1 size-1.5 rounded-full bg-black/60 blur-[1px]" />
           </div>
         ) : (
-          <div className="relative size-6">
-            <span className="haven-pulse absolute inset-0 rounded-full" style={{ background: `${color}66` }} />
-            <span className="absolute inset-1 rounded-full border-2 border-white" style={{ background: color }} />
+          // An area, not a point: incident locations are rounded to about a block.
+          <div className="relative flex size-28 items-center justify-center">
+            <span className="absolute inset-0 rounded-full border" style={{ background: `${color}22`, borderColor: `${color}88` }} />
+            <span className="haven-pulse absolute inset-[38%] rounded-full" style={{ background: `${color}66` }} />
+            <span className="relative size-4 rounded-full border-[2.5px] border-white shadow-[0_2px_6px_rgba(0,0,0,.5)]" style={{ background: color }} />
           </div>
         )}
       </div>

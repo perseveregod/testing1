@@ -85,3 +85,14 @@ describe("recency and privacy", () => {
     expect(recencyFactor(at(48), now)).toBe(0.55);
   });
 });
+
+describe("feed sections", () => {
+  it("buckets incidents by how long ago they happened", async () => {
+    const { timeSection } = await import("@/components/incident/IncidentCard");
+    const now = new Date(2026, 9, 1, 15, 0).getTime();
+    expect(timeSection(new Date(now - 20 * 60_000).toISOString(), now)).toBe("Last hour");
+    expect(timeSection(new Date(2026, 9, 1, 9, 0).toISOString(), now)).toBe("Earlier today");
+    expect(timeSection(new Date(2026, 8, 30, 22, 0).toISOString(), now)).toBe("Yesterday");
+    expect(timeSection(new Date(2026, 8, 27, 12, 0).toISOString(), now)).toBe("Older");
+  });
+});

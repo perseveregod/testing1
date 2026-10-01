@@ -107,7 +107,7 @@ export function InsightsScreen() {
 
             {ins.busiestHour != null && (
               <p className="mt-6 text-[14px] text-muted">
-                Busiest hour: <span className="text-text tnum">{formatHour(ins.busiestHour)}</span> (UTC)
+                Busiest hour: <span className="text-text tnum">{formatHour(ins.busiestHour)}</span>
               </p>
             )}
           </>
@@ -125,8 +125,10 @@ export function InsightsScreen() {
 }
 
 function formatHour(h: number) {
-  const d = new Date(Date.UTC(2000, 0, 1, h));
-  return d.toLocaleTimeString(undefined, { hour: "numeric", timeZone: "UTC" });
+  // The server counts by UTC hour; show it in the viewer's own time zone.
+  const now = new Date();
+  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), h));
+  return d.toLocaleTimeString(undefined, { hour: "numeric" });
 }
 
 /** Simple bar chart, one bar per day; no library needed. */
@@ -145,7 +147,7 @@ function DayChart({ days, className = "" }: { days: AreaInsights["byDay"]; class
         ))}
       </div>
       <figcaption className="mt-2 flex justify-between text-[11px] text-faint tnum">
-        <span>{days[0]?.date.slice(5)}</span>
+        <span>{days[0] ? new Date(`${days[0].date}T12:00:00Z`).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : ""}</span>
         <span>today</span>
       </figcaption>
     </figure>
