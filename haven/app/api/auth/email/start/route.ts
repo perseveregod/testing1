@@ -4,6 +4,6 @@ import { startEmailSignIn } from "@/server/auth/email";
 
 export const POST = route(async (req: Request) => {
   const { email } = await parseBody(req, emailStartSchema);
-  const result = await startEmailSignIn(email, clientIp(req));
+  const result = await startEmailSignIn(email, clientIp(req), new URL(req.url).origin);
   return json({ sent: true, ...result });
 });

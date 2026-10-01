@@ -27,17 +27,30 @@ function supabaseAuth() {
   }).auth;
 }
 
-export async function startEmailSignIn(email: string, ip: string): Promise<{ devCode?: string }> {
+export async function startEmailSignIn(email: string, ip: string, origin?: string): Promise<{ devCode?: string; mode: "code" | "link" }> {
   rateLimit(`otp-ip:${ip}`, 10, 3_600_000);
   rateLimit(`otp-email:${email}`, 5, 3_600_000);
   const auth = supabaseAuth();
   if (auth) {
-    const { error } = await auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
-    if (error) throw new ApiError(502, "Couldn't send the code. Try again shortly.", "email_failed");
-    return {};
+    // Supabase's default email (editable only with custom SMTP) carries a
+    // sign-in link. It lands on /auth/callback, which finishes sign-in; if the
+    // template has been customized with {{ .Token }}, the code works too.
+    const { error } = await auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: true, emailRedirectTo: origin ? `${origin}/auth/callback` : undefined },
+    });
+    if (error) {
+      const limited = /rate|limit|too many/i.test(error.message);
+      throw new ApiError(
+        limited ? 429 : 502,
+        limited ? "Too many sign-in emails right now. Wait a few minutes and try again." : "Couldn't send the email. Try again shortly.",
+        "email_failed",
+      );
+    }
+    return { mode: "link" };
   }
   const code = demoCode(email, Math.floor(Date.now() / WINDOW_MS));
-  return { devCode: code };
+  return { devCode: code, mode: "code" };
 }
 
 async function verifyCode(email: string, code: string): Promise<boolean> {
@@ -70,6 +83,21 @@ export async function verifyEmailSignIn(email: string, code: string, current: Us
   if (!(await verifyCode(email, code))) {
     throw new ApiError(400, "That code is incorrect or expired.", "bad_code");
   }
+  return signInAs(email, current);
+}
+
+/** Finishes sign-in from the emailed link: Supabase hands back an access token for the verified email. */
+export async function linkSignIn(accessToken: string, current: UserRecord | null, ip: string) {
+  rateLimit(`otp-verify:${ip}`, 20, 3_600_000);
+  const auth = supabaseAuth();
+  if (!auth) throw new ApiError(400, "Email links aren't enabled.", "bad_link");
+  const { data, error } = await auth.getUser(accessToken);
+  const email = data.user?.email?.toLowerCase();
+  if (error || !email) throw new ApiError(400, "That sign-in link is invalid or expired. Request a new one.", "bad_link");
+  return signInAs(email, current);
+}
+
+async function signInAs(email: string, current: UserRecord | null) {
   const store = getStore();
   const existing = await store.getUserByEmail(email);
   let user: UserRecord;

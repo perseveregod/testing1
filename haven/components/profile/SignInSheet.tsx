@@ -27,14 +27,16 @@ export function SignInSheet({
   const [code, setCode] = useState("");
   const [stage, setStage] = useState<"email" | "code">("email");
   const [devCode, setDevCode] = useState<string | null>(null);
+  const [mode, setMode] = useState<"code" | "link">("code");
   const [busy, setBusy] = useState(false);
 
   async function sendCode(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     try {
-      const r = await apiSend<{ devCode?: string }>("/api/auth/email/start", "POST", { email });
+      const r = await apiSend<{ devCode?: string; mode?: "code" | "link" }>("/api/auth/email/start", "POST", { email });
       setDevCode(r.devCode ?? null);
+      setMode(r.mode ?? "code");
       setStage("code");
     } catch (err) {
       toast(errorMessage(err), "error");
@@ -62,7 +64,7 @@ export function SignInSheet({
   }
 
   return (
-    <Sheet open={open} onClose={onClose} title={stage === "email" ? "Sign in with email" : "Enter your code"}>
+    <Sheet open={open} onClose={onClose} title={stage === "email" ? "Sign in with email" : mode === "link" ? "Check your email" : "Enter your code"}>
       {stage === "email" ? (
         <form onSubmit={sendCode} className="pb-2">
           <p className="mb-3 text-[14px] leading-relaxed text-muted">
