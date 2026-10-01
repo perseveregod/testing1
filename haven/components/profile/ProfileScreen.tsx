@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import useSWR from "swr";
-import { BarChart3, Bell, ChevronRight, Database, FileText, Languages, LogOut, ShieldCheck, Sparkles } from "lucide-react";
+import { BarChart3, Bell, ChevronRight, CircleHelp, Database, FileText, Languages, LogOut, ShieldCheck, Sparkles } from "lucide-react";
 import { apiSend, fetcher } from "@/lib/client/api";
 import { useNotifications, useViewer } from "@/lib/client/hooks";
 import { setLang, useT } from "@/lib/client/lang";
@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/States";
 import { PlacesSection } from "./PlacesSection";
 import { InstallRow } from "@/components/onboarding/InstallRow";
 import { SignInSheet } from "./SignInSheet";
+import { HowItWorksSheet } from "./HowItWorksSheet";
 
 export function ProfileScreen() {
   const { viewer, mutate } = useViewer();
@@ -25,6 +26,7 @@ export function ProfileScreen() {
   const toast = useToast();
   const { t, lang } = useT();
   const [signIn, setSignIn] = useState(false);
+  const [how, setHow] = useState(false);
 
   async function signOut() {
     await apiSend("/api/auth/signout", "POST");
@@ -132,6 +134,7 @@ export function ProfileScreen() {
         <SourcesSection />
 
         <Group title={t("profile.about")}>
+          <Row icon={<CircleHelp className="size-5" />} title={t("profile.how")} detail={t("profile.howBody")} onClick={() => setHow(true)} />
           <Row icon={<ShieldCheck className="size-5" />} title={t("profile.guidelines")} href="/legal#safety" />
           <Row icon={<FileText className="size-5" />} title={t("profile.privacy")} href="/legal#privacy" />
           {viewer?.email && <Row icon={<LogOut className="size-5" />} title={t("profile.signOut")} onClick={signOut} tone="danger" />}
@@ -143,6 +146,7 @@ export function ProfileScreen() {
         <p className="mt-5 pb-2 text-center text-[12px] text-faint">{t("profile.footer")}</p>
       </div>
       <SignInSheet open={signIn} onClose={() => setSignIn(false)} />
+      <HowItWorksSheet open={how} onClose={() => setHow(false)} />
     </main>
   );
 }

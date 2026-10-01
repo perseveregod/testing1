@@ -1,19 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  ChevronDown,
-  Layers,
-  ListChecks,
-  LocateFixed,
-  Navigation2,
-  Search,
-  SlidersHorizontal,
-} from "lucide-react";
+import { ChevronDown, Layers, ListChecks, LocateFixed, Navigation2, Search, SlidersHorizontal, X } from "lucide-react";
 import { setStormPrefs, useStormPrefs, useStormReportTick } from "@/lib/client/stormMode";
 import { peekMapFocus, takeMapFocus } from "@/lib/client/mapFocus";
 import { setMapTone } from "@/lib/client/mapTone";
 import { useT } from "@/lib/client/lang";
+import { dismissTip, useTip } from "@/lib/client/tips";
 import type { Key } from "@/lib/i18n";
 import { STATE_STYLE, strings, type StormKind } from "@/lib/storm";
 import { STORM_CATEGORIES } from "@/lib/categories";
@@ -289,6 +282,11 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
   }, [position]);
 
   const selected = items.find((i) => i.id === selectedId) ?? null;
+  // First visit: one line under the chips until a pin is tapped.
+  const pinTip = useTip("pin") && !storm.on && items.length > 0;
+  useEffect(() => {
+    if (selectedId) dismissTip("pin");
+  }, [selectedId]);
   const filterCount = activeFilterCount(filters);
   const activeCount = items.filter((i) => i.status !== "resolved").length;
   const allDemo = items.length > 0 && items.every((i) => i.isDemo);
@@ -430,6 +428,21 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
             )}
           </div>
 
+          {pinTip && !weatherAlert && (
+            <div className="pointer-events-auto flex">
+              <button
+                onClick={() => dismissTip("pin")}
+                className="panel haven-rise inline-flex min-h-10 items-center gap-2 rounded-full py-1 pl-3.5 pr-3 text-[13px] font-medium text-muted"
+              >
+                <span className="relative flex size-2.5" aria-hidden>
+                  <span className="haven-pulse absolute inset-0 rounded-full bg-live" />
+                  <span className="relative size-2.5 rounded-full bg-live" />
+                </span>
+                {t("map.pinTip")}
+                <X className="size-3.5 opacity-60" aria-hidden />
+              </button>
+            </div>
+          )}
           {weatherAlert && (
             <div className="pointer-events-auto flex">
               <div className="panel inline-flex min-h-11 items-center gap-2 rounded-full py-1 pl-3.5 pr-1 text-[13px] font-semibold">
