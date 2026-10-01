@@ -84,6 +84,16 @@ async function runIngest(force: boolean, fastOnly: boolean): Promise<IngestResul
   const results: IngestResult[] = [];
   const now = new Date();
 
+  // A source that was switched off takes its rows with it: demo incidents
+  // must not linger next to real ones for a day.
+  const on = new Set(config.sources.enabled);
+  for (const adapter of ADAPTERS) {
+    const prev = known.get(adapter.meta.id);
+    if (on.has(adapter.meta.id) || !prev?.enabled) continue;
+    if (adapter.rolling) await store.deleteIncidentsBySource(adapter.meta.id);
+    await store.upsertSource({ ...prev, enabled: false });
+  }
+
   for (const adapter of enabledAdapters()) {
     if (fastOnly && !adapter.rolling) continue;
     const prev = known.get(adapter.meta.id);

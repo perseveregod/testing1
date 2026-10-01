@@ -94,16 +94,7 @@ export function AlertSettings() {
 
       <Group
         title={t("alerts.radius")}
-        footer={
-          free && (
-            <>
-              {t("alerts.freeRadius", { n: limits.maxAlertRadiusMi })}
-              <a href="/upgrade" className="text-gold">
-                {t("alerts.lifetimeRadius")}
-              </a>
-            </>
-          )
-        }
+        footer={free ? t("alerts.freeRadius", { n: limits.maxAlertRadiusMi }).trim() : undefined}
       >
         <div className="py-3.5">
           <Segmented
@@ -145,7 +136,7 @@ function QuietHours({ prefs, allowed, onSave }: { prefs: AlertPreferences; allow
   const { t } = useT();
 
   return (
-    <Group title={t("alerts.quiet")} footer={!allowed ? t("alerts.quietLifetime") : undefined}>
+    <Group title={t("alerts.quiet")}>
       <Toggle
         checked={on}
         locked={!allowed}

@@ -66,16 +66,7 @@ export function PlacesSection() {
             </button>
           )
         }
-        footer={
-          atLimit && viewer?.plan === "free" ? (
-            <>
-              {es ? "Gratis incluye un lugar guardado. " : "Free includes one saved place. "}
-              <a href="/upgrade" className="text-gold">
-                {es ? "De por vida guarda hasta 10." : "Lifetime saves up to 10."}
-              </a>
-            </>
-          ) : undefined
-        }
+        footer={atLimit && viewer?.plan === "free" ? (es ? "Gratis incluye un lugar guardado." : "Free includes one saved place.") : undefined}
       >
         {isLoading ? (
           <div className="flex min-h-[60px] items-center gap-3.5 py-3" aria-busy="true" aria-label={es ? "Cargando lugares" : "Loading saved places"}>
@@ -113,13 +104,15 @@ export function PlacesSection() {
                       : p.address || (es ? "Ubicación marcada" : "Pinned location")}
                   </p>
                 </div>
-                <button
-                  onClick={() => setRulesFor(p)}
-                  aria-label={es ? `Reglas de alerta para ${p.label}` : `Alert rules for ${p.label}`}
-                  className={`press inline-flex size-10 items-center justify-center rounded-full ${p.radiusMi != null || p.categories != null ? "text-gold" : "text-faint"}`}
-                >
-                  <SlidersHorizontal className="size-[18px]" aria-hidden />
-                </button>
+                {viewer?.limits.placeRules && (
+                  <button
+                    onClick={() => setRulesFor(p)}
+                    aria-label={es ? `Reglas de alerta para ${p.label}` : `Alert rules for ${p.label}`}
+                    className={`press inline-flex size-10 items-center justify-center rounded-full ${p.radiusMi != null || p.categories != null ? "text-gold" : "text-faint"}`}
+                  >
+                    <SlidersHorizontal className="size-[18px]" aria-hidden />
+                  </button>
+                )}
                 <button
                   onClick={() => toggleAlerts(p)}
                   aria-label={p.alertsEnabled ? (es ? `Desactivar alertas de ${p.label}` : `Turn off alerts for ${p.label}`) : es ? `Activar alertas de ${p.label}` : `Turn on alerts for ${p.label}`}

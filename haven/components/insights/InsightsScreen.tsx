@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import useSWR from "swr";
-import { BarChart3, Lock, TrendingDown, TrendingUp } from "lucide-react";
+import { BarChart3, TrendingDown, TrendingUp } from "lucide-react";
 import { errorMessage, fetcher } from "@/lib/client/api";
 import { DEFAULT_CENTER } from "@/lib/client/defaults";
-import { usePlaces, useViewer } from "@/lib/client/hooks";
+import { usePlaces } from "@/lib/client/hooks";
 import { useT } from "@/lib/client/lang";
 import type { AreaInsights } from "@/server/services/insights";
 import { useLocation } from "@/components/providers/LocationProvider";
@@ -21,14 +20,12 @@ import { EmptyState, ErrorState, Skeleton } from "@/components/ui/States";
 export function InsightsScreen() {
   const { position } = useLocation();
   const { places } = usePlaces();
-  const { viewer } = useViewer();
   const [focus, setFocus] = useState<string>("me");
   const place = places.find((p) => p.id === focus);
   const center = place ? { lat: place.latitude, lng: place.longitude } : (position ?? DEFAULT_CENTER);
   const url = `/api/insights?lat=${center.lat.toFixed(3)}&lng=${center.lng.toFixed(3)}&radiusMi=3`;
   const { data, error, isLoading, mutate } = useSWR<{ insights: AreaInsights }>(url, fetcher, { keepPreviousData: true });
   const ins = data?.insights;
-  const premium = viewer?.limits.insightsDays === 30;
   const { es, cat } = useT();
 
   return (
@@ -119,14 +116,6 @@ export function InsightsScreen() {
           </>
         )}
 
-        {!premium && (
-          <Link href="/upgrade" transitionTypes={["nav-forward"]} className="press mt-8 flex items-center gap-3 rounded-card bg-surface px-4 py-3.5">
-            <Lock className="size-[18px] shrink-0 text-gold" aria-hidden />
-            <span className="flex-1 text-[14px] leading-snug text-muted">
-              {es ? "Gratis muestra 7 días. De por vida muestra 30 días de tendencias para cada lugar guardado." : "Free shows 7 days. Lifetime shows 30 days of trends for every saved place."}
-            </span>
-          </Link>
-        )}
       </div>
     </main>
   );

@@ -30,7 +30,7 @@ const MODES: { id: MapMode; label: Key; detail: Key; preview: string }[] = [
   {
     id: "satellite",
     label: "layers.satellite",
-    detail: MAPTILER_KEY ? "layers.satelliteBody" : "layers.satelliteKey",
+    detail: "layers.satelliteBody",
     preview: "radial-gradient(circle at 35% 35%, #6b7a4a 0, #3e4a2c 40%, #1c2a3a 100%)",
   },
 ];
@@ -77,14 +77,12 @@ export function LayersSheet({
         </div>
       )}
       <div className="grid grid-cols-2 gap-2.5">
-        {MODES.map((m) => {
-          const disabled = m.id === "satellite" && !MAPTILER_KEY;
+        {MODES.filter((m) => m.id !== "satellite" || MAPTILER_KEY).map((m) => {
           const on = value === m.id;
           return (
             <button
               key={m.id}
               type="button"
-              disabled={disabled}
               aria-pressed={on}
               onClick={() => {
                 onChange(m.id);

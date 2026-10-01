@@ -2,7 +2,7 @@
 
 import useSWR from "swr";
 import { distanceMiles, type LatLng } from "@/lib/geo";
-import type { AlertPreferences, NotificationItem, PricingInfo, PublicIncident, SavedPlace, Viewer } from "@/lib/types";
+import type { AlertPreferences, DataSource, NotificationItem, PricingInfo, PublicIncident, SavedPlace, Viewer } from "@/lib/types";
 import { fetcher } from "./api";
 
 export function useViewer() {
@@ -41,6 +41,19 @@ export function useNotifications() {
     { refreshInterval: 45_000 },
   );
   return { items: data?.items ?? [], unread: data?.unread ?? 0, loaded: Boolean(data), error, isLoading, mutate };
+}
+
+/**
+ * When the official feeds were last checked, so people can judge how fresh
+ * the map is. Null until known, or when no live feed is on. `stale` compares
+ * against the caller's clock (a ticking `now`), never Date.now() in render.
+ */
+export function useFeedFreshness(now: number): { checkedAt: number | null; stale: boolean } {
+  const { data } = useSWR<{ sources: DataSource[] }>("/api/sources", fetcher, { refreshInterval: 60_000, revalidateOnFocus: true });
+  const live = (data?.sources ?? []).filter((s) => s.enabled && s.kind !== "demo" && s.kind !== "user" && s.lastSyncedAt);
+  if (live.length === 0) return { checkedAt: null, stale: false };
+  const checkedAt = Math.max(...live.map((s) => new Date(s.lastSyncedAt!).getTime()));
+  return { checkedAt, stale: now > 0 && now - checkedAt > 20 * 60_000 };
 }
 
 export function usePricing() {

@@ -7,6 +7,7 @@ import { BarChart3, Bell, ChevronRight, CircleHelp, Database, FileText, Language
 import { apiSend, fetcher } from "@/lib/client/api";
 import { useNotifications, useViewer } from "@/lib/client/hooks";
 import { setLang, useT } from "@/lib/client/lang";
+import { FEATURES } from "@/lib/features";
 import type { DataSource, PublicIncident } from "@/lib/types";
 import { useToast } from "@/components/providers/ToastProvider";
 import { CategoryIcon } from "@/components/incident/CategoryIcon";
@@ -103,12 +104,14 @@ export function ProfileScreen() {
             }
             href="/alerts"
           />
-          <Row
-            icon={<BarChart3 className="size-5" />}
-            title={t("profile.insights")}
-            detail={viewer?.limits.insightsDays === 30 ? t("profile.insights30") : t("profile.insights7")}
-            href="/insights"
-          />
+          {FEATURES.insights && (
+            <Row
+              icon={<BarChart3 className="size-5" />}
+              title={t("profile.insights")}
+              detail={viewer?.limits.insightsDays === 30 ? t("profile.insights30") : t("profile.insights7")}
+              href="/insights"
+            />
+          )}
           <div className="flex min-h-[52px] items-center gap-3 py-2.5">
             <span className="flex size-[30px] shrink-0 items-center justify-center text-muted" aria-hidden>
               <Languages className="size-5" />

@@ -2,11 +2,10 @@ import type { PublicSource } from "@/lib/types";
 import { demoAdapter } from "./demo";
 import { houstonActiveAdapter } from "./houstonActive";
 import { nwsAlertsAdapter } from "./nwsAlerts";
-import { seattleFireAdapter } from "./seattleFire";
 import type { SourceAdapter } from "./types";
 
-// Register new feeds here. Enable them with INCIDENT_SOURCES=demo,houston_active,seattle_fire_911,...
-export const ADAPTERS: SourceAdapter[] = [demoAdapter, houstonActiveAdapter, seattleFireAdapter, nwsAlertsAdapter];
+// Register new feeds here. Enable them with INCIDENT_SOURCES=houston_active,nws_alerts,...
+export const ADAPTERS: SourceAdapter[] = [demoAdapter, houstonActiveAdapter, nwsAlertsAdapter];
 
 /** Community reports are a source too, with no adapter (they arrive via the API). */
 export const USER_SOURCE: PublicSource = {

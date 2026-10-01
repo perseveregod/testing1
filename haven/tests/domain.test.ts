@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { approximate, distanceMiles, formatDistance } from "@/lib/geo";
 import { moderateText } from "@/lib/moderation";
 import { estimateSeverity } from "@/lib/severity";
-import { toBlock, seattleLocalToIso } from "@/server/sources/seattleFire";
+import { toBlock } from "@/server/sources/format";
 import { polygonCenter } from "@/server/sources/nwsAlerts";
 
 describe("geo", () => {
@@ -51,9 +51,6 @@ describe("severity", () => {
 describe("source adapters", () => {
   it("reduces addresses to the hundred block", () => {
     expect(toBlock("6561 PHINNEY AVE N")).toBe("6500 block of Phinney Ave N");
-  });
-  it("converts Seattle local time to UTC (PDT = UTC-7)", () => {
-    expect(seattleLocalToIso("2026-09-30T20:02:00.000")).toBe("2026-10-01T03:02:00.000Z");
   });
   it("finds a polygon center", () => {
     expect(polygonCenter({ type: "Polygon", coordinates: [[[0, 0], [2, 0], [2, 2], [0, 2]]] })).toEqual({ lat: 1, lng: 1 });

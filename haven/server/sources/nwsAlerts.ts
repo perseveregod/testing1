@@ -58,8 +58,8 @@ export const nwsAlertsAdapter: SourceAdapter = {
   notify: true,
   async fetch(ctx) {
     const params = new URLSearchParams({ status: "actual" });
-    const area = process.env.NWS_AREA;
-    if (area) params.set("area", area);
+    // One state's alerts, not the whole country's. NWS_AREA overrides.
+    params.set("area", process.env.NWS_AREA || "TX");
     const body = (await fetchJson(`https://api.weather.gov/alerts/active?${params}`, ctx, 12000)) as {
       features?: Feature[];
     };

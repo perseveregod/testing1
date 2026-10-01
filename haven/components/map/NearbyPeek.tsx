@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ChevronRight, ChevronUp } from "lucide-react";
-import { distanceFrom, NEAR_RADIUS_MI } from "@/lib/client/hooks";
+import { distanceFrom, NEAR_RADIUS_MI, useFeedFreshness } from "@/lib/client/hooks";
 import { useAffects } from "@/lib/client/affects";
 import { useT } from "@/lib/client/lang";
 import { formatDistance, type LatLng } from "@/lib/geo";
@@ -47,6 +47,7 @@ export function NearbyPeek({
   const [open, setOpen] = useState(false);
   const affectsOf = useAffects();
   const { t, timeAgo, title: titleOf } = useT();
+  const fresh = useFeedFreshness(now);
   const active = items.filter((i) => i.status !== "resolved" && i.category !== "missing_pet");
   const sorted = position
     ? [...active].sort((a, b) => (distanceFrom(position, a) ?? 0) - (distanceFrom(position, b) ?? 0))
@@ -71,7 +72,9 @@ export function NearbyPeek({
     : position
       ? (() => {
           const hood = neighborhoodFor(position);
-          return hood ? t("near.hoodWithin", { hood, n: NEAR_RADIUS_MI }) : t("near.withinYou", { n: NEAR_RADIUS_MI });
+          if (!hood) return t("near.withinYou", { n: NEAR_RADIUS_MI });
+          // Leave room for the freshness stamp on the same line.
+          return fresh.checkedAt != null ? t("near.hoodShort", { hood, n: NEAR_RADIUS_MI }) : t("near.hoodWithin", { hood, n: NEAR_RADIUS_MI });
         })()
       : t("near.withinCenter", { n: NEAR_RADIUS_MI });
 
@@ -105,6 +108,12 @@ export function NearbyPeek({
               </span>
               <span className="mt-0.5 block truncate text-[13px] leading-tight text-muted">
                 {where}
+                {!storm && fresh.checkedAt != null && now > 0 && (
+                  <span className={fresh.stale ? "text-warn" : "text-faint"}>
+                    {" · "}
+                    {t(fresh.stale ? "fresh.shortStale" : "fresh.short", { t: timeAgo(new Date(fresh.checkedAt).toISOString(), now) })}
+                  </span>
+                )}
                 {!storm && onLocate && !position && (
                   <>
                     {" · "}

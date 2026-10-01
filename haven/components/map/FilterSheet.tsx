@@ -4,7 +4,6 @@ import { categoriesInGroup, FILTER_GROUPS, type FilterGroup } from "@/lib/catego
 import type { IncidentParams } from "@/lib/client/hooks";
 import { useT } from "@/lib/client/lang";
 import type { Viewer } from "@/lib/types";
-import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Chip, Segmented, Toggle } from "@/components/ui/Controls";
 import { Sheet } from "@/components/ui/Sheet";
@@ -81,7 +80,6 @@ export function FilterSheet({
   const { t, es } = useT();
   const toggleGroup = (g: FilterGroup) =>
     onChange({ ...value, groups: value.groups.includes(g) ? value.groups.filter((x) => x !== g) : [...value.groups, g] });
-  const lifetime = <span className="text-[12px] font-medium text-gold">{t("common.lifetime")}</span>;
 
   return (
     <Sheet
@@ -112,7 +110,7 @@ export function FilterSheet({
       </div>
 
       <div className="mt-5">
-        <Label aside={maxHours < 24 * 7 ? lifetime : undefined}>{t("filter.time")}</Label>
+        <Label>{t("filter.time")}</Label>
         <Segmented
           label={t("filter.time")}
           value={value.sinceHours}
@@ -126,7 +124,7 @@ export function FilterSheet({
       </div>
 
       <div className="mt-5">
-        <Label aside={!premium ? lifetime : undefined}>{t("filter.severity")}</Label>
+        <Label>{t("filter.severity")}</Label>
         <Segmented
           label={t("filter.severity")}
           value={value.minSeverity}
@@ -152,15 +150,6 @@ export function FilterSheet({
           locked={!premium}
         />
       </div>
-      {!premium && (
-        <p className="mb-1 pt-1 text-[13px] text-faint">
-          {es ? "Los filtros de gravedad y solo confirmados son parte de " : "Severity and confirmed-only filters are part of "}
-          <Link href="/upgrade" transitionTypes={["nav-forward"]} className="font-medium text-gold">
-            {t("profile.lifetime")}
-          </Link>
-          .
-        </p>
-      )}
     </Sheet>
   );
 }

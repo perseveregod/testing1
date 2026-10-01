@@ -414,9 +414,6 @@ export function MapScreen({ initial, active = true }: { initial?: InitialInciden
                 <a href={`tel:${EMERGENCY_NUMBER}`} className="press inline-flex h-9 shrink-0 items-center rounded-full bg-live px-3.5 text-[13px] font-bold text-white">
                   {EMERGENCY_NUMBER}
                 </a>
-                <Chip onClick={() => setStormPrefs({ lang: storm.lang === "en" ? "es" : "en" })} aria-label={t(storm.lang === "en" ? "map.toSpanish" : "map.toEnglish")}>
-                  {storm.lang === "en" ? "ES" : "EN"}
-                </Chip>
               </>
             ) : (
               <>

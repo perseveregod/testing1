@@ -79,11 +79,11 @@ Each feed is an adapter in `server/sources/` returning normalized incidents. Ing
 
 | id | Source | Notes |
 |---|---|---|
-| `demo` | Fictional seed data | Default. Labeled DEMO DATA in the API and UI; regenerated every 6 h |
-| `houston_active, seattle_fire_911` | Seattle Fire real-time 911 (data.seattle.gov) | Routine aid calls and alarms skipped; addresses reduced to the hundred-block, coordinates rounded to ~100 m |
-| `nws_alerts` | US National Weather Service active alerts | Moderate and above; polygon center used; alerts that disappear from the feed are resolved |
+| `houston_active` | City of Houston Fire, EMS and Police active incidents | Default. Addresses reduced to the block, coordinates rounded to ~100 m |
+| `nws_alerts` | US National Weather Service active alerts | Default (Texas). Moderate and above; polygon center used; alerts that disappear from the feed are resolved |
+| `demo` | Fictional seed data | Opt-in for development. Labeled DEMO DATA in the API and UI; removed from the database when switched off |
 
-To add a city, write an adapter (see `seattleFire.ts`) and list it in `server/sources/registry.ts`, then enable it with `INCIDENT_SOURCES=demo,seattle_fire_911,nws_alerts,<your_id>`.
+To add a city, write an adapter (see `houstonActive.ts`) and list it in `server/sources/registry.ts`, then enable it with `INCIDENT_SOURCES=houston_active,nws_alerts,<your_id>`.
 
 ## Trust & safety
 
@@ -127,12 +127,11 @@ The moderation rules are a first line of defense. Before launch, add a hosted mo
 
 | Source id | What it is | Needs |
 | --- | --- | --- |
-| `demo` | Labeled fictional incidents around the default center | nothing |
 | `houston_active` | City of Houston Fire, EMS and Police dispatches (public page, refreshed every 5 min), placed with the free US Census geocoder | nothing (`HAVEN_CONTACT_EMAIL` is polite) |
-| `seattle_fire_911` | Seattle Fire 911 dispatches from data.seattle.gov | nothing |
-| `nws_alerts` | National Weather Service alerts with a polygon | `NWS_AREA` to limit to a state |
+| `nws_alerts` | National Weather Service alerts with a polygon | `NWS_AREA` to change the state (default `TX`) |
+| `demo` | Labeled fictional incidents around the default center | nothing; for development only |
 
-Set `INCIDENT_SOURCES` to a comma list. The default is `demo,houston_active`; drop `demo` once real data is flowing. Live feeds refresh after a response is sent (never on the request path), and new rows are geocoded a dozen at a time.
+Set `INCIDENT_SOURCES` to a comma list. The default is `houston_active,nws_alerts`; add `demo` only for local development. Live feeds refresh after a response is sent (never on the request path), and new rows are geocoded a dozen at a time.
 
 ## Sign-in emails
 

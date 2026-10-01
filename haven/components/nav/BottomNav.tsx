@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { List, Map as MapIcon, Plus, ShieldHalf, UserRound, UsersRound, Zap } from "lucide-react";
+import { FEATURES } from "@/lib/features";
 import { useNotifications } from "@/lib/client/hooks";
 import { useT } from "@/lib/client/lang";
 import { useMapTone } from "@/lib/client/mapTone";
 import { useAppBadge } from "@/lib/client/push";
 import { requestStormReport, useStormPrefs } from "@/lib/client/stormMode";
 
-const TABS = [
+const ALL_TABS = [
   { href: "/", label: "nav.map", icon: MapIcon },
   { href: "/feed", label: "nav.feed", icon: List },
   { href: "/report", label: "nav.report", icon: Plus, primary: true },
@@ -17,6 +18,7 @@ const TABS = [
   { href: "/community", label: "nav.events", icon: UsersRound },
   { href: "/profile", label: "nav.profile", icon: UserRound },
 ] as const;
+const TABS = FEATURES.events ? ALL_TABS : ALL_TABS.filter((t) => t.href !== "/community");
 
 export function BottomNav() {
   const path = usePathname();
@@ -37,7 +39,7 @@ export function BottomNav() {
         style={{ paddingBottom: "calc(var(--safe-bottom) + var(--nav-gap))" }}
         data-tone={onMap ? tone : "dark"}
       >
-        <ul className="glass pointer-events-auto mx-auto grid h-[var(--nav-h)] max-w-lg grid-cols-6 rounded-full px-1.5">
+        <ul className={`glass pointer-events-auto mx-auto grid h-[var(--nav-h)] max-w-lg rounded-full px-1.5 ${TABS.length === 6 ? "grid-cols-6" : "grid-cols-5"}`}>
           {TABS.map((tab) => {
             const active = tab.href === "/" ? path === "/" : path.startsWith(tab.href);
             const Icon = tab.icon;

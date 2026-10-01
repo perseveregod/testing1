@@ -84,11 +84,13 @@ export const config = {
   },
   sources: {
     /**
-     * Comma list of adapters to ingest. "demo" seeds labeled demo incidents;
-     * "houston_active" is the City of Houston dispatch page (default area).
+     * Comma list of adapters to ingest. "houston_active" is the City of
+     * Houston dispatch page, "nws_alerts" the National Weather Service.
+     * "demo" seeds labeled fictional incidents: add it for local development
+     * or a fresh area with no feed yet; never alongside real feeds in production.
      */
     get enabled(): string[] {
-      return (env.INCIDENT_SOURCES ?? "demo,houston_active")
+      return (env.INCIDENT_SOURCES ?? "houston_active,nws_alerts")
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean);

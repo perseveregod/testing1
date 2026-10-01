@@ -4,7 +4,8 @@ import { useCallback, useMemo, useState } from "react";
 import { MapPinned, Navigation, ShieldCheck } from "lucide-react";
 import { categoriesInGroup, type FilterGroup } from "@/lib/categories";
 import { DEFAULT_CENTER } from "@/lib/client/defaults";
-import { activeLabel, distanceFrom, nearYouParams, useIncidents, useViewer, type InitialIncidents } from "@/lib/client/hooks";
+import { activeLabel, distanceFrom, nearYouParams, useFeedFreshness, useIncidents, type InitialIncidents } from "@/lib/client/hooks";
+import { useClock } from "@/lib/client/safewalk";
 import { errorMessage } from "@/lib/client/api";
 import { useT } from "@/lib/client/lang";
 import { neighborhoodFor } from "@/lib/houston";
@@ -40,8 +41,9 @@ const FILTERS: { id: FeedFilter; label: Key }[] = [
 
 export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
   const { position, status, request } = useLocation();
-  const { viewer } = useViewer();
-  const { t, es } = useT();
+  const { t, es, timeAgo } = useT();
+  const now = Math.floor(useClock(true) / 30_000) * 30_000;
+  const fresh = useFeedFreshness(now);
   const [filter, setFilter] = useState<FeedFilter>("nearby");
   // Mount a short list first; the rest comes on request. Keeps the tab instant.
   const [limit, setLimit] = useState(30);
@@ -141,6 +143,12 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
             <p className="px-0 pb-1 pt-2 text-[13px] text-faint tnum">
               {activeLabel(activeCount, undefined, es)}
               {t("feed.last24")}
+              {fresh.checkedAt != null && now > 0 && (
+                <span className={fresh.stale ? "text-warn" : ""}>
+                  {" · "}
+                  {t(fresh.stale ? "fresh.stale" : "fresh.checked", { t: timeAgo(new Date(fresh.checkedAt).toISOString(), now) })}
+                </span>
+              )}
             </p>
           )}
 
@@ -202,26 +210,6 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
               {t("common.showMore", { n: Math.min(50, rest.length - limit) })}
             </button>
           )}
-
-          {!isLoading &&
-            !error &&
-            viewer?.plan === "free" &&
-            sorted.length > 0 && (
-              <div className="mt-6 flex items-center justify-between gap-3 rounded-2xl bg-surface px-4 py-3.5">
-                <p className="text-[13.5px] leading-snug text-muted">
-                  {t("feed.freeNote")}
-                </p>
-                <ButtonLink
-                  href="/upgrade"
-                  variant="ghost"
-                  size="sm"
-                  transitionTypes={["nav-forward"]}
-                  className="shrink-0 text-gold"
-                >
-                  {t("common.learnMore")}
-                </ButtonLink>
-              </div>
-            )}
 
           <div className="mt-8">
             <EmergencyNote inline />

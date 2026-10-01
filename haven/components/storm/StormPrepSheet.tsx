@@ -176,6 +176,7 @@ function Centers({ es }: { es: boolean }) {
         <a href={COOLING_SOURCE.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 underline">
           {COOLING_SOURCE.name} <ExternalLink className="size-3" aria-hidden />
         </a>
+        {es ? ` · lista revisada ${COOLING_SOURCE.checked}` : ` · list checked ${COOLING_SOURCE.checked}`}
       </p>
     </div>
   );

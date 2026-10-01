@@ -66,6 +66,8 @@ export const COOLING_CENTERS: CoolingCenter[] = [
 export const COOLING_SOURCE = {
   name: "City of Houston Heat Emergency Plan",
   url: "https://www.houstontx.gov/citizensnet/2023/HeatEmergencyPlan20230614.html",
+  /** When someone last compared this list against the City's page. Re-check every season. */
+  checked: "2026-10",
 };
 
 export function prepText(item: PrepItem, lang: Lang) {
