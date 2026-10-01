@@ -18,12 +18,16 @@ export interface AlprCamera {
 }
 
 export const ALPR_ATTRIBUTION = "© OpenStreetMap contributors (ODbL), via the DeFlock project";
-export const OVERPASS_URL = process.env.OVERPASS_URL || "https://overpass-api.de/api/interpreter";
+// The public instances are shared and sometimes busy; try more than one.
+export const OVERPASS_URLS = (process.env.OVERPASS_URL || "https://overpass-api.de/api/interpreter,https://overpass.kumi.systems/api/interpreter")
+  .split(",")
+  .map((u) => u.trim())
+  .filter(Boolean);
 
 // Greater Houston, generously.
 export const HOUSTON_BBOX = { south: 29.35, west: -96.0, north: 30.25, east: -94.8 };
 
-const QUERY = `[out:json][timeout:60];
+const QUERY = `[out:json][timeout:20];
 (
   node["man_made"="surveillance"]["surveillance:type"="ALPR"](${HOUSTON_BBOX.south},${HOUSTON_BBOX.west},${HOUSTON_BBOX.north},${HOUSTON_BBOX.east});
   node["man_made"="surveillance"]["camera:type"="ALPR"](${HOUSTON_BBOX.south},${HOUSTON_BBOX.west},${HOUSTON_BBOX.north},${HOUSTON_BBOX.east});
@@ -67,19 +71,28 @@ export async function alprCameras(): Promise<{ items: AlprCamera[]; updatedAt: s
   if (cache && Date.now() - cache.at < DAY) return { items: cache.items, updatedAt: new Date(cache.at).toISOString() };
   if (!inflight) {
     inflight = (async () => {
-      const res = await fetch(OVERPASS_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          "User-Agent": `Haven/0.1 community-safety-app${config.sources.contactEmail ? ` (${config.sources.contactEmail})` : ""}`,
-        },
-        body: `data=${encodeURIComponent(QUERY)}`,
-        signal: AbortSignal.timeout(70_000),
-      });
-      if (!res.ok) throw new Error(`overpass HTTP ${res.status}`);
-      const items = parseOverpass((await res.json()) as { elements?: OverpassElement[] });
-      cache = { at: Date.now(), items };
-      return items;
+      let lastErr: unknown = null;
+      for (const url of OVERPASS_URLS) {
+        try {
+          const res = await fetch(url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+              "User-Agent": `Haven/0.1 community-safety-app${config.sources.contactEmail ? ` (${config.sources.contactEmail})` : ""}`,
+            },
+            body: `data=${encodeURIComponent(QUERY)}`,
+            signal: AbortSignal.timeout(24_000),
+          });
+          if (!res.ok) throw new Error(`overpass HTTP ${res.status} from ${new URL(url).host}`);
+          const items = parseOverpass((await res.json()) as { elements?: OverpassElement[] });
+          cache = { at: Date.now(), items };
+          return items;
+        } catch (err) {
+          lastErr = err;
+          console.warn("[haven] ALPR fetch failed:", (err as Error).message);
+        }
+      }
+      throw lastErr ?? new Error("overpass unavailable");
     })().finally(() => {
       inflight = null;
     });

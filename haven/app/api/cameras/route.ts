@@ -9,6 +9,9 @@ const q = z.object({
   radiusMi: z.coerce.number().min(1).max(60).default(25),
 });
 
+// The first request after a cold start waits on Overpass; give it room.
+export const maxDuration = 60;
+
 /** License plate reader cameras near a point (OpenStreetMap data). */
 export const GET = route(async (req: Request) => {
   rateLimit(`cameras:${clientIp(req)}`, 60, 60_000);
