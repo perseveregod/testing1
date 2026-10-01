@@ -10,6 +10,8 @@ import type { PublicIncident } from "@/lib/types";
 import { CategoryIcon } from "@/components/incident/CategoryIcon";
 import { isLive } from "@/components/incident/Badges";
 import { Spinner } from "@/components/ui/States";
+import { strings, type Lang } from "@/lib/storm";
+import { Zap } from "lucide-react";
 
 /**
  * The map's bottom bar: the one shared count ("7 active · 5 mi") and, pulled
@@ -27,6 +29,7 @@ export function NearbyPeek({
   now,
   onPick,
   onLocate,
+  storm,
 }: {
   items: PublicIncident[];
   activeCount: number;
@@ -39,6 +42,8 @@ export function NearbyPeek({
   onPick: (id: string) => void;
   /** When set, the bar offers "Use my location" instead of naming the default area. */
   onLocate?: (() => void) | null;
+  /** Storm Mode: the number is storm reports, and a Report button sits on the right. */
+  storm?: { lang: Lang; onReport: () => void } | null;
 }) {
   const [open, setOpen] = useState(false);
   const active = items.filter((i) => i.status !== "resolved" && i.category !== "missing_pet");
@@ -48,13 +53,25 @@ export function NearbyPeek({
   const rows = open ? sorted.slice(0, 5) : [];
 
   const n = String(activeCount).padStart(2, "0");
+  const t = storm ? strings(storm.lang) : null;
+  const title = storm ? (storm.lang === "es" ? "Reportes de tormenta" : "Storm reports") : "Nearby active incidents";
+  const sub = storm
+    ? activeCount === 0
+      ? storm.lang === "es"
+        ? "Sea el primero en reportar luz, inundación o un lugar abierto"
+        : "Be the first to report power, flooding or an open place"
+      : storm.lang === "es"
+        ? "Últimas 6 h · cerca de usted"
+        : "Last 6h · near you"
+    : `Within ${NEAR_RADIUS_MI} mi`;
   return (
-    <section aria-label="Right now near you" className={`pointer-events-auto ${open ? "glass-sheet overflow-hidden rounded-[22px]" : ""}`}>
+    <section aria-label={title} className={`pointer-events-auto ${open ? "glass-sheet overflow-hidden rounded-[22px]" : ""}`}>
+      <div className={`flex items-end gap-3 ${open ? "px-4 pb-2 pt-4" : "px-1 pb-1"}`}>
       <button
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         disabled={loading || Boolean(error) || active.length === 0}
-        className={`flex w-full items-end gap-3 text-left ${open ? "px-4 pb-2 pt-4" : "px-1 pb-1"}`}
+        className="flex min-w-0 flex-1 items-end gap-3 text-left"
       >
         {loading ? (
           <span className="flex items-center gap-2 pb-2 text-[13.5px] text-muted">
@@ -67,21 +84,21 @@ export function NearbyPeek({
         ) : (
           <>
             <span
-              className={`text-[52px] font-extrabold leading-[0.9] tracking-[-0.04em] tnum ${activeCount > 0 ? "text-live" : "text-text"}`}
+              className={`text-[52px] font-extrabold leading-[0.9] tracking-[-0.04em] tnum ${activeCount > 0 ? (storm ? "text-[#FFC233]" : "text-live") : "text-text"}`}
               style={{ textShadow: "0 2px 12px rgba(0,0,0,.6)" }}
             >
               {n}
             </span>
             <span className="min-w-0 pb-0.5">
               <span className="flex items-center gap-1.5 text-[14px] font-semibold leading-tight text-text" style={{ textShadow: "0 1px 6px rgba(0,0,0,.7)" }}>
-                Nearby active incidents
+                {title}
                 {active.length > 0 && (
                   <ChevronUp className={`size-4 shrink-0 text-faint transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
                 )}
               </span>
-              <span className="flex items-center gap-1.5 text-[12.5px] leading-tight text-muted" style={{ textShadow: "0 1px 6px rgba(0,0,0,.7)" }}>
-                {`Within ${NEAR_RADIUS_MI} mi`}
-                {onLocate && !position ? (
+              <span className="flex flex-wrap items-center gap-x-1.5 text-[12.5px] leading-tight text-muted" style={{ textShadow: "0 1px 6px rgba(0,0,0,.7)" }}>
+                {sub}
+                {storm ? null : onLocate && !position ? (
                   <span
                     role="button"
                     onClick={(e) => {
@@ -101,6 +118,16 @@ export function NearbyPeek({
           </>
         )}
       </button>
+      {storm && (
+        <button
+          onClick={storm.onReport}
+          className="press mb-0.5 inline-flex h-12 shrink-0 items-center gap-2 rounded-full bg-[#ffc233] pl-4 pr-5 text-[15px] font-extrabold text-[#1b1300] shadow-[0_8px_24px_-10px_rgba(0,0,0,0.6)]"
+        >
+          <Zap className="size-[18px] fill-current" aria-hidden />
+          {t!.report}
+        </button>
+      )}
+      </div>
       {open && (
         <>
           <ul className="px-2 pb-1">

@@ -106,11 +106,12 @@ body {
 /* Liquid Glass: a tinted, blurred, light-boosted backdrop with a specular
    sheen from the top-left and bright rims, like Apple's iOS 26 material. */
 @utility glass {
+  /* Dark enough to read over a light map; the map still shows through. */
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.015)),
-    rgba(20, 23, 32, 0.34);
-  backdrop-filter: blur(22px) saturate(170%);
-  -webkit-backdrop-filter: blur(22px) saturate(170%);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.01)),
+    rgba(14, 16, 22, 0.74);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
   border: 0.5px solid rgba(255, 255, 255, 0.16);
   box-shadow:
     var(--glass-rim),

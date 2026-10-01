@@ -8,7 +8,6 @@ import {
   Navigation2,
   Search,
   SlidersHorizontal,
-  Zap,
 } from "lucide-react";
 import { setStormPrefs, useStormPrefs } from "@/lib/client/stormMode";
 import { peekMapFocus, takeMapFocus } from "@/lib/client/mapFocus";
@@ -21,7 +20,7 @@ import { useClock } from "@/lib/client/safewalk";
 import { StormReportSheet } from "@/components/storm/StormReportSheet";
 import { DEFAULT_CENTER } from "@/lib/client/defaults";
 import { errorMessage } from "@/lib/client/api";
-import { activeLabel, distanceFrom, useIncidents, useNearYou, useViewer, type InitialIncidents } from "@/lib/client/hooks";
+import { distanceFrom, useIncidents, useNearYou, useViewer, type InitialIncidents } from "@/lib/client/hooks";
 import type { LatLng } from "@/lib/geo";
 import { useLocation } from "@/components/providers/LocationProvider";
 import { IncidentPreview } from "@/components/incident/IncidentPreview";
@@ -379,43 +378,6 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
         </div>
         </div>
 
-        {/* Status: what the map is showing, and whether it is real. */}
-        {storm.on && <div className="pointer-events-auto mx-auto mt-2 flex max-w-lg px-1">
-          <p
-            className="inline-flex h-7 items-center gap-2 rounded-full bg-bg/70 px-3 text-[12px] font-medium text-muted backdrop-blur-md tnum"
-            aria-live="polite"
-          >
-            {loading ? (
-              <>
-                <Spinner className="size-3" /> Loading incidents
-              </>
-            ) : error ? (
-              <button onClick={() => mutate()} className="text-danger">
-                Couldn&apos;t load · Retry
-              </button>
-            ) : (
-              <>
-                <span
-                  className={`size-1.5 rounded-full ${(storm.on ? activeCount : near.activeCount) > 0 ? "bg-live" : "bg-ok"}`}
-                  aria-hidden
-                />
-                <span>
-                  {storm.on
-                    ? storm.lang === "es"
-                      ? `${activeCount} reportes de tormenta · últimas 6 h`
-                      : `${activeCount} storm reports · last 6h`
-                    : activeLabel(near.activeCount)}
-                </span>
-                {allDemo && (
-                  <span className="rounded-[4px] bg-white/[0.1] px-1.5 py-px text-[10.5px] font-semibold uppercase tracking-[0.06em] text-text/80">
-                    Demo data
-                  </span>
-                )}
-              </>
-            )}
-          </p>
-        </div>}
-
         {storm.on && (
           <div className="mx-auto mt-2 max-w-lg px-1">
             <StormBanner />
@@ -479,35 +441,20 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
       {/* Bottom: incident preview or the one-time location prompt */}
       <div className="pointer-events-none absolute inset-x-0 z-30 bottom-nav-offset">
         <div ref={bottomRef} className="mx-auto max-w-lg px-4 pb-3">
-          {storm.on && !selected && (
-            <div className="flex flex-col items-center gap-2">
-              {!loading && !error && activeCount === 0 && (
-                <p className="glass pointer-events-auto max-w-xs rounded-[16px] px-4 py-2.5 text-center text-[13px] leading-snug text-muted">
-                  {st.empty}
-                </p>
-              )}
-              <button
-                onClick={() => setStormReportOpen(true)}
-                className="press pointer-events-auto inline-flex h-14 items-center gap-2.5 rounded-full bg-[#ffc233] pl-5 pr-6 text-[16px] font-extrabold text-[#1b1300] shadow-[0_8px_24px_-10px_rgba(0,0,0,0.6)]"
-              >
-                <Zap className="size-5 fill-current" aria-hidden />
-                {st.report}
-              </button>
-            </div>
-          )}
-          {!storm.on && !selected && (
+          {!selected && (
             <div className="mb-2">
               <NearbyPeek
-                items={near.items}
-                activeCount={near.activeCount}
-                loading={near.isLoading}
-                error={near.error ? errorMessage(near.error) : null}
-                onRetry={() => near.mutate()}
-                allDemo={near.items.length > 0 && near.items.every((i) => i.isDemo)}
+                items={storm.on ? items : near.items}
+                activeCount={storm.on ? activeCount : near.activeCount}
+                loading={storm.on ? loading : near.isLoading}
+                error={storm.on ? (error ? errorMessage(error) : null) : near.error ? errorMessage(near.error) : null}
+                onRetry={() => (storm.on ? mutate() : near.mutate())}
+                allDemo={storm.on ? allDemo : near.items.length > 0 && near.items.every((i) => i.isDemo)}
                 position={position}
                 now={now}
                 onPick={setSelectedId}
                 onLocate={showPrompt ? request : null}
+                storm={storm.on ? { lang: storm.lang, onReport: () => setStormReportOpen(true) } : null}
               />
             </div>
           )}

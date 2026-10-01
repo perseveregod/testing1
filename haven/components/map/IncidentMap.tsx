@@ -627,12 +627,12 @@ function StormPin({
           width: size,
           height: size,
           borderRadius: flooded ? "30%" : "9999px",
-          background: style.color,
-          color: state === "closed" || flooded ? "#fff" : "#0b0c0f",
-          border: `${flooded ? 3 : 2.5}px solid #fff`,
+          // Same dark disc as every other pin; flooded streets stay solid red.
+          background: flooded ? style.color : "#15181f",
+          color: flooded ? "#fff" : style.color,
           boxShadow: selected
-            ? `0 0 0 6px color-mix(in srgb, ${style.color} 35%, transparent), 0 8px 20px rgba(0,0,0,.55)`
-            : "0 0 0 1px rgba(0,0,0,.35), 0 4px 12px rgba(0,0,0,.5)",
+            ? `0 0 0 3px ${style.color}, 0 0 0 8px color-mix(in srgb, ${style.color} 30%, transparent), 0 8px 20px rgba(0,0,0,.6)`
+            : `0 0 0 2px ${flooded ? "#fff" : `color-mix(in srgb, ${style.color} 75%, transparent)`}, 0 4px 12px rgba(0,0,0,.55)`,
         }}
       >
         <CategoryGlyph category={category} animated={false} style={{ width: size * 0.56, height: size * 0.56 }} />
