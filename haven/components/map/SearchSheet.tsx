@@ -105,7 +105,8 @@ export function SearchSheet({
 }) {
   const [q, setQ] = useState("");
   const { results, error, searching } = usePlaceSearch(q, near);
-  const { places } = usePlaces();
+  // Saved places are only shown here, so only ask once the sheet opens.
+  const { places } = usePlaces(open);
   const { es } = useT();
 
   const pick = (p: LatLng, label: string) => {

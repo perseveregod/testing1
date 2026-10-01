@@ -52,9 +52,16 @@ const INSTALL_STEP = { icon: Smartphone, color: "#ff2d55", title: "welcome.insta
 
 export function WelcomeFlow() {
   const done = useSyncExternalStore(subscribe, seen, () => true);
+  const path = usePathname();
+  // Someone opening a shared incident link goes straight to it. The steps
+  // (and the push status they ask the server for) only exist while showing.
+  if (done || path.startsWith("/incidents/")) return null;
+  return <WelcomeSteps />;
+}
+
+function WelcomeSteps() {
   const [step, setStep] = useState(0);
   const { request, status } = useLocation();
-  const path = usePathname();
 
   const push = usePush();
   const [installOpen, setInstallOpen] = useState(false);
@@ -62,8 +69,6 @@ export function WelcomeFlow() {
 
   const finish = useCallback(() => markSeen(), []);
 
-  // Someone opening a shared incident link goes straight to it.
-  if (done || path.startsWith("/incidents/")) return null;
   const extra = push.status === "off" ? ALERT_STEP : push.status === "install" ? INSTALL_STEP : null;
   const steps = extra ? [...STEPS, extra] : STEPS;
   const s = steps[Math.min(step, steps.length - 1)]!;

@@ -20,11 +20,9 @@ function useSessionKey(url: string): string | null {
   return viewer ? url : null;
 }
 
-export function usePlaces() {
-  const { data, error, isLoading, mutate } = useSWR<{ places: SavedPlace[]; max: number }>(
-    useSessionKey("/api/places"),
-    fetcher,
-  );
+export function usePlaces(enabled = true) {
+  const key = useSessionKey("/api/places");
+  const { data, error, isLoading, mutate } = useSWR<{ places: SavedPlace[]; max: number }>(enabled ? key : null, fetcher);
   return { places: data?.places ?? [], max: data?.max ?? 1, error, isLoading, mutate };
 }
 
