@@ -28,7 +28,7 @@ import { StormReportSheet } from "@/components/storm/StormReportSheet";
 import { DEFAULT_CENTER, EMERGENCY_NUMBER } from "@/lib/client/defaults";
 import { errorMessage } from "@/lib/client/api";
 import { distanceFrom, useIncidents, useNearYou, useViewer, type InitialIncidents } from "@/lib/client/hooks";
-import type { LatLng } from "@/lib/geo";
+import { distanceMiles, type LatLng } from "@/lib/geo";
 import { useLocation } from "@/components/providers/LocationProvider";
 import { IncidentPreview } from "@/components/incident/IncidentPreview";
 import { getCategory, type FilterGroup } from "@/lib/categories";
@@ -170,28 +170,27 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
   // Optional layers. Cameras come from OpenStreetMap, 25 mi around the default area.
   const layerPrefs = useLayerPrefs();
   const [pickedCamera, setPickedCamera] = useState<PickedCamera | null>(null);
-  const camCenter = position ?? DEFAULT_CENTER;
-  const { data: camData } = useSWR<{ cameras: { id: string; lat: number; lng: number; operator: string | null; manufacturer: string | null; direction: number | null; note: string | null }[]; loading?: boolean }>(
-    layerPrefs.cameras ? `/api/cameras?lat=${camCenter.lat.toFixed(2)}&lng=${camCenter.lng.toFixed(2)}&radiusMi=30` : null,
+  const camCenter = useMemo(() => position ?? DEFAULT_CENTER, [position]);
+  // A static snapshot built at deploy time (scripts/fetch-alpr.mjs): served
+  // from the CDN, so the layer is instant and never waits on Overpass.
+  const { data: camData } = useSWR<{ cameras: { id: string; lat: number; lng: number; operator: string | null; manufacturer: string | null; direction: number | null; note: string | null }[]; updatedAt: string | null }>(
+    layerPrefs.cameras ? "/data/alpr-houston.json" : null,
     fetcher,
-    {
-      revalidateOnFocus: false,
-      dedupingInterval: 600_000,
-      // The server fetches in the background on a cold start; ask again until it has data.
-      refreshInterval: (d) => (d?.loading ? 12_000 : 0),
-    },
+    { revalidateOnFocus: false, dedupingInterval: 3_600_000 },
   );
   const cameraGeo = useMemo<GeoJSON.FeatureCollection | null>(() => {
     if (!layerPrefs.cameras || !camData) return null;
+    // Only what's within 30 mi of the person (or downtown): keeps the layer light.
+    const near = camData.cameras.filter((c) => distanceMiles(camCenter, { lat: c.lat, lng: c.lng }) <= 30);
     return {
       type: "FeatureCollection",
-      features: camData.cameras.map((c) => ({
+      features: near.map((c) => ({
         type: "Feature",
         geometry: { type: "Point", coordinates: [c.lng, c.lat] },
         properties: { operator: c.operator, manufacturer: c.manufacturer, direction: c.direction, note: c.note },
       })),
     };
-  }, [layerPrefs.cameras, camData]);
+  }, [layerPrefs.cameras, camData, camCenter]);
   const [filters, setFilters] = useState<MapFilters>(DEFAULT_FILTERS);
   const [searchLabel, setSearchLabel] = useState<string | null>(() => peekMapFocus()?.label ?? null);
   const [promptDismissed] = useState(promptWasDismissed);
