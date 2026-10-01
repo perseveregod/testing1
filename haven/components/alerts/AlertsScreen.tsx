@@ -37,7 +37,7 @@ export function AlertsScreen() {
     <main className="min-h-dvh pb-nav">
       <PageHeader
         title="Alerts"
-        large
+        back="/profile"
         action={
           tab === "inbox" && unread > 0 ? (
             <button onClick={markAll} className="press mr-2 min-h-11 rounded-full px-3 text-[14px] font-medium text-brand">

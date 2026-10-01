@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { boundingBox, distanceMeters } from "@/lib/geo";
+import { eventEndsAt } from "@/lib/community";
 import type {
   AlertPreferences,
   DataSource,
@@ -13,6 +14,9 @@ import type {
 import type {
   AlertCandidate,
   EntitlementRecord,
+  EventCommentRecord,
+  EventQuery,
+  EventRecord,
   IncidentQuery,
   PlaceCandidate,
   ReportRecord,
@@ -38,6 +42,10 @@ interface Data {
   notifications: (NotificationItem & { userId: string })[];
   sources: DataSource[];
   photos: Record<string, string>;
+  events: EventRecord[];
+  eventComments: EventCommentRecord[];
+  rsvps: { eventId: string; userId: string; createdAt: string }[];
+  communityFlags: { kind: "event" | "comment"; id: string; userId: string; createdAt: string }[];
 }
 
 const empty = (): Data => ({
@@ -54,6 +62,10 @@ const empty = (): Data => ({
   alertPrefs: [],
   notifications: [],
   sources: [],
+  events: [],
+  eventComments: [],
+  rsvps: [],
+  communityFlags: [],
 });
 
 const MAX_NOTIFICATIONS_PER_USER = 200;
@@ -334,6 +346,92 @@ export class LocalStore implements Store {
       if (n.userId === userId && !n.readAt && (!set || set.has(n.id))) n.readAt = now;
     }
     this.save();
+  }
+
+  // community ---------------------------------------------------------------
+  async listEvents(q: EventQuery) {
+    const endsAfter = new Date(q.endsAfter).getTime();
+    return this.data.events
+      .filter((e) => !e.hidden && e.startsAt < q.startsBefore)
+      .filter((e) => eventEndsAt(e) > endsAfter)
+      .filter((e) => distanceMeters(q.center, { lat: e.latitude, lng: e.longitude }) <= q.radiusM)
+      .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
+      .slice(0, q.limit)
+      .map((e) => ({ ...e }));
+  }
+  async getEvent(id: string) {
+    const e = this.data.events.find((x) => x.id === id);
+    return e ? { ...e } : null;
+  }
+  async insertEvent(rec: EventRecord) {
+    if (this.data.events.some((e) => e.id === rec.id)) return;
+    this.data.events.push({ ...rec });
+    this.save();
+  }
+  async hideEvent(id: string) {
+    const e = this.data.events.find((x) => x.id === id);
+    if (e) e.hidden = true;
+    this.save();
+  }
+  async listEventComments(eventId: string, limit: number) {
+    return this.data.eventComments
+      .filter((c) => c.eventId === eventId && !c.hidden)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+      .slice(-limit)
+      .map((c) => ({ ...c }));
+  }
+  async getEventComment(id: string) {
+    const c = this.data.eventComments.find((x) => x.id === id);
+    return c ? { ...c } : null;
+  }
+  async insertEventComment(rec: EventCommentRecord) {
+    if (this.data.eventComments.some((c) => c.id === rec.id)) return;
+    this.data.eventComments.push({ ...rec });
+    const e = this.data.events.find((x) => x.id === rec.eventId);
+    if (e) e.commentCount += 1;
+    this.save();
+  }
+  async hideEventComment(id: string) {
+    const c = this.data.eventComments.find((x) => x.id === id);
+    if (c && !c.hidden) {
+      c.hidden = true;
+      const e = this.data.events.find((x) => x.id === c.eventId);
+      if (e) e.commentCount = Math.max(0, e.commentCount - 1);
+    }
+    this.save();
+  }
+  async setGoing(eventId: string, userId: string, going: boolean) {
+    const has = this.data.rsvps.some((r) => r.eventId === eventId && r.userId === userId);
+    if (has === going) return;
+    const e = this.data.events.find((x) => x.id === eventId);
+    if (going) {
+      this.data.rsvps.push({ eventId, userId, createdAt: new Date().toISOString() });
+      if (e) e.goingCount += 1;
+    } else {
+      this.data.rsvps = this.data.rsvps.filter((r) => !(r.eventId === eventId && r.userId === userId));
+      if (e) e.goingCount = Math.max(0, e.goingCount - 1);
+    }
+    this.save();
+  }
+  async goingEventIds(userId: string, eventIds: string[]) {
+    const ids = new Set(eventIds);
+    return new Set(this.data.rsvps.filter((r) => r.userId === userId && ids.has(r.eventId)).map((r) => r.eventId));
+  }
+  async flagCommunityItem(kind: "event" | "comment", id: string, userId: string) {
+    const flags = this.data.communityFlags;
+    if (!flags.some((f) => f.kind === kind && f.id === id && f.userId === userId)) {
+      flags.push({ kind, id, userId, createdAt: new Date().toISOString() });
+      const target = kind === "event" ? this.data.events.find((x) => x.id === id) : this.data.eventComments.find((x) => x.id === id);
+      if (target) target.flagCount += 1;
+      this.save();
+    }
+    return flags.filter((f) => f.kind === kind && f.id === id).length;
+  }
+  async countEventsSince(userId: string, since: string) {
+    return this.data.events.filter((e) => e.createdBy === userId && e.createdAt >= since).length;
+  }
+  async countEventCommentsSince(userId: string, since: string) {
+    return this.data.eventComments.filter((c) => c.userId === userId && c.createdAt >= since).length;
   }
 
   // sources ---------------------------------------------------------------

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ViewTransition } from "react";
-import { Bell, List, Map as MapIcon, Plus, ShieldHalf, UserRound } from "lucide-react";
+import { List, Map as MapIcon, Plus, ShieldHalf, UserRound, UsersRound } from "lucide-react";
 import { useNotifications } from "@/lib/client/hooks";
 
 const TABS = [
@@ -11,7 +11,7 @@ const TABS = [
   { href: "/feed", label: "Feed", icon: List },
   { href: "/report", label: "Report", icon: Plus, primary: true },
   { href: "/safety", label: "Safety", icon: ShieldHalf },
-  { href: "/alerts", label: "Alerts", icon: Bell },
+  { href: "/community", label: "Community", icon: UsersRound },
   { href: "/profile", label: "Profile", icon: UserRound },
 ] as const;
 
@@ -67,7 +67,7 @@ export function BottomNav() {
                       strokeWidth={active ? 2.2 : 1.8}
                       aria-hidden
                     />
-                    {t.href === "/alerts" && unread > 0 && (
+                    {t.href === "/profile" && unread > 0 && (
                       <span className="haven-pop absolute -right-2 -top-1 min-w-[17px] rounded-full bg-danger px-1 text-center text-[10px] font-bold leading-[17px] text-white tnum ring-2 ring-bg">
                         {unread > 9 ? "9+" : unread}
                         <span className="sr-only"> unread alerts</span>

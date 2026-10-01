@@ -13,9 +13,14 @@ import type {
   StormState,
 } from "@/lib/types";
 import { ApiError } from "../http";
+import { boundingBox, distanceMeters } from "@/lib/geo";
+import { eventEndsAt as eventEnd, type EventKind } from "@/lib/community";
 import type {
   AlertCandidate,
   EntitlementRecord,
+  EventCommentRecord,
+  EventQuery,
+  EventRecord,
   IncidentQuery,
   PlaceCandidate,
   ReportRecord,
@@ -38,6 +43,48 @@ function check<T>(res: { data: T; error: { message: string; code?: string } | nu
 
 const str = (v: unknown) => (v == null ? null : String(v));
 const iso = (v: unknown) => new Date(String(v)).toISOString();
+
+/** Community tables come from a separate migration; say so plainly if it hasn't run. */
+function community<T>(res: { data: T; error: { message: string; code?: string } | null }): T {
+  if (res.error && /community_|does not exist|schema cache/i.test(res.error.message)) {
+    throw new ApiError(503, "Community needs a one-time database update before it can be used.", "schema_update_needed");
+  }
+  return check(res);
+}
+
+function toEvent(r: Row): EventRecord {
+  return {
+    id: String(r.id),
+    kind: r.kind as EventKind,
+    title: String(r.title),
+    description: String(r.description ?? ""),
+    startsAt: iso(r.starts_at),
+    endsAt: r.ends_at ? iso(r.ends_at) : null,
+    placeName: String(r.place_name),
+    latitude: Number(r.latitude),
+    longitude: Number(r.longitude),
+    createdBy: str(r.created_by),
+    createdAt: iso(r.created_at),
+    goingCount: Number(r.going_count ?? 0),
+    commentCount: Number(r.comment_count ?? 0),
+    flagCount: Number(r.flag_count ?? 0),
+    hidden: Boolean(r.hidden),
+    isDemo: Boolean(r.is_demo),
+  };
+}
+
+function toEventComment(r: Row): EventCommentRecord {
+  return {
+    id: String(r.id),
+    eventId: String(r.event_id),
+    userId: str(r.user_id),
+    body: String(r.body),
+    createdAt: iso(r.created_at),
+    flagCount: Number(r.flag_count ?? 0),
+    hidden: Boolean(r.hidden),
+    isDemo: Boolean(r.is_demo),
+  };
+}
 
 function toUser(r: Row): UserRecord {
   return {
@@ -571,6 +618,138 @@ export class SupabaseStore implements Store {
       .is("read_at", null);
     if (ids !== "all") q = q.in("id", ids);
     check(await q);
+  }
+
+  // community ---------------------------------------------------------------
+  async listEvents(q: EventQuery) {
+    const box = boundingBox(q.center, q.radiusM);
+    // Events without an end time run a few hours; fetch from a little earlier and trim in code.
+    const earliest = new Date(new Date(q.endsAfter).getTime() - 24 * 3_600_000).toISOString();
+    const data = community(
+      await this.db
+        .from("community_events")
+        .select()
+        .eq("hidden", false)
+        .gte("starts_at", earliest)
+        .lt("starts_at", q.startsBefore)
+        .gte("latitude", box.minLat)
+        .lte("latitude", box.maxLat)
+        .gte("longitude", box.minLng)
+        .lte("longitude", box.maxLng)
+        .order("starts_at", { ascending: true })
+        .limit(q.limit * 2),
+    ) as Row[];
+    const endsAfter = new Date(q.endsAfter).getTime();
+    return data
+      .map(toEvent)
+      .filter((e) => eventEnd(e) > endsAfter)
+      .filter((e) => distanceMeters(q.center, { lat: e.latitude, lng: e.longitude }) <= q.radiusM)
+      .slice(0, q.limit);
+  }
+  async getEvent(id: string) {
+    const data = community(await this.db.from("community_events").select().eq("id", id).maybeSingle()) as Row | null;
+    return data ? toEvent(data) : null;
+  }
+  async insertEvent(rec: EventRecord) {
+    const res = await this.db.from("community_events").insert({
+      id: rec.id,
+      kind: rec.kind,
+      title: rec.title,
+      description: rec.description,
+      starts_at: rec.startsAt,
+      ends_at: rec.endsAt,
+      place_name: rec.placeName,
+      latitude: rec.latitude,
+      longitude: rec.longitude,
+      created_by: rec.createdBy,
+      created_at: rec.createdAt,
+      // Counters belong to triggers; seed only the RSVP count (demo data).
+      going_count: rec.goingCount,
+      hidden: rec.hidden,
+      is_demo: rec.isDemo,
+    });
+    if (res.error?.code === PG_UNIQUE_VIOLATION) return;
+    community(res);
+  }
+  async hideEvent(id: string) {
+    community(await this.db.from("community_events").update({ hidden: true }).eq("id", id));
+  }
+  async listEventComments(eventId: string, limit: number) {
+    const data = community(
+      await this.db
+        .from("community_comments")
+        .select()
+        .eq("event_id", eventId)
+        .eq("hidden", false)
+        .order("created_at", { ascending: false })
+        .limit(limit),
+    ) as Row[];
+    return data.map(toEventComment).reverse();
+  }
+  async getEventComment(id: string) {
+    const data = community(await this.db.from("community_comments").select().eq("id", id).maybeSingle()) as Row | null;
+    return data ? toEventComment(data) : null;
+  }
+  async insertEventComment(rec: EventCommentRecord) {
+    const res = await this.db.from("community_comments").insert({
+      id: rec.id,
+      event_id: rec.eventId,
+      user_id: rec.userId,
+      body: rec.body,
+      created_at: rec.createdAt,
+      hidden: rec.hidden,
+      is_demo: rec.isDemo,
+    });
+    if (res.error?.code === PG_UNIQUE_VIOLATION) return;
+    community(res);
+  }
+  async hideEventComment(id: string) {
+    community(await this.db.from("community_comments").update({ hidden: true }).eq("id", id));
+  }
+  async setGoing(eventId: string, userId: string, going: boolean) {
+    if (going) {
+      const res = await this.db.from("community_rsvps").insert({ event_id: eventId, user_id: userId });
+      if (res.error?.code === PG_UNIQUE_VIOLATION) return;
+      community(res);
+    } else {
+      community(await this.db.from("community_rsvps").delete().eq("event_id", eventId).eq("user_id", userId));
+    }
+  }
+  async goingEventIds(userId: string, eventIds: string[]) {
+    if (eventIds.length === 0) return new Set<string>();
+    const data = community(
+      await this.db.from("community_rsvps").select("event_id").eq("user_id", userId).in("event_id", eventIds),
+    ) as Row[];
+    return new Set(data.map((r) => String(r.event_id)));
+  }
+  async flagCommunityItem(kind: "event" | "comment", id: string, userId: string) {
+    const res = await this.db.from("community_flags").insert({ target_kind: kind, target_id: id, user_id: userId });
+    if (res.error && res.error.code !== PG_UNIQUE_VIOLATION) community(res);
+    const count = await this.db
+      .from("community_flags")
+      .select("user_id", { count: "exact", head: true })
+      .eq("target_kind", kind)
+      .eq("target_id", id);
+    community(count);
+    return count.count ?? 0;
+  }
+  async countEventsSince(userId: string, since: string) {
+    const res = await this.db
+      .from("community_events")
+      .select("id", { count: "exact", head: true })
+      .eq("created_by", userId)
+      .gte("created_at", since);
+    community(res);
+    return res.count ?? 0;
+  }
+  async countEventCommentsSince(userId: string, since: string) {
+    const res = await this.db
+      .from("community_comments")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .gte("created_at", since);
+    community(res);
+    return res.count ?? 0;
   }
 
   // sources ---------------------------------------------------------------

@@ -3,9 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import useSWR from "swr";
-import { BarChart3, ChevronRight, Database, FileText, LogOut, ShieldCheck, Sparkles } from "lucide-react";
+import { BarChart3, Bell, ChevronRight, Database, FileText, LogOut, ShieldCheck, Sparkles } from "lucide-react";
 import { apiSend, fetcher } from "@/lib/client/api";
-import { useViewer } from "@/lib/client/hooks";
+import { useNotifications, useViewer } from "@/lib/client/hooks";
 import { timeAgo } from "@/lib/time";
 import type { DataSource, PublicIncident } from "@/lib/types";
 import { useToast } from "@/components/providers/ToastProvider";
@@ -21,6 +21,7 @@ import { SignInSheet } from "./SignInSheet";
 
 export function ProfileScreen() {
   const { viewer, mutate } = useViewer();
+  const { unread } = useNotifications();
   const toast = useToast();
   const [signIn, setSignIn] = useState(false);
 
@@ -87,6 +88,17 @@ export function ProfileScreen() {
           ))}
 
         <Group>
+          <Row
+            icon={<Bell className="size-5" />}
+            title="Alerts"
+            detail={unread > 0 ? `${unread} unread` : "Inbox and alert settings"}
+            trailing={
+              unread > 0 ? (
+                <span className="min-w-[22px] rounded-full bg-danger px-1.5 text-center text-[12px] font-bold leading-[22px] text-white tnum">{unread > 9 ? "9+" : unread}</span>
+              ) : undefined
+            }
+            href="/alerts"
+          />
           <Row
             icon={<BarChart3 className="size-5" />}
             title="Area insights"

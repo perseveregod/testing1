@@ -1,3 +1,4 @@
+import type { EventKind } from "@/lib/community";
 import type {
   AlertPreferences,
   CategoryId,
@@ -70,6 +71,45 @@ export interface PlaceCandidate extends SavedPlace {
   userId: string;
 }
 
+export interface EventRecord {
+  id: string;
+  kind: EventKind;
+  title: string;
+  description: string;
+  startsAt: string;
+  endsAt: string | null;
+  placeName: string;
+  latitude: number;
+  longitude: number;
+  createdBy: string | null;
+  createdAt: string;
+  goingCount: number;
+  commentCount: number;
+  flagCount: number;
+  hidden: boolean;
+  isDemo: boolean;
+}
+
+export interface EventCommentRecord {
+  id: string;
+  eventId: string;
+  userId: string | null;
+  body: string;
+  createdAt: string;
+  flagCount: number;
+  hidden: boolean;
+  isDemo: boolean;
+}
+
+export interface EventQuery {
+  center: { lat: number; lng: number };
+  radiusM: number;
+  /** Events still running at or after this time. */
+  endsAfter: string;
+  startsBefore: string;
+  limit: number;
+}
+
 export interface Store {
   readonly kind: "local" | "supabase";
 
@@ -130,6 +170,24 @@ export interface Store {
   /** Skips any (user, incident) pair that already has a notification. */
   insertNotifications(items: (NotificationItem & { userId: string })[]): Promise<number>;
   markNotificationsRead(userId: string, ids: string[] | "all"): Promise<void>;
+
+  // community board (hidden rows are never returned by list calls)
+  listEvents(q: EventQuery): Promise<EventRecord[]>;
+  getEvent(id: string): Promise<EventRecord | null>;
+  insertEvent(rec: EventRecord): Promise<void>;
+  hideEvent(id: string): Promise<void>;
+  listEventComments(eventId: string, limit: number): Promise<EventCommentRecord[]>;
+  getEventComment(id: string): Promise<EventCommentRecord | null>;
+  /** Bumps the event's comment count. */
+  insertEventComment(rec: EventCommentRecord): Promise<void>;
+  hideEventComment(id: string): Promise<void>;
+  /** Adds or removes an RSVP and keeps the event's going count in step. */
+  setGoing(eventId: string, userId: string, going: boolean): Promise<void>;
+  goingEventIds(userId: string, eventIds: string[]): Promise<Set<string>>;
+  /** One flag per person per item; returns how many distinct people have flagged it. */
+  flagCommunityItem(kind: "event" | "comment", id: string, userId: string): Promise<number>;
+  countEventsSince(userId: string, since: string): Promise<number>;
+  countEventCommentsSince(userId: string, since: string): Promise<number>;
 
   // data sources
   listSources(): Promise<DataSource[]>;

@@ -1,3 +1,4 @@
+import { COMMUNITY_LIMITS, EVENT_KIND_IDS } from "@/lib/community";
 import { z } from "zod";
 import { CATEGORY_IDS } from "./categories";
 import { MAX_DESCRIPTION, MAX_UPDATE } from "./moderation";
@@ -98,6 +99,40 @@ export const listQuerySchema = z.object({
 });
 
 export type ListQuery = z.infer<typeof listQuerySchema>;
+
+// community -------------------------------------------------------------------
+const isoDate = z.string().max(40).refine((v) => !Number.isNaN(Date.parse(v)), "Pick a valid date and time.");
+
+export const createEventSchema = z.object({
+  kind: z.enum(EVENT_KIND_IDS),
+  title: z.string().trim().min(3, "Give the event a name.").max(COMMUNITY_LIMITS.title),
+  description: z.string().max(COMMUNITY_LIMITS.description).default(""),
+  startsAt: isoDate,
+  endsAt: isoDate.nullable().default(null),
+  placeName: z.string().trim().min(2, "Say where it is.").max(COMMUNITY_LIMITS.placeName),
+  latitude: lat,
+  longitude: lng,
+  clientRequestId: z.string().uuid().optional(),
+});
+
+export const eventsQuerySchema = z.object({
+  lat: z.coerce.number().finite().min(-90).max(90),
+  lng: z.coerce.number().finite().min(-180).max(180),
+  radiusMi: z.coerce.number().min(1).max(50).default(25),
+  days: z.coerce.number().int().min(1).max(COMMUNITY_LIMITS.maxDaysAhead).default(30),
+});
+
+export const goingSchema = z.object({ going: z.boolean() });
+
+export const commentSchema = z.object({
+  body: z.string().trim().min(1, "Write something first.").max(COMMUNITY_LIMITS.comment),
+  clientRequestId: z.string().uuid().optional(),
+});
+
+export const communityFlagSchema = z.object({
+  kind: z.enum(["event", "comment"]),
+  id: z.string().min(1).max(120),
+});
 
 export function firstIssue(err: z.ZodError): string {
   const i = err.issues[0];
