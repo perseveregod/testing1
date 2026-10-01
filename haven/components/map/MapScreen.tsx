@@ -5,7 +5,7 @@ import { ChevronDown, Layers, ListChecks, LocateFixed, Navigation2, Search, Slid
 import { setStormPrefs, useStormPrefs, useStormReportTick } from "@/lib/client/stormMode";
 import { peekMapFocus, takeMapFocus } from "@/lib/client/mapFocus";
 import { setMapTone } from "@/lib/client/mapTone";
-import { useT } from "@/lib/client/lang";
+import { incidentTitle, useT } from "@/lib/client/lang";
 import { dismissTip, useTip } from "@/lib/client/tips";
 import type { Key } from "@/lib/i18n";
 import { STATE_STYLE, strings, type StormKind } from "@/lib/storm";
@@ -22,8 +22,9 @@ import { useClock } from "@/lib/client/safewalk";
 import { StormReportSheet } from "@/components/storm/StormReportSheet";
 import { DEFAULT_CENTER, EMERGENCY_NUMBER } from "@/lib/client/defaults";
 import { errorMessage } from "@/lib/client/api";
+import { useArrivals } from "@/lib/client/arrivals";
 import { distanceFrom, useHydrated, useIncidents, useNearYou, useViewer, type InitialIncidents } from "@/lib/client/hooks";
-import { distanceMiles, type LatLng } from "@/lib/geo";
+import { distanceMiles, formatDistance, type LatLng } from "@/lib/geo";
 import { lastKnownPosition, useLocation } from "@/components/providers/LocationProvider";
 import { IncidentPreview } from "@/components/incident/IncidentPreview";
 import { getCategory, type FilterGroup } from "@/lib/categories";
@@ -226,7 +227,7 @@ export function MapScreen({ initial, active = true }: { initial?: InitialInciden
 
   const storm = useStormPrefs();
   const st = strings(storm.lang);
-  const { t } = useT();
+  const { t, lang } = useT();
   const [stormFilter, setStormFilter] = useState<StormKind | null>(null);
   // Storm reports open from the tab bar's center button (see requestStormReport).
   const reportTick = useStormReportTick();
@@ -263,6 +264,13 @@ export function MapScreen({ initial, active = true }: { initial?: InitialInciden
   );
   const { isLoading, isValidating, error, mutate } = viewportQuery;
   const items = !storm.on && !area ? near.items : viewportQuery.items;
+  // Something new within 5 mi gets a few seconds as a chip under the filters
+  // (the ring on its pin may be off screen); tapping it goes there.
+  const { arrived } = useArrivals(near.items, { scrolled: false });
+  const arrival = useMemo(() => {
+    const fresh = near.items.filter((i) => arrived.has(i.id) && i.status !== "resolved");
+    return fresh.sort((a, b) => (distanceFrom(lastPosition, a) ?? 0) - (distanceFrom(lastPosition, b) ?? 0))[0] ?? null;
+  }, [near.items, arrived, lastPosition]);
   const bottomRef = useRef<HTMLDivElement>(null);
   const [bottomH, setBottomH] = useState(0);
   useEffect(() => {
@@ -465,7 +473,24 @@ export function MapScreen({ initial, active = true }: { initial?: InitialInciden
             )}
           </div>
 
-          {pinTip && !weatherAlert && (
+          {arrival && !storm.on && !selected && (
+            <div className="pointer-events-auto flex">
+              <button
+                onClick={() => {
+                  setSelectedId(arrival.id);
+                  mapRef.current?.flyTo({ lat: arrival.latitude, lng: arrival.longitude }, 15);
+                }}
+                className="panel haven-rise inline-flex min-h-10 max-w-full items-center gap-2 rounded-full py-1 pl-3 pr-3.5 text-[13px] font-medium"
+              >
+                <span className="rounded-full bg-brand px-1.5 py-0.5 text-[11px] font-bold text-white">{t("map.newNearby")}</span>
+                <span className="truncate">{incidentTitle(arrival, lang)}</span>
+                {distanceFrom(lastPosition, arrival) != null && (
+                  <span className="shrink-0 text-muted tnum">{formatDistance(distanceFrom(lastPosition, arrival))}</span>
+                )}
+              </button>
+            </div>
+          )}
+          {pinTip && !weatherAlert && !arrival && (
             <div className="pointer-events-auto flex">
               <button
                 onClick={() => dismissTip("pin")}

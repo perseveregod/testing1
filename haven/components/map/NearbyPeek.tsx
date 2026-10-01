@@ -73,8 +73,9 @@ export function NearbyPeek({
       ? (() => {
           const hood = neighborhoodFor(position);
           if (!hood) return t("near.withinYou", { n: NEAR_RADIUS_MI });
-          // Leave room for the freshness stamp on the same line.
-          return fresh.checkedAt != null ? t("near.hoodShort", { hood, n: NEAR_RADIUS_MI }) : t("near.hoodWithin", { hood, n: NEAR_RADIUS_MI });
+          // Leave room for the freshness stamp on the same line (the radius is
+          // in the title's "within 5 mi" everywhere else).
+          return fresh.checkedAt != null ? hood : t("near.hoodWithin", { hood, n: NEAR_RADIUS_MI });
         })()
       : t("near.withinCenter", { n: NEAR_RADIUS_MI });
 
