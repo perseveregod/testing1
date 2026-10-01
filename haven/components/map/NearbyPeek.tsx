@@ -26,6 +26,7 @@ export function NearbyPeek({
   position,
   now,
   onPick,
+  onLocate,
 }: {
   items: PublicIncident[];
   activeCount: number;
@@ -36,6 +37,8 @@ export function NearbyPeek({
   position: LatLng | null;
   now: number;
   onPick: (id: string) => void;
+  /** When set, the bar offers "Use my location" instead of naming the default area. */
+  onLocate?: (() => void) | null;
 }) {
   const [open, setOpen] = useState(false);
   const active = items.filter((i) => i.status !== "resolved" && i.category !== "missing_pet");
@@ -66,7 +69,20 @@ export function NearbyPeek({
           <>
             <span className={`size-2 rounded-full ${activeCount > 0 ? "bg-live" : "bg-ok"}`} aria-hidden />
             <span className="shrink-0 whitespace-nowrap text-[15px] font-bold tracking-[-0.01em] tnum">{activeLabel(activeCount)}</span>
-            <span className="min-w-0 truncate text-[13px] text-muted">{position ? "near you" : "central Houston"}</span>
+            {onLocate && !position ? (
+              <span
+                role="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onLocate();
+                }}
+                className="min-w-0 truncate text-[13px] font-semibold text-brand"
+              >
+                Locate me
+              </span>
+            ) : (
+              <span className="min-w-0 truncate text-[13px] text-muted">{position ? "near you" : "central Houston"}</span>
+            )}
             {allDemo && (
               <span className="shrink-0 rounded-[4px] bg-white/[0.1] px-1.5 py-px text-[10px] font-semibold uppercase tracking-[0.06em] text-text/70">
                 Demo

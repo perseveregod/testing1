@@ -4,12 +4,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Layers,
   LocateFixed,
-  Navigation,
   Navigation2,
   Search,
   SlidersHorizontal,
   Zap,
-  X,
 } from "lucide-react";
 import { setStormPrefs, useStormPrefs } from "@/lib/client/stormMode";
 import { peekMapFocus, takeMapFocus } from "@/lib/client/mapFocus";
@@ -137,17 +135,10 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [chipsOpen, setChipsOpen] = useState(false);
   const [filters, setFilters] = useState<MapFilters>(DEFAULT_FILTERS);
   const [searchLabel, setSearchLabel] = useState<string | null>(() => peekMapFocus()?.label ?? null);
-  const [promptDismissed, setPromptDismissedState] = useState(promptWasDismissed);
-  const setPromptDismissed = useCallback((v: boolean) => {
-    setPromptDismissedState(v);
-    try {
-      if (v) localStorage.setItem(PROMPT_KEY, "1");
-    } catch {
-      // Storage blocked: it stays dismissed for this visit.
-    }
-  }, []);
+  const [promptDismissed] = useState(promptWasDismissed);
   const [mode, setMode] = useState<MapMode>(savedMode);
   const [layersOpen, setLayersOpen] = useState(false);
   const [camera, setCamera] = useState<Camera>({
@@ -293,16 +284,14 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
         className="pointer-events-none absolute inset-x-0 top-0 z-20 px-3"
         style={{ paddingTop: "calc(var(--safe-top) + 8px)" }}
       >
-        <div className="glass pointer-events-auto mx-auto max-w-lg rounded-[24px] p-2">
-        <div className="flex gap-2">
+        <div className="glass pointer-events-auto mx-auto max-w-lg rounded-[26px] p-1.5">
+        <div className="flex h-11 items-center gap-1">
           <button
             onClick={() => setSearchOpen(true)}
-            className="press flex h-11 min-w-0 flex-1 items-center gap-2.5 rounded-full bg-white/[0.07] px-4 text-left"
+            className="press flex h-11 min-w-0 flex-1 items-center gap-2.5 rounded-full pl-3.5 pr-2 text-left"
           >
             <Search className="size-[18px] shrink-0 text-muted" aria-hidden />
-            <span
-              className={`truncate text-[15.5px] ${searchLabel ? "text-text" : "text-muted"}`}
-            >
+            <span className={`truncate text-[15.5px] ${searchLabel ? "text-text" : "text-muted"}`}>
               {searchLabel ?? "Search a place"}
             </span>
           </button>
@@ -314,30 +303,34 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
               setSelectedId(null);
               setStormPrefs({ on: !storm.on });
             }}
-            className={`press relative flex size-11 shrink-0 items-center justify-center rounded-full ${
-              storm.on ? "storm-on text-white" : "bg-white/[0.07] text-text"
+            className={`press relative flex size-10 shrink-0 items-center justify-center rounded-full ${
+              storm.on ? "storm-on text-white" : "text-text"
             }`}
           >
             <StormIcon className="size-[22px]" active={storm.on} bolt={storm.on ? "#FFD34D" : "#FFC233"} />
           </button>
           {!storm.on && (
-          <button
-            type="button"
-            aria-label={`Filters${filterCount ? ` (${filterCount} active)` : ""}`}
-            onClick={() => setFilterOpen(true)}
-            className="press relative flex size-11 shrink-0 items-center justify-center rounded-full bg-white/[0.07] text-text"
-          >
-            <SlidersHorizontal className="size-[18px]" aria-hidden />
-            {filterCount > 0 && (
-              <span className="haven-pop absolute -right-0.5 -top-0.5 flex size-[18px] items-center justify-center rounded-full bg-text text-[10px] font-bold text-bg tnum ring-2 ring-bg">
-                {filterCount}
-              </span>
-            )}
-          </button>
+            <button
+              type="button"
+              aria-label={`Filters${filterCount ? ` (${filterCount} active)` : ""}`}
+              aria-expanded={chipsOpen || filterCount > 0}
+              onClick={() => setChipsOpen((o) => !o)}
+              className={`press relative flex size-10 shrink-0 items-center justify-center rounded-full ${
+                chipsOpen || filterCount > 0 ? "bg-text text-bg" : "text-text"
+              }`}
+            >
+              <SlidersHorizontal className="size-[18px]" aria-hidden />
+              {filterCount > 0 && (
+                <span className="haven-pop absolute -right-0.5 -top-0.5 flex size-[18px] items-center justify-center rounded-full bg-live text-[10px] font-bold text-white tnum ring-2 ring-bg">
+                  {filterCount}
+                </span>
+              )}
+            </button>
           )}
         </div>
+        {(storm.on || chipsOpen || filterCount > 0) && (
         <div
-          className="no-scrollbar flex items-center gap-1.5 overflow-x-auto pt-2"
+          className="no-scrollbar haven-rise flex items-center gap-1.5 overflow-x-auto px-0.5 pb-1 pt-2"
           role="toolbar"
           aria-label="Quick filters"
         >
@@ -389,7 +382,16 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
               </button>
             );
           })}
+          {!storm.on && (
+            <button
+              onClick={() => setFilterOpen(true)}
+              className="press inline-flex h-9 shrink-0 items-center gap-1 rounded-full px-3 text-[13px] font-semibold text-muted"
+            >
+              More…
+            </button>
+          )}
         </div>
+        )}
         </div>
 
         {/* Status: what the map is showing, and whether it is real. */}
@@ -508,26 +510,6 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
               </button>
             </div>
           )}
-          {showPrompt && (
-            <div className="mb-2 flex justify-center">
-              <div className="glass haven-rise pointer-events-auto inline-flex h-11 items-center gap-1 rounded-full pl-1 pr-1">
-                <button
-                  onClick={request}
-                  className="press inline-flex h-9 items-center gap-2 rounded-full bg-brand px-4 text-[14px] font-semibold text-white"
-                >
-                  <Navigation className="size-4" aria-hidden />
-                  See what&apos;s near you
-                </button>
-                <button
-                  onClick={() => setPromptDismissed(true)}
-                  aria-label="Not now"
-                  className="press inline-flex size-11 items-center justify-center rounded-full text-muted"
-                >
-                  <X className="size-4" aria-hidden />
-                </button>
-              </div>
-            </div>
-          )}
           {!storm.on && !selected && (
             <div className="mb-2">
               <NearbyPeek
@@ -540,6 +522,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
                 position={position}
                 now={now}
                 onPick={setSelectedId}
+                onLocate={showPrompt ? request : null}
               />
             </div>
           )}
