@@ -1,0 +1,41 @@
+# Render Blueprint for ReplyDesk. In Render: New -> Blueprint -> pick this repo.
+# Render fills in everything below and asks only for the values marked sync: false.
+services:
+  - type: web
+    name: replydesk
+    runtime: node
+    repo: https://github.com/perseveregod/testing1
+    branch: claude/inspiring-goldberg-1eoa5x
+    rootDir: review-replies
+    # Free is fine for testing, but its storage is wiped on restart.
+    # Before real customers: change to "starter" and uncomment the disk + DB_FILE below.
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    autoDeploy: true
+    # disk:
+    #   name: replydesk-data
+    #   mountPath: /var/data
+    #   sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: TRUST_PROXY
+        value: "1"
+      # - key: DB_FILE
+      #   value: /var/data/replydesk.db
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PRICE_ID
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: COMPANY_NAME
+        sync: false
+      - key: CONTACT_EMAIL
+        sync: false
+      - key: GOVERNING_LAW
+        sync: false

@@ -11,7 +11,8 @@ const { reviewsFromCsv } = require("./lib/csv");
 const PORT = Number(process.env.PORT) || 3000;
 const DB_FILE = process.env.DB_FILE || path.join(__dirname, "data", "replydesk.db");
 const MODEL = process.env.MODEL || replies.DEFAULT_MODEL;
-const PUBLIC_URL = (process.env.PUBLIC_URL || `http://localhost:${PORT}`).replace(/\/$/, "");
+// RENDER_EXTERNAL_URL is set automatically by Render to the service's public address.
+const PUBLIC_URL = (process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`).replace(/\/$/, "");
 const SECURE_COOKIES = PUBLIC_URL.startsWith("https://");
 const TRUST_PROXY = process.env.TRUST_PROXY === "1";
 const PUBLIC_DIR = path.join(__dirname, "public");
