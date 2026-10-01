@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AI Place</title>
+<meta name="description" content="One shared canvas. Claim a tile, type an idea, and AI draws it in pixel art for everyone to see.">
+<meta property="og:title" content="AI Place">
+<meta property="og:description" content="One shared canvas. Claim a tile, type an idea, and AI draws it in pixel art live.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,600&family=DM+Mono&display=swap">
+<style>
+  /* Layout: full-bleed canvas board, with a docked control panel (right on desktop, bottom sheet on phones). */
+  :root {
+    --board: #15131f;
+    --board-grid: #221f33;
+    --slot: #3a3555;
+    --panel: #f6f4fb;
+    --panel-line: #dcd8ea;
+    --ink: #1c1930;
+    --muted: #6a6585;
+    --accent: #ff4f7b;
+    --accent-ink: #ffffff;
+    --live: #2fd27a;
+    --font-display: "Pixelify Sans", "Courier New", monospace;
+    --font-body: "DM Sans", system-ui, sans-serif;
+    --font-mono: "DM Mono", ui-monospace, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --panel: #1f1c2e;
+      --panel-line: #34304a;
+      --ink: #f0eef8;
+      --muted: #a39ebd;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--board);
+    color: var(--ink);
+    font: 15px/1.5 var(--font-body);
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    grid-template-rows: auto 1fr;
+    overflow: hidden;
+  }
+  header {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 16px;
+    padding-top: calc(10px + env(safe-area-inset-top, 0px));
+    background: var(--board);
+    color: #f0eef8;
+    border-bottom: 1px solid var(--board-grid);
+  }
+  .logo { font: 700 24px/1 var(--font-display); letter-spacing: 0.02em; margin: 0; }
+  .logo span { color: var(--accent); }
+  .stats { display: flex; gap: 14px; font: 13px var(--font-mono); color: #a39ebd; margin-left: auto; flex-wrap: wrap; }
+  .stats b { color: #f0eef8; font-weight: 400; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--live); margin-right: 6px; animation: pulse 2s infinite; }
+  @keyframes pulse { 50% { opacity: 0.35; } }
+
+  #board { position: relative; overflow: hidden; touch-action: none; cursor: grab; min-width: 0; }
+  #board.dragging { cursor: grabbing; }
+  #board canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+  .zoom { position: absolute; right: 12px; bottom: 12px; display: flex; flex-direction: column; gap: 6px; }
+  .zoom button {
+    width: 40px; height: 40px; border-radius: 8px; border: 1px solid var(--slot);
+    background: #221f33; color: #f0eef8; font: 700 20px var(--font-display); cursor: pointer;
+  }
+  .hint {
+    position: absolute; left: 12px; bottom: 12px; padding: 6px 10px; border-radius: 6px;
+    background: rgba(21, 19, 31, 0.85); color: #a39ebd; font: 12px var(--font-mono);
+  }
+
+  aside {
+    background: var(--panel);
+    border-left: 1px solid var(--panel-line);
+    overflow-y: auto;
+    padding: 20px 16px;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    display: flex; flex-direction: column; gap: 20px;
+    min-width: 0;
+  }
+  h2 { font: 700 18px/1.2 var(--font-display); margin: 0 0 8px; text-wrap: balance; }
+  .eyebrow { font: 12px var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 4px; }
+  p { margin: 0; }
+  .muted { color: var(--muted); }
+  label { display: block; font-size: 13px; font-weight: 600; margin: 12px 0 4px; }
+  input[type=text] {
+    width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--panel-line);
+    background: var(--board); color: #f0eef8; font: 15px var(--font-body);
+  }
+  input[type=text]:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chip {
+    border: 1px dashed var(--panel-line); background: transparent; color: var(--muted);
+    border-radius: 999px; padding: 3px 10px; font-size: 12px; cursor: pointer;
+  }
+  .chip:hover { color: var(--ink); border-color: var(--muted); }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; margin-top: 14px; padding: 12px; border: 0; border-radius: 8px;
+    background: var(--accent); color: var(--accent-ink); font: 700 16px var(--font-display); cursor: pointer;
+  }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--panel-line); font: 600 14px var(--font-body); }
+  .row { display: flex; gap: 8px; }
+  .row .btn { margin-top: 8px; }
+  .msg { margin-top: 10px; font-size: 13px; min-height: 1.5em; }
+  .msg.err { color: var(--accent); }
+  .preview { display: flex; gap: 14px; align-items: center; }
+  .preview canvas { width: 96px; height: 96px; image-rendering: pixelated; background: var(--board); border-radius: 6px; flex: none; }
+  .feed { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .feed li { display: flex; gap: 10px; align-items: center; cursor: pointer; padding: 4px; border-radius: 6px; }
+  .feed li:hover { background: var(--panel-line); }
+  .feed canvas { width: 32px; height: 32px; image-rendering: pixelated; background: var(--board); border-radius: 4px; flex: none; }
+  .feed .t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+  .feed .when { margin-left: auto; font: 12px var(--font-mono); color: var(--muted); flex: none; }
+  .banner { font-size: 12px; padding: 8px 10px; border-radius: 6px; border: 1px dashed var(--panel-line); color: var(--muted); }
+
+  @media (max-width: 760px) {
+    body { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; }
+    aside { border-left: 0; border-top: 1px solid var(--panel-line); max-height: 46vh; }
+    .stats { font-size: 12px; gap: 10px; }
+    .hint { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
+</style>
+</head>
+<body>
+<header>
+  <h1 class="logo">AI<span>/</span>PLACE</h1>
+  <div class="stats">
+    <span><span class="dot"></span><b id="watching">1</b> here now</span>
+    <span><b id="count">0</b> tiles drawn</span>
+  </div>
+</header>
+
+<main id="board" aria-label="Shared canvas">
+  <canvas id="cv"></canvas>
+  <div class="hint">drag to pan · scroll to zoom · tap a + to draw</div>
+  <div class="zoom">
+    <button id="zin" aria-label="Zoom in">+</button>
+    <button id="zout" aria-label="Zoom out">−</button>
+    <button id="zfit" aria-label="Fit canvas">⤢</button>
+  </div>
+</main>
+
+<aside>
+  <section id="intro">
+    <p class="eyebrow">How it works</p>
+    <h2>One canvas. Everyone draws. AI does the pixels.</h2>
+    <p class="muted">Pick an empty tile next to the art, describe anything in a few words, and AI draws it as a 16×16 sprite for everyone watching. One tile per minute, so team up.</p>
+  </section>
+
+  <section id="draw" hidden>
+    <p class="eyebrow">Tile <span id="drawPos"></span></p>
+    <h2>What should go here?</h2>
+    <form id="form" autocomplete="off">
+      <label for="prompt">Your idea</label>
+      <input type="text" id="prompt" maxlength="60" placeholder="a frog wearing a crown" required>
+      <div class="chips" id="ideas"></div>
+      <label for="name">Sign it (optional)</label>
+      <input type="text" id="name" maxlength="20" placeholder="your name or @handle">
+      <button class="btn" id="go" type="submit">Draw it</button>
+      <p class="msg" id="msg" role="status"></p>
+    </form>
+  </section>
+
+  <section id="info" hidden>
+    <p class="eyebrow">Tile <span id="infoPos"></span></p>
+    <div class="preview">
+      <canvas id="infoArt" width="16" height="16"></canvas>
+      <div>
+        <h2 id="infoPrompt"></h2>
+        <p class="muted" id="infoBy"></p>
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn ghost" id="copyLink" type="button">Copy link</button>
+      <button class="btn ghost" id="saveImg" type="button">Save canvas</button>
+    </div>
+    <p class="msg" id="infoMsg" role="status"></p>
+  </section>
+
+  <section>
+    <p class="eyebrow">Just drawn</p>
+    <ul class="feed" id="feed"><li class="muted">Nothing yet. Be the first: tap the + in the middle.</li></ul>
+  </section>
+
+  <p class="banner" id="demoBanner" hidden>Demo mode: the server has no AI key yet, so tiles use a free placeholder generator.</p>
+</aside>
+
+<script>
+(() => {
+  const T = 16; // pixels per tile side
+  const tiles = new Map();
+  const pending = new Map();
+  let palette = [];
+  let cooldownMs = 60000;
+  let readyAt = 0;
+  let selected = null;
+
+  const $ = (id) => document.getElementById(id);
+  const cv = $("cv"), ctx = cv.getContext("2d");
+  const board = $("board");
+  const key = (x, y) => x + "," + y;
+
+  const view = { scale: 4, ox: 0, oy: 0 }; // screen px per art px, world origin offset
+
+  const IDEAS = ["a frog wearing a crown", "tiny pixel dragon", "pizza slice", "rubber duck", "haunted house",
+    "astronaut cat", "cherry blossom", "game controller", "mushroom house", "rocket launch", "sleepy panda",
+    "rainbow", "skull with flowers", "lighthouse", "taco", "ghost", "sunflower", "treasure chest"];
+
+  function shuffleIdeas() {
+    const box = $("ideas");
+    box.textContent = "";
+    [...IDEAS].sort(() => Math.random() - 0.5).slice(0, 4).forEach((idea) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "chip"; b.textContent = idea;
+      b.onclick = () => { $("prompt").value = idea; $("prompt").focus(); };
+      box.append(b);
+    });
+  }
+
+  // ----- tile images -----
+  const imgCache = new Map();
+  function tileImage(tile) {
+    const k = key(tile.x, tile.y) + tile.createdAt;
+    if (imgCache.has(k)) return imgCache.get(k);
+    const c = document.createElement("canvas");
+    c.width = c.height = T;
+    paintPixels(c.getContext("2d"), tile.pixels);
+    imgCache.set(k, c);
+    return c;
+  }
+  function paintPixels(g, pixels) {
+    g.clearRect(0, 0, T, T);
+    for (let i = 0; i < T * T; i++) {
+      const p = parseInt(pixels[i], 16);
+      if (!p) continue;
+      g.fillStyle = palette[p];
+      g.fillRect(i % T, Math.floor(i / T), 1, 1);
+    }
+  }
+
+  // ----- geometry -----
+  function bounds() {
+    if (!tiles.size) return { x0: -1, y0: -1, x1: 1, y1: 1 };
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const t of tiles.values()) {
+      x0 = Math.min(x0, t.x); y0 = Math.min(y0, t.y);
+      x1 = Math.max(x1, t.x); y1 = Math.max(y1, t.y);
+    }
+    return { x0: x0 - 1, y0: y0 - 1, x1: x1 + 1, y1: y1 + 1 };
+  }
+  function placeable(x, y) {
+    if (tiles.has(key(x, y)) || pending.has(key(x, y))) return false;
+    if (!tiles.size) return x === 0 && y === 0;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++)
+      if ((dx || dy) && tiles.has(key(x + dx, y + dy))) return true;
+    return false;
+  }
+  function screenToTile(sx, sy) {
+    const s = view.scale * T;
+    return { x: Math.floor((sx - view.ox) / s), y: Math.floor((sy - view.oy) / s) };
+  }
+  function fit() {
+    const b = bounds();
+    const w = board.clientWidth, h = board.clientHeight;
+    const cols = b.x1 - b.x0 + 1, rows = b.y1 - b.y0 + 1;
+    view.scale = Math.max(1, Math.min(8, Math.floor(Math.min(w / (cols * T), h / (rows * T)) * 0.9 * 4) / 4));
+    const s = view.scale * T;
+    view.ox = Math.round(w / 2 - ((b.x0 + b.x1 + 1) / 2) * s);
+    view.oy = Math.round(h / 2 - ((b.y0 + b.y1 + 1) / 2) * s);
+    draw();
+  }
+  function centerOn(x, y) {
+    const s = view.scale * T;
+    view.ox = Math.round(board.clientWidth / 2 - (x + 0.5) * s);
+    view.oy = Math.round(board.clientHeight / 2 - (y + 0.5) * s);
+    draw();
+  }
+
+  // ----- drawing -----
+  let raf = 0;
+  function draw() { if (!raf) raf = requestAnimationFrame(render); }
+  function render(now) {
+    raf = 0;
+    const dpr = window.devicePixelRatio || 1;
+    const w = board.clientWidth, h = board.clientHeight;
+    if (cv.width !== w * dpr || cv.height !== h * dpr) { cv.width = w * dpr; cv.height = h * dpr; }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = "#15131f";
+    ctx.fillRect(0, 0, w, h);
+
+    const s = view.scale * T;
+    const b = bounds();
+    // empty slots in the frame
+    for (let y = b.y0; y <= b.y1; y++) {
+      for (let x = b.x0; x <= b.x1; x++) {
+        const px = view.ox + x * s, py = view.oy + y * s;
+        if (px > w || py > h || px + s < 0 || py + s < 0) continue;
+        if (tiles.has(key(x, y))) continue;
+        ctx.fillStyle = "#1b1828";
+        ctx.fillRect(px + 1, py + 1, s - 2, s - 2);
+        if (placeable(x, y) && s >= 20) {
+          ctx.strokeStyle = "#3a3555";
+          ctx.setLineDash([4, 4]);
+          ctx.strokeRect(px + 2.5, py + 2.5, s - 5, s - 5);
+          ctx.setLineDash([]);
+          ctx.fillStyle = "#5c5680";
+          ctx.font = `700 ${Math.round(s * 0.4)}px "Pixelify Sans", monospace`;
+          ctx.textAlign = "center"; ctx.textBaseline = "middle";
+          ctx.fillText("+", px + s / 2, py + s / 2 + 1);
+        }
+      }
+    }
+    for (const t of tiles.values()) {
+      const px = view.ox + t.x * s, py = view.oy + t.y * s;
+      if (px > w || py > h || px + s < 0 || py + s < 0) continue;
+      ctx.drawImage(tileImage(t), px, py, s, s);
+    }
+    // tiles being drawn right now: shimmer
+    if (pending.size) {
+      const a = 0.25 + 0.2 * Math.sin((now || 0) / 200);
+      for (const p of pending.values()) {
+        const px = view.ox + p.x * s, py = view.oy + p.y * s;
+        ctx.fillStyle = `rgba(255, 79, 123, ${a})`;
+        ctx.fillRect(px + 1, py + 1, s - 2, s - 2);
+      }
+      draw();
+    }
+    if (selected) {
+      const px = view.ox + selected.x * s, py = view.oy + selected.y * s;
+      ctx.strokeStyle = "#ff4f7b"; ctx.lineWidth = 2;
+      ctx.strokeRect(px + 1, py + 1, s - 2, s - 2);
+      ctx.lineWidth = 1;
+    }
+  }
+
+  // ----- pan / zoom -----
+  let drag = null;
+  board.addEventListener("pointerdown", (e) => {
+    if (e.target.closest(".zoom")) return;
+    drag = { x: e.clientX, y: e.clientY, ox: view.ox, oy: view.oy, moved: false };
+    board.setPointerCapture(e.pointerId);
+  });
+  board.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (Math.abs(dx) + Math.abs(dy) > 4) { drag.moved = true; board.classList.add("dragging"); }
+    view.ox = drag.ox + dx; view.oy = drag.oy + dy;
+    draw();
+  });
+  board.addEventListener("pointerup", (e) => {
+    if (drag && !drag.moved) {
+      const r = board.getBoundingClientRect();
+      select(screenToTile(e.clientX - r.left, e.clientY - r.top));
+    }
+    drag = null; board.classList.remove("dragging");
+  });
+  function zoomAt(factor, sx, sy) {
+    const next = Math.max(0.5, Math.min(24, view.scale * factor));
+    const f = next / view.scale;
+    view.ox = sx - (sx - view.ox) * f;
+    view.oy = sy - (sy - view.oy) * f;
+    view.scale = next;
+    draw();
+  }
+  board.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const r = board.getBoundingClientRect();
+    zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX - r.left, e.clientY - r.top);
+  }, { passive: false });
+  $("zin").onclick = () => zoomAt(1.4, board.clientWidth / 2, board.clientHeight / 2);
+  $("zout").onclick = () => zoomAt(1 / 1.4, board.clientWidth / 2, board.clientHeight / 2);
+  $("zfit").onclick = fit;
+  addEventListener("resize", draw);
+
+  // ----- panel -----
+  function select(pos) {
+    const t = tiles.get(key(pos.x, pos.y));
+    if (t) return showInfo(t);
+    if (placeable(pos.x, pos.y)) return showDraw(pos);
+    selected = null; draw();
+  }
+  function showDraw(pos) {
+    selected = pos; draw();
+    $("intro").hidden = true; $("info").hidden = true; $("draw").hidden = false;
+    $("drawPos").textContent = `${pos.x}, ${pos.y}`;
+    $("msg").textContent = ""; $("msg").className = "msg";
+    shuffleIdeas();
+    updateCooldown();
+    $("prompt").focus({ preventScroll: true });
+  }
+  function showInfo(t) {
+    selected = { x: t.x, y: t.y }; draw();
+    $("intro").hidden = true; $("draw").hidden = true; $("info").hidden = false;
+    $("infoPos").textContent = `${t.x}, ${t.y}`;
+    $("infoPrompt").textContent = t.prompt;
+    $("infoBy").textContent = `${t.author ? "by " + t.author + " · " : ""}${ago(t.createdAt)}`;
+    paintPixels($("infoArt").getContext("2d"), t.pixels);
+    $("infoMsg").textContent = "";
+    history.replaceState(null, "", `#t${t.x}_${t.y}`.replace(/-/g, "m"));
+  }
+
+  function ago(ts) {
+    const s = Math.max(1, Math.round((Date.now() - ts) / 1000));
+    if (s < 60) return s + "s ago";
+    if (s < 3600) return Math.round(s / 60) + "m ago";
+    if (s < 86400) return Math.round(s / 3600) + "h ago";
+    return Math.round(s / 86400) + "d ago";
+  }
+
+  function renderFeed() {
+    const feed = $("feed");
+    const recent = [...tiles.values()].sort((a, b) => b.createdAt - a.createdAt).slice(0, 12);
+    if (!recent.length) return;
+    feed.textContent = "";
+    for (const t of recent) {
+      const li = document.createElement("li");
+      const c = document.createElement("canvas"); c.width = c.height = T;
+      paintPixels(c.getContext("2d"), t.pixels);
+      const txt = document.createElement("span"); txt.className = "t";
+      txt.textContent = t.prompt + (t.author ? " · " + t.author : "");
+      const when = document.createElement("span"); when.className = "when"; when.textContent = ago(t.createdAt);
+      li.append(c, txt, when);
+      li.onclick = () => { centerOn(t.x, t.y); showInfo(t); };
+      feed.append(li);
+    }
+    $("count").textContent = tiles.size;
+  }
+
+  function updateCooldown() {
+    const left = readyAt - Date.now();
+    const go = $("go");
+    if (left > 0) {
+      go.disabled = true;
+      go.textContent = `Next tile in ${Math.ceil(left / 1000)}s`;
+      setTimeout(updateCooldown, 500);
+    } else if (!go.dataset.busy) {
+      go.disabled = false;
+      go.textContent = "Draw it";
+    }
+  }
+
+  try { $("name").value = localStorage.getItem("aiplace:name") || ""; } catch {}
+
+  $("form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!selected) return;
+    const go = $("go"), msg = $("msg");
+    const prompt = $("prompt").value.trim();
+    const name = $("name").value.trim();
+    try { localStorage.setItem("aiplace:name", name); } catch {}
+    go.disabled = true; go.dataset.busy = "1"; go.textContent = "Drawing…";
+    msg.className = "msg"; msg.textContent = "The AI is drawing your tile. This takes a few seconds.";
+    try {
+      const res = await fetch("/api/tiles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ x: selected.x, y: selected.y, prompt, name }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.retryMs) readyAt = Date.now() + data.retryMs;
+        throw new Error(data.error || "Something went wrong.");
+      }
+      readyAt = Date.now() + data.cooldownMs;
+      addTile(data.tile);
+      $("prompt").value = "";
+      showInfo(data.tile);
+      $("infoMsg").textContent = "Placed! Copy the link and send it to friends.";
+    } catch (err) {
+      msg.className = "msg err"; msg.textContent = err.message;
+    } finally {
+      delete go.dataset.busy;
+      updateCooldown();
+    }
+  });
+
+  $("copyLink").onclick = async () => {
+    const url = location.href;
+    try { await navigator.clipboard.writeText(url); $("infoMsg").textContent = "Link copied."; }
+    catch { $("infoMsg").textContent = url; }
+  };
+  $("saveImg").onclick = () => {
+    const b = bounds();
+    const out = document.createElement("canvas");
+    const scale = 4;
+    out.width = (b.x1 - b.x0 + 1) * T * scale; out.height = (b.y1 - b.y0 + 1) * T * scale;
+    const g = out.getContext("2d");
+    g.imageSmoothingEnabled = false;
+    g.fillStyle = "#15131f"; g.fillRect(0, 0, out.width, out.height);
+    for (const t of tiles.values())
+      g.drawImage(tileImage(t), (t.x - b.x0) * T * scale, (t.y - b.y0) * T * scale, T * scale, T * scale);
+    const a = document.createElement("a");
+    a.href = out.toDataURL("image/png"); a.download = "ai-place.png"; a.click();
+  };
+
+  // ----- data -----
+  function addTile(t) {
+    tiles.set(key(t.x, t.y), t);
+    pending.delete(key(t.x, t.y));
+    renderFeed(); draw();
+  }
+
+  function parseHash() {
+    const m = /^#t(m?\d+)_(m?\d+)$/.exec(location.hash);
+    if (!m) return null;
+    const n = (s) => (s[0] === "m" ? -Number(s.slice(1)) : Number(s));
+    return { x: n(m[1]), y: n(m[2]) };
+  }
+
+  async function boot() {
+    const data = await (await fetch("/api/tiles")).json();
+    palette = data.palette;
+    cooldownMs = data.cooldownMs;
+    $("demoBanner").hidden = !data.demo;
+    data.tiles.forEach((t) => tiles.set(key(t.x, t.y), t));
+    data.pending.forEach((p) => pending.set(key(p.x, p.y), p));
+    renderFeed();
+    fit();
+    const target = parseHash();
+    if (target && tiles.has(key(target.x, target.y))) {
+      view.scale = Math.max(view.scale, 6);
+      centerOn(target.x, target.y);
+      showInfo(tiles.get(key(target.x, target.y)));
+    }
+
+    const es = new EventSource("/api/stream");
+    es.addEventListener("tile", (e) => addTile(JSON.parse(e.data)));
+    es.addEventListener("pending", (e) => { const p = JSON.parse(e.data); pending.set(key(p.x, p.y), p); draw(); });
+    es.addEventListener("cancel", (e) => { const p = JSON.parse(e.data); pending.delete(key(p.x, p.y)); draw(); });
+    es.addEventListener("watchers", (e) => { $("watching").textContent = JSON.parse(e.data).count; });
+  }
+
+  setInterval(renderFeed, 30000);
+  boot().catch(() => { $("feed").innerHTML = "<li class='muted'>Can't reach the server. Refresh to try again.</li>"; });
+})();
+</script>
+</body>
+</html>

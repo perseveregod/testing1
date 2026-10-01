@@ -1,0 +1,17 @@
+{
+  "name": "ai-place",
+  "version": "0.1.0",
+  "description": "A shared, ever-growing canvas where every tile is pixel art drawn by AI from someone's prompt.",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0"
+  }
+}
