@@ -37,3 +37,15 @@ describe("Spanish", () => {
     expect(timeAgoIn("en", new Date(now - 3 * 3_600_000).toISOString(), now)).toBe("3 hr ago");
   });
 });
+
+import { updateBody } from "@/lib/i18n";
+
+describe("timeline lines", () => {
+  it("translates the server's templates and keeps people's words", () => {
+    expect(updateBody("Reported by Houston Fire Department.", "es")).toBe("Reportado por Houston Fire Department.");
+    expect(updateBody('First reported: "smoke on Elgin"', "es")).toBe('Primer reporte: "smoke on Elgin"');
+    expect(updateBody("Source updated status to contained.", "es")).toBe("La fuente cambió el estado a contenido.");
+    expect(updateBody("Two lanes open now", "es")).toBe("Two lanes open now");
+    expect(updateBody("Reported by Houston Fire Department.", "en")).toBe("Reported by Houston Fire Department.");
+  });
+});

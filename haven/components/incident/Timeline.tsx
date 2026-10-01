@@ -2,7 +2,7 @@
 
 import { clockTime } from "@/lib/time";
 import { useT } from "@/lib/client/lang";
-import type { Key } from "@/lib/i18n";
+import { updateBody, type Key } from "@/lib/i18n";
 import type { IncidentStatus, PublicIncidentUpdate } from "@/lib/types";
 
 const AUTHOR: Record<PublicIncidentUpdate["author"], Key> = {
@@ -13,7 +13,7 @@ const AUTHOR: Record<PublicIncidentUpdate["author"], Key> = {
 };
 
 export function Timeline({ updates }: { updates: PublicIncidentUpdate[] }) {
-  const { t, timeAgo } = useT();
+  const { t, lang, timeAgo } = useT();
   // Newest first reads best on a phone.
   const items = [...updates].reverse();
   return (
@@ -26,11 +26,11 @@ export function Timeline({ updates }: { updates: PublicIncidentUpdate[] }) {
             <p className="text-[13px] text-muted">
               <span className="font-medium text-text/80">{t(AUTHOR[u.author])}</span>
               <span className="text-faint"> · </span>
-              <time dateTime={u.createdAt} title={clockTime(u.createdAt)} className="tnum">
-                {timeAgo(u.createdAt)}
+              <time dateTime={u.createdAt} className="tnum">
+                {clockTime(u.createdAt)} · {timeAgo(u.createdAt)}
               </time>
             </p>
-            <p className="mt-1 break-words text-[15px] leading-[1.5]">{u.body}</p>
+            <p className="mt-1 break-words text-[15px] leading-[1.5]">{updateBody(u.body, lang)}</p>
           </div>
         </li>
       ))}
@@ -43,7 +43,7 @@ const STEP_FOR: Record<IncidentStatus, number> = { under_review: 0, active: 1, c
 
 /** Where the incident is in its life: Reported → Responding → Contained → Cleared. */
 export function StatusStepper({ status, color }: { status: IncidentStatus; color: string }) {
-  const { t } = useT();
+  const { t, es } = useT();
   const STEPS = STEP_KEYS.map((k) => t(k));
   const current = STEP_FOR[status];
   const ended = status === "resolved";
@@ -73,7 +73,7 @@ export function StatusStepper({ status, color }: { status: IncidentStatus; color
           );
         })}
       </div>
-      <div className="relative mt-2 h-4 text-[12px] font-semibold">
+      <div className={`relative mt-2 h-4 font-semibold ${es ? "text-[11px]" : "text-[12px]"}`}>
         {STEPS.map((label, i) => {
           const pct = (i / (STEPS.length - 1)) * 100;
           const shift = i === 0 ? "0%" : i === STEPS.length - 1 ? "-100%" : "-50%";

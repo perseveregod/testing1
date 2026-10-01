@@ -184,8 +184,8 @@ const D = {
   "inc.distance": ["Distance", "Distancia"],
   "inc.fromYou": ["{d} from you", "a {d} de usted"],
   "inc.locationOff": ["Location off", "Ubicación apagada"],
-  "inc.lastUpdate": ["Last update", "Última actualización"],
-  "inc.confirmedBy": ["Confirmed by", "Confirmado por"],
+  "inc.lastUpdate": ["Last update", "Actualizado"],
+  "inc.confirmedBy": ["Confirmed by", "Confirmado"],
   "inc.noOneYet": ["No one yet", "Nadie todavía"],
   "inc.peopleNearby": ["{n} people nearby", "{n} personas cercanas"],
   "inc.personNearby": ["1 person nearby", "1 persona cercana"],
@@ -199,10 +199,10 @@ const D = {
   "inc.thanksStatus": ["Thanks. We'll update the status.", "Gracias. Actualizaremos el estado."],
   "inc.mapAlt": ["Map showing the approximate location: {a}", "Mapa con la ubicación aproximada: {a}"],
   "inc.firstReported": ["First reported", "Primer reporte"],
-  "inc.step.reported": ["Reported", "Reportado"],
-  "inc.step.responding": ["Responding", "En camino"],
+  "inc.step.reported": ["Reported", "Reporte"],
+  "inc.step.responding": ["Responding", "En ruta"],
   "inc.step.contained": ["Contained", "Contenido"],
-  "inc.step.cleared": ["Cleared", "Despejado"],
+  "inc.step.cleared": ["Cleared", "Resuelto"],
   "inc.status": ["Status", "Estado"],
   "inc.who.you": ["You", "Usted"],
   "inc.who.community": ["Someone nearby", "Alguien cercano"],
@@ -427,6 +427,33 @@ export function t(lang: Lang, key: Key, vars?: Vars): string {
 /** Pick the English or Spanish of an inline pair. */
 export function pick(lang: Lang, en: string, es: string): string {
   return lang === "es" ? es : en;
+}
+
+// ---- timeline entries ---------------------------------------------------------
+
+const STATUS_ES: Record<string, string> = { active: "activo", contained: "contenido", resolved: "terminado", under_review: "en revisión" };
+
+/**
+ * Timeline lines are written by the server in English from a few templates.
+ * Translate the template, keep anything a person wrote (the quoted part).
+ */
+export function updateBody(body: string, lang: Lang): string {
+  if (lang !== "es") return body;
+  let m: RegExpMatchArray | null;
+  if ((m = body.match(/^Reported by (.+)\.$/))) return `Reportado por ${m[1]}.`;
+  if (body === "Source reports this has ended.") return "La fuente informa que esto terminó.";
+  if ((m = body.match(/^Source updated status to (\w+)\.$/))) return `La fuente cambió el estado a ${STATUS_ES[m[1]!] ?? m[1]}.`;
+  if (body === "No longer listed as active by the source.") return "La fuente ya no lo lista como activo.";
+  if ((m = body.match(/^First reported: ("[\s\S]*")$/))) return `Primer reporte: ${m[1]}`;
+  if (body === "First reported by someone nearby.") return "Primer reporte de alguien cercano.";
+  if ((m = body.match(/^Reported: ("[\s\S]*")$/))) return `Reportado: ${m[1]}`;
+  if (body === "Reported by someone nearby.") return "Reportado por alguien cercano.";
+  if ((m = body.match(/^Another person reported: ("[\s\S]*")$/))) return `Otra persona reportó: ${m[1]}`;
+  if (body === "Another person nearby reported this.") return "Otra persona cercana reportó esto.";
+  if (body === "Marked critical after multiple people confirmed it.") return "Marcado como crítico después de que varias personas lo confirmaran.";
+  if (body === "Marked as ended by the community.") return "Marcado como terminado por la comunidad.";
+  if (body === "Someone nearby says this has ended.") return "Alguien cercano dice que esto terminó.";
+  return body;
 }
 
 // ---- data that carries its own translations ---------------------------------
