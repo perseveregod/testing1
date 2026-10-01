@@ -24,7 +24,8 @@ export interface SafeWalkState {
 
 /** How long after a missed check-in before we push the person to alert contacts. */
 export const GRACE_MS = 60_000;
-export const DURATIONS_MIN = [10, 15, 30, 45, 60] as const;
+/** 1 minute is there for trying the alarm out. */
+export const DURATIONS_MIN = [1, 10, 15, 30, 45, 60] as const;
 export const MAX_CONTACTS = 5;
 
 const KEY = "haven.safewalk.v1";
@@ -121,20 +122,34 @@ let clock = 0;
 const tickers = new Set<() => void>();
 let timer: ReturnType<typeof setInterval> | null = null;
 
+function tick() {
+  clock = Date.now();
+  tickers.forEach((t) => t());
+}
+
+// Phones pause timers while the screen is off or another app is open. Catch up
+// the moment the page is visible again so a missed check-in shows right away.
+function onVisible() {
+  if (document.visibilityState === "visible") tick();
+}
+
 function subscribeClock(cb: () => void) {
   tickers.add(cb);
   if (!timer) {
     clock = Date.now();
-    timer = setInterval(() => {
-      clock = Date.now();
-      tickers.forEach((t) => t());
-    }, 1000);
+    timer = setInterval(tick, 1000);
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("pageshow", tick);
+    window.addEventListener("focus", tick);
   }
   return () => {
     tickers.delete(cb);
     if (!tickers.size && timer) {
       clearInterval(timer);
       timer = null;
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("pageshow", tick);
+      window.removeEventListener("focus", tick);
     }
   };
 }

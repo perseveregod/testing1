@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { BellRing, Check, MessageSquare, Phone, Plus, Share2, ShieldCheck, Trash2, UserPlus } from "lucide-react";
+import { BellRing, Check, Volume2, MessageSquare, Phone, Plus, Share2, ShieldCheck, Trash2, UserPlus } from "lucide-react";
 import {
   cleanPhone,
   DURATIONS_MIN,
@@ -17,6 +17,7 @@ import {
   type ActiveWalk,
   type TrustedContact,
 } from "@/lib/client/safewalk";
+import { primeAlarm, startAlarm, stopAlarm } from "@/lib/client/alarm";
 import { EMERGENCY_NUMBER } from "@/lib/client/defaults";
 import { useLocation } from "@/components/providers/LocationProvider";
 import { useToast } from "@/components/providers/ToastProvider";
@@ -34,7 +35,7 @@ export function SafeWalkScreen() {
   const [destination, setDestination] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const audio = useRef<AudioContext | null>(null);
+  const [soundBlocked, setSoundBlocked] = useState(false);
   const wake = useRef<WakeLockLike | null>(null);
 
   const update = setSafeWalk;
@@ -45,25 +46,16 @@ export function SafeWalkScreen() {
   const overdue = walk != null && now > 0 && remaining <= 0;
   const alerting = overdue && -remaining >= GRACE_MS;
 
-  // Missed check-in: buzz and beep every few seconds until they respond.
+  // Missed check-in: siren (and vibration where the phone allows it) until they respond.
   useEffect(() => {
     if (!overdue) return;
-    const ring = () => {
-      navigator.vibrate?.([400, 150, 400, 150, 400]);
-      const ctx = audio.current;
-      if (ctx) {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.frequency.value = 880;
-        gain.gain.value = 0.25;
-        osc.connect(gain).connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.6);
-      }
+    const title = document.title;
+    document.title = "⚠️ Check in! · Haven";
+    void startAlarm().then((ok) => setSoundBlocked(!ok));
+    return () => {
+      stopAlarm();
+      document.title = title;
     };
-    ring();
-    const t = setInterval(ring, 5000);
-    return () => clearInterval(t);
   }, [overdue]);
 
   async function keepScreenOn() {
@@ -77,12 +69,8 @@ export function SafeWalkScreen() {
 
   function start() {
     if (!state) return;
-    // Created inside the tap so browsers allow the alarm sound later.
-    try {
-      audio.current ??= new AudioContext();
-    } catch {
-      audio.current = null;
-    }
+    // Must happen inside the tap so browsers allow the alarm sound later.
+    primeAlarm();
     if (!position) request();
     const t = Date.now();
     const next: ActiveWalk = { startedAt: t, endsAt: t + minutes * 60_000, destination: destination.trim().slice(0, 60) };
@@ -92,6 +80,7 @@ export function SafeWalkScreen() {
 
   function finish(message: string) {
     if (!state) return;
+    stopAlarm();
     update({ ...state, walk: null });
     void wake.current?.release().catch(() => {});
     wake.current = null;
@@ -167,6 +156,14 @@ export function SafeWalkScreen() {
                     ? "Let your contacts know now. Haven can't text them for you, so tap a contact to send the message."
                     : "Tap “I'm safe” to stop the alarm, or add more time."}
                 </p>
+                {soundBlocked && (
+                  <button
+                    onClick={() => void startAlarm().then((ok) => setSoundBlocked(!ok))}
+                    className="press mt-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-white/10 px-4 text-[14px] font-semibold"
+                  >
+                    <Volume2 className="size-4" aria-hidden /> Sound the alarm
+                  </button>
+                )}
               </>
             ) : (
               <>
@@ -236,8 +233,9 @@ export function SafeWalkScreen() {
           </section>
 
           <p className="mt-8 text-center text-[12.5px] leading-relaxed text-faint">
-            Keep Haven open during your walk. Phones can pause timers in the background, and Haven can&apos;t contact anyone
-            on its own. If you&apos;re in danger, call {EMERGENCY_NUMBER}.
+            Keep Haven open with the screen on and your volume up. Phones pause websites in the background, iPhones
+            don&apos;t let websites vibrate, and Haven can&apos;t contact anyone on its own. If you&apos;re in danger, call{" "}
+            {EMERGENCY_NUMBER}.
           </p>
         </div>
       </main>
@@ -269,12 +267,15 @@ export function SafeWalkScreen() {
         </section>
 
         <section className="mt-5">
-          <p className="mb-2 text-[13px] font-medium text-muted">Check in after</p>
+          <div className="mb-2 flex items-baseline justify-between">
+            <p className="text-[13px] font-medium text-muted">Check in after (minutes)</p>
+            <p className="text-[12px] text-faint">1 = quick test</p>
+          </div>
           <Segmented
             label="Check-in time"
             value={minutes}
             onChange={setMinutes}
-            options={DURATIONS_MIN.map((m) => ({ value: m, label: `${m} min` }))}
+            options={DURATIONS_MIN.map((m) => ({ value: m, label: String(m) }))}
           />
         </section>
 
