@@ -4,10 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import useSWR from "swr";
 import { BarChart3, Lock, TrendingDown, TrendingUp } from "lucide-react";
-import { getCategory } from "@/lib/categories";
 import { errorMessage, fetcher } from "@/lib/client/api";
 import { DEFAULT_CENTER } from "@/lib/client/defaults";
 import { usePlaces, useViewer } from "@/lib/client/hooks";
+import { useT } from "@/lib/client/lang";
 import type { AreaInsights } from "@/server/services/insights";
 import { useLocation } from "@/components/providers/LocationProvider";
 import { CategoryIcon } from "@/components/incident/CategoryIcon";
@@ -29,16 +29,17 @@ export function InsightsScreen() {
   const { data, error, isLoading, mutate } = useSWR<{ insights: AreaInsights }>(url, fetcher, { keepPreviousData: true });
   const ins = data?.insights;
   const premium = viewer?.limits.insightsDays === 30;
+  const { es, cat } = useT();
 
   return (
     <main className="min-h-dvh pb-nav">
       <PageHeader
-        title="Area insights"
+        title={es ? "Tendencias de la zona" : "Area insights"}
         back="/profile"
         sub={
-          <div className="no-scrollbar flex gap-2 overflow-x-auto px-5 pb-3 pt-1" role="toolbar" aria-label="Area">
+          <div className="no-scrollbar flex gap-2 overflow-x-auto px-5 pb-3 pt-1" role="toolbar" aria-label={es ? "Zona" : "Area"}>
             <Chip active={focus === "me"} onClick={() => setFocus("me")}>
-              Near me
+              {es ? "Cerca de mí" : "Near me"}
             </Chip>
             {places.map((p) => (
               <Chip key={p.id} active={focus === p.id} onClick={() => setFocus(p.id)}>
@@ -59,40 +60,44 @@ export function InsightsScreen() {
         ) : !ins || ins.total === 0 ? (
           <EmptyState
             icon={<BarChart3 className="size-9" strokeWidth={1.5} aria-hidden />}
-            title="Nothing to chart yet"
-            body={`No real incidents within 3 miles in the last ${ins?.days ?? 7} days. Demo data isn't counted.`}
+            title={es ? "Aún no hay nada que graficar" : "Nothing to chart yet"}
+            body={
+              es
+                ? `No hay incidentes reales a menos de 3 millas en los últimos ${ins?.days ?? 7} días. Los datos de demostración no cuentan.`
+                : `No real incidents within 3 miles in the last ${ins?.days ?? 7} days. Demo data isn't counted.`
+            }
           />
         ) : (
           <>
             <div className="haven-rise flex items-end justify-between">
               <div>
                 <p className="text-[13px] text-muted">
-                  Last {ins.days} days · within {ins.radiusMi} mi
+                  {es ? `Últimos ${ins.days} días · a menos de ${ins.radiusMi} mi` : `Last ${ins.days} days · within ${ins.radiusMi} mi`}
                 </p>
                 <p className="mt-1 text-[44px] font-bold leading-none tracking-[-0.04em] tnum">{ins.total}</p>
-                <p className="mt-1 text-[14px] text-muted">incidents</p>
+                <p className="mt-1 text-[14px] text-muted">{es ? "incidentes" : "incidents"}</p>
               </div>
               {ins.trend != null && (
                 <div className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium ${ins.trend > 1.1 ? "bg-danger/12 text-danger" : ins.trend < 0.9 ? "bg-ok/12 text-ok" : "bg-surface-2 text-muted"}`}>
                   {ins.trend > 1.1 ? <TrendingUp className="size-4" aria-hidden /> : ins.trend < 0.9 ? <TrendingDown className="size-4" aria-hidden /> : null}
-                  {Math.round(Math.abs(ins.trend - 1) * 100)}% {ins.trend >= 1 ? "more" : "fewer"} than before
+                  {Math.round(Math.abs(ins.trend - 1) * 100)}% {es ? (ins.trend >= 1 ? "más que antes" : "menos que antes") : `${ins.trend >= 1 ? "more" : "fewer"} than before`}
                 </div>
               )}
             </div>
 
-            <DayChart days={ins.byDay} className="mt-6" />
+            <DayChart days={ins.byDay} className="mt-6" es={es} />
 
             <section className="mt-7">
-              <h2 className="mb-3 text-[13px] font-medium text-muted">By category</h2>
+              <h2 className="mb-3 text-[13px] font-medium text-muted">{es ? "Por categoría" : "By category"}</h2>
               <ul className="space-y-3">
                 {ins.byCategory.map((c) => {
-                  const def = getCategory(c.category);
+                  const { def, label } = cat(c.category);
                   return (
                     <li key={c.category} className="flex items-center gap-3">
                       <CategoryIcon category={c.category} size="sm" />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-baseline justify-between text-[14.5px]">
-                          <span>{def.label}</span>
+                          <span>{label}</span>
                           <span className="text-muted tnum">{c.count}</span>
                         </div>
                         <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-2">
@@ -107,7 +112,8 @@ export function InsightsScreen() {
 
             {ins.busiestHour != null && (
               <p className="mt-6 text-[14px] text-muted">
-                Busiest hour: <span className="text-text tnum">{formatHour(ins.busiestHour)}</span>
+                {es ? "Hora más activa: " : "Busiest hour: "}
+                <span className="text-text tnum">{formatHour(ins.busiestHour, es)}</span>
               </p>
             )}
           </>
@@ -116,7 +122,9 @@ export function InsightsScreen() {
         {!premium && (
           <Link href="/upgrade" transitionTypes={["nav-forward"]} className="press mt-8 flex items-center gap-3 rounded-card bg-surface px-4 py-3.5">
             <Lock className="size-[18px] shrink-0 text-gold" aria-hidden />
-            <span className="flex-1 text-[14px] leading-snug text-muted">Free shows 7 days. Lifetime shows 30 days of trends for every saved place.</span>
+            <span className="flex-1 text-[14px] leading-snug text-muted">
+              {es ? "Gratis muestra 7 días. De por vida muestra 30 días de tendencias para cada lugar guardado." : "Free shows 7 days. Lifetime shows 30 days of trends for every saved place."}
+            </span>
           </Link>
         )}
       </div>
@@ -124,18 +132,18 @@ export function InsightsScreen() {
   );
 }
 
-function formatHour(h: number) {
+function formatHour(h: number, es = false) {
   // The server counts by UTC hour; show it in the viewer's own time zone.
   const now = new Date();
   const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), h));
-  return d.toLocaleTimeString(undefined, { hour: "numeric" });
+  return d.toLocaleTimeString(es ? "es-US" : undefined, { hour: "numeric" });
 }
 
 /** Simple bar chart, one bar per day; no library needed. */
-function DayChart({ days, className = "" }: { days: AreaInsights["byDay"]; className?: string }) {
+function DayChart({ days, className = "", es = false }: { days: AreaInsights["byDay"]; className?: string; es?: boolean }) {
   const max = Math.max(1, ...days.map((d) => d.count));
   return (
-    <figure className={className} aria-label="Incidents per day">
+    <figure className={className} aria-label={es ? "Incidentes por día" : "Incidents per day"}>
       <div className="flex h-24 items-end gap-[3px]">
         {days.map((d, i) => (
           <div
@@ -147,8 +155,8 @@ function DayChart({ days, className = "" }: { days: AreaInsights["byDay"]; class
         ))}
       </div>
       <figcaption className="mt-2 flex justify-between text-[11px] text-faint tnum">
-        <span>{days[0] ? new Date(`${days[0].date}T12:00:00Z`).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : ""}</span>
-        <span>today</span>
+        <span>{days[0] ? new Date(`${days[0].date}T12:00:00Z`).toLocaleDateString(es ? "es-US" : undefined, { month: "short", day: "numeric" }) : ""}</span>
+        <span>{es ? "hoy" : "today"}</span>
       </figcaption>
     </figure>
   );

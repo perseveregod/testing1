@@ -33,11 +33,12 @@ export function useCommunityEvent(id: string | null) {
   return { event: data?.event ?? null, error, isLoading: isLoading && !data, mutate };
 }
 
-/** "Sat, Oct 4 · 11:00 AM" in the viewer's locale. */
-export function formatEventTime(startsAt: string, endsAt: string | null): string {
+/** "Sat, Oct 4 · 11:00 AM" in the viewer's language. */
+export function formatEventTime(startsAt: string, endsAt: string | null, lang: "en" | "es" = "en"): string {
+  const locale = lang === "es" ? "es-US" : undefined;
   const s = new Date(startsAt);
-  const day = s.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
-  const t = (d: Date) => d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  const day = s.toLocaleDateString(locale, { weekday: "short", month: "short", day: "numeric" });
+  const t = (d: Date) => d.toLocaleTimeString(locale, { hour: "numeric", minute: "2-digit" });
   return endsAt ? `${day} · ${t(s)} – ${t(new Date(endsAt))}` : `${day} · ${t(s)}`;
 }
 
@@ -57,3 +58,4 @@ export function eventBucket(startsAt: string, now = Date.now()): "now" | "today"
 }
 
 export const BUCKET_LABEL = { now: "Happening now", today: "Today", tomorrow: "Tomorrow", week: "This week", later: "Coming up" } as const;
+export const BUCKET_LABEL_ES = { now: "Pasando ahora", today: "Hoy", tomorrow: "Mañana", week: "Esta semana", later: "Próximamente" } as const;

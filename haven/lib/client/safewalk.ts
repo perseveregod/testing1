@@ -77,14 +77,24 @@ export function smsHref(phone: string, body: string): string {
   return `sms:${phone}?&body=${encodeURIComponent(body)}`;
 }
 
-export function startMessage(walk: ActiveWalk, where: LatLng | null): string {
-  const until = new Date(walk.endsAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+export function startMessage(walk: ActiveWalk, where: LatLng | null, lang: "en" | "es" = "en"): string {
+  const until = new Date(walk.endsAt).toLocaleTimeString(lang === "es" ? "es-US" : [], { hour: "numeric", minute: "2-digit" });
+  if (lang === "es") {
+    const dest = walk.destination ? ` a ${walk.destination}` : "";
+    const loc = where ? ` Salgo de aquí: ${mapsLink(where)}` : "";
+    return `Voy caminando${dest} y activé un temporizador de Camino seguro. Debería avisar antes de las ${until}.${loc}`;
+  }
   const dest = walk.destination ? ` to ${walk.destination}` : "";
   const loc = where ? ` I'm starting here: ${mapsLink(where)}` : "";
   return `I'm walking${dest} and started a Safe Walk timer. I should check in by ${until}.${loc}`;
 }
 
-export function missedMessage(walk: ActiveWalk, where: LatLng | null): string {
+export function missedMessage(walk: ActiveWalk, where: LatLng | null, lang: "en" | "es" = "en"): string {
+  if (lang === "es") {
+    const dest = walk.destination ? ` a ${walk.destination}` : "";
+    const loc = where ? ` Mi última ubicación conocida: ${mapsLink(where)}` : "";
+    return `No avisé a tiempo en mi Camino seguro de camino${dest}. Por favor llámame o escríbeme para confirmar que estoy bien.${loc}`;
+  }
   const dest = walk.destination ? ` to ${walk.destination}` : "";
   const loc = where ? ` My last known location: ${mapsLink(where)}` : "";
   return `I missed my Safe Walk check-in on my way${dest}. Please call or text me to make sure I'm OK.${loc}`;

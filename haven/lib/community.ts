@@ -4,14 +4,14 @@
 
 export type EventKind = "community_day" | "cleanup" | "meeting" | "market" | "sports" | "family" | "other";
 
-export const EVENT_KINDS: { id: EventKind; label: string; plural: string; color: string }[] = [
-  { id: "community_day", label: "Community day", plural: "Community days", color: "#FF9F0A" },
-  { id: "cleanup", label: "Cleanup", plural: "Cleanups", color: "#30D158" },
-  { id: "meeting", label: "Meeting", plural: "Meetings", color: "#64D2FF" },
-  { id: "market", label: "Market", plural: "Markets", color: "#FFD60A" },
-  { id: "sports", label: "Sports", plural: "Sports", color: "#5E5CE6" },
-  { id: "family", label: "Family", plural: "Family", color: "#FF375F" },
-  { id: "other", label: "Other", plural: "Other", color: "#98989F" },
+export const EVENT_KINDS: { id: EventKind; label: string; plural: string; labelEs: string; pluralEs: string; color: string }[] = [
+  { id: "community_day", label: "Community day", plural: "Community days", labelEs: "Día comunitario", pluralEs: "Días comunitarios", color: "#FF9F0A" },
+  { id: "cleanup", label: "Cleanup", plural: "Cleanups", labelEs: "Limpieza", pluralEs: "Limpiezas", color: "#30D158" },
+  { id: "meeting", label: "Meeting", plural: "Meetings", labelEs: "Reunión", pluralEs: "Reuniones", color: "#64D2FF" },
+  { id: "market", label: "Market", plural: "Markets", labelEs: "Mercado", pluralEs: "Mercados", color: "#FFD60A" },
+  { id: "sports", label: "Sports", plural: "Sports", labelEs: "Deportes", pluralEs: "Deportes", color: "#5E5CE6" },
+  { id: "family", label: "Family", plural: "Family", labelEs: "Familia", pluralEs: "Familia", color: "#FF375F" },
+  { id: "other", label: "Other", plural: "Other", labelEs: "Otro", pluralEs: "Otros", color: "#98989F" },
 ];
 
 export const EVENT_KIND_IDS = EVENT_KINDS.map((k) => k.id) as [EventKind, ...EventKind[]];

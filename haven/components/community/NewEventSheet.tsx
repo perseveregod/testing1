@@ -7,6 +7,7 @@ import { COMMUNITY_LIMITS, EVENT_KINDS, type CommunityEvent, type EventKind } fr
 import type { LatLng } from "@/lib/geo";
 import { MiniMap } from "@/components/map/MiniMap";
 import { SearchSheet } from "@/components/map/SearchSheet";
+import { useT } from "@/lib/client/lang";
 import { useToast } from "@/components/providers/ToastProvider";
 import { Button } from "@/components/ui/Button";
 import { Sheet } from "@/components/ui/Sheet";
@@ -24,6 +25,7 @@ export function NewEventSheet({
   onCreated: (e: CommunityEvent) => void;
 }) {
   const toast = useToast();
+  const { es } = useT();
   const [kind, setKind] = useState<EventKind>("community_day");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -65,7 +67,7 @@ export function NewEventSheet({
         longitude: where.lng,
         clientRequestId: requestId,
       });
-      toast("Posted. Neighbors nearby can see it now.", "success");
+      toast(es ? "Publicado. Los vecinos cercanos ya pueden verlo." : "Posted. Neighbors nearby can see it now.", "success");
       reset();
       onCreated(r.event);
       onClose();
@@ -83,15 +85,15 @@ export function NewEventSheet({
     <Sheet
       open={open}
       onClose={onClose}
-      title="Post an event"
+      title={es ? "Publicar un evento" : "Post an event"}
       footer={
         <Button block size="lg" onClick={submit} loading={busy} disabled={!ready}>
-          Post to the board
+          {es ? "Publicar en el tablero" : "Post to the board"}
         </Button>
       }
     >
       <div className="space-y-4 pb-1">
-        <div className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5" role="radiogroup" aria-label="Kind of event">
+        <div className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5" role="radiogroup" aria-label={es ? "Tipo de evento" : "Kind of event"}>
           {EVENT_KINDS.map((k) => (
             <button
               key={k.id}
@@ -103,17 +105,17 @@ export function NewEventSheet({
               }`}
             >
               <span className="size-2 rounded-full" style={{ background: k.color }} aria-hidden />
-              {k.label}
+              {es ? k.labelEs : k.label}
             </button>
           ))}
         </div>
 
         <label className="block">
-          <span className="sr-only">Event name</span>
+          <span className="sr-only">{es ? "Nombre del evento" : "Event name"}</span>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value.slice(0, COMMUNITY_LIMITS.title))}
-            placeholder="Event name, e.g. Northside Community Day"
+            placeholder={es ? "Nombre del evento, p. ej. Día comunitario de Northside" : "Event name, e.g. Northside Community Day"}
             className={field}
             autoComplete="off"
           />
@@ -121,35 +123,35 @@ export function NewEventSheet({
 
         <div className="grid grid-cols-[1.4fr_1fr_1fr] gap-2">
           <label className="block">
-            <span className="mb-1 block px-1 text-[12.5px] font-semibold text-muted">Date</span>
+            <span className="mb-1 block px-1 text-[12.5px] font-semibold text-muted">{es ? "Fecha" : "Date"}</span>
             <input type="date" value={date} min={defaultDate()} onChange={(e) => setDate(e.target.value)} className={`${field} tnum`} />
           </label>
           <label className="block">
-            <span className="mb-1 block px-1 text-[12.5px] font-semibold text-muted">Starts</span>
+            <span className="mb-1 block px-1 text-[12.5px] font-semibold text-muted">{es ? "Empieza" : "Starts"}</span>
             <input type="time" value={start} onChange={(e) => setStart(e.target.value)} className={`${field} tnum`} />
           </label>
           <label className="block">
-            <span className="mb-1 block px-1 text-[12.5px] font-semibold text-muted">Ends</span>
+            <span className="mb-1 block px-1 text-[12.5px] font-semibold text-muted">{es ? "Termina" : "Ends"}</span>
             <input type="time" value={end} onChange={(e) => setEnd(e.target.value)} className={`${field} tnum`} />
           </label>
         </div>
 
         <div>
-          <span className="mb-1 block px-1 text-[12.5px] font-semibold text-muted">Where</span>
+          <span className="mb-1 block px-1 text-[12.5px] font-semibold text-muted">{es ? "Dónde" : "Where"}</span>
           <div className="flex gap-2">
             <label className="block min-w-0 flex-1">
-              <span className="sr-only">Place name</span>
+              <span className="sr-only">{es ? "Nombre del lugar" : "Place name"}</span>
               <input
                 value={placeName}
                 onChange={(e) => setPlaceName(e.target.value.slice(0, COMMUNITY_LIMITS.placeName))}
-                placeholder="Park, center or street, e.g. Moody Park"
+                placeholder={es ? "Parque, centro o calle, p. ej. Moody Park" : "Park, center or street, e.g. Moody Park"}
                 className={field}
                 autoComplete="off"
               />
             </label>
             <button
               onClick={() => setSearchOpen(true)}
-              aria-label="Search for the place on the map"
+              aria-label={es ? "Buscar el lugar en el mapa" : "Search for the place on the map"}
               className="press flex size-12 shrink-0 items-center justify-center rounded-2xl bg-surface-2 text-brand"
             >
               <Search className="size-5" aria-hidden />
@@ -162,22 +164,22 @@ export function NewEventSheet({
             color="#FF9F0A"
             onChange={setPoint}
             className="mt-2 h-44 overflow-hidden rounded-2xl"
-            label="Map to place the event. Drag to move the pin."
+            label={es ? "Mapa para ubicar el evento. Arrastre para mover el pin." : "Map to place the event. Drag to move the pin."}
             attribution={false}
           />
           <p className="mt-1.5 flex items-start gap-1.5 text-[12.5px] leading-snug text-faint">
             <MapPin className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-            <span>Rounded to about 100 m. Use a public place, not someone&apos;s home.</span>
+            <span>{es ? "Se redondea a unos 100 m. Use un lugar público, no la casa de alguien." : "Rounded to about 100 m. Use a public place, not someone's home."}</span>
           </p>
         </div>
 
         <label className="block">
-          <span className="sr-only">Details</span>
+          <span className="sr-only">{es ? "Detalles" : "Details"}</span>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value.slice(0, COMMUNITY_LIMITS.description))}
             rows={3}
-            placeholder="What to expect, what to bring, who it's for. No phone numbers or links."
+            placeholder={es ? "Qué esperar, qué traer, para quién es. Sin teléfonos ni enlaces." : "What to expect, what to bring, who it's for. No phone numbers or links."}
             className={`${field} resize-none`}
           />
         </label>
