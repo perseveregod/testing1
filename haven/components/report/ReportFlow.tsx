@@ -173,24 +173,19 @@ function StickyFooter({ children }: { children: React.ReactNode }) {
 function StepCategory({ value, onPick }: { value: CategoryId | null; onPick: (c: CategoryId) => void }) {
   return (
     <div className="haven-rise flex flex-1 flex-col">
-      <div className="grid grid-cols-3 gap-2.5">
+      <div className="grid grid-cols-2 gap-2.5">
         {EVERYDAY_CATEGORIES.map((c, i) => (
           <button
             key={c.id}
             onClick={() => onPick(c.id)}
             aria-pressed={value === c.id}
-            style={{ animationDelay: `${i * 30}ms` }}
-            className={`press haven-rise relative flex min-h-[104px] flex-col items-center justify-center gap-2.5 overflow-hidden rounded-card px-2 text-center ${
+            style={{ animationDelay: `${i * 25}ms` }}
+            className={`press haven-rise flex min-h-[72px] items-center gap-3 rounded-card px-3.5 py-3 text-left ${
               value === c.id ? "bg-surface-3 ring-2 ring-text" : "bg-surface hover:bg-surface-2"
             }`}
           >
-            <span
-              className="pointer-events-none absolute -top-10 left-1/2 size-28 -translate-x-1/2 rounded-full opacity-25 blur-2xl"
-              style={{ background: c.color }}
-              aria-hidden
-            />
-            <CategoryIcon category={c.id} size="lg" animated glow />
-            <span className="text-[13px] font-medium leading-tight tracking-[-0.01em]">{c.label}</span>
+            <CategoryIcon category={c.id} size="lg" animated />
+            <span className="min-w-0 text-[15px] font-semibold leading-tight tracking-[-0.01em]">{c.label}</span>
           </button>
         ))}
       </div>

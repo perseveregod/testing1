@@ -61,8 +61,7 @@ export function UpgradeScreen() {
             style={{ maskImage: "linear-gradient(to bottom, black 55%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 55%, transparent 100%)" }}
             aria-hidden
           >
-            <div className="absolute left-[20%] top-[10%] size-72 rounded-full bg-gold/25 blur-3xl" />
-            <div className="absolute right-[10%] top-[30%] size-64 rounded-full bg-brand/15 blur-3xl" />
+            <div className="absolute inset-0" style={{ background: "radial-gradient(70% 60% at 30% 10%, rgba(233,194,122,0.22), transparent 70%), radial-gradient(60% 50% at 85% 40%, rgba(61,139,255,0.14), transparent 70%)" }} />
             
           </div>
           <p className="relative text-[13px] font-semibold uppercase tracking-[0.14em] text-gold">Lifetime</p>

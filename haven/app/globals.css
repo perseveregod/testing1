@@ -159,7 +159,7 @@ body {
 }
 /* Space content above the bottom tab bar (+ home indicator). */
 .pb-nav {
-  padding-bottom: calc(var(--nav-h) + var(--nav-gap) + var(--safe-bottom) + 24px);
+  padding-bottom: calc(var(--nav-h) + var(--nav-gap) + var(--safe-bottom) + 36px);
 }
 .bottom-nav-offset {
   bottom: calc(var(--nav-h) + var(--nav-gap) + var(--safe-bottom));

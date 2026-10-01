@@ -81,15 +81,16 @@ export const CATEGORIES: readonly CategoryDef[] = [
   },
   {
     id: "suspicious",
-    label: "Suspicious Activity",
-    short: "Suspicious",
+    // Named for the behavior, not a vibe: reports describe what someone is doing.
+    label: "Break-in or Theft",
+    short: "Theft",
     color: "#B48CFF",
     group: "police",
     defaultSeverity: "low",
     staleAfterHours: 2,
     dedupeRadiusM: 250,
     dedupeWindowMin: 60,
-    hint: "Describe the activity, never a person's appearance or identity",
+    hint: "Someone breaking into a car or home, or taking something. Describe what they're doing, never how they look",
   },
   {
     id: "severe_weather",

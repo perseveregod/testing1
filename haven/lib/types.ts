@@ -187,6 +187,8 @@ export interface NotificationItem {
   severity: Severity;
   createdAt: string;
   readAt: string | null;
+  /** Sample alert shown in demo mode so the inbox isn't empty. */
+  isDemo?: boolean;
 }
 
 export type PlanId = "free" | "lifetime";

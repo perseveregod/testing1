@@ -46,8 +46,7 @@ export function NearbyPeek({
       >
         <span className="mx-auto mb-1 block h-1 w-9 rounded-full bg-white/25 absolute left-1/2 top-1.5 -translate-x-1/2" aria-hidden />
         <span className="text-[13px] font-semibold text-muted">{position ? "Right now near you" : "Right now in Houston"}</span>
-        <span className="ml-auto text-[12.5px] text-faint tnum">{active.length} active</span>
-        <ChevronUp className={`size-4 text-faint transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
+        <ChevronUp className={`ml-auto size-4 text-faint transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
       </button>
       <ul className="px-2 pb-2">
         {rows.map((i) => {

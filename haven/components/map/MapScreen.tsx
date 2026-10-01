@@ -191,6 +191,15 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
   );
   // The count in the status chip is the shared "near you" number every tab uses.
   const near = useNearYou(position ?? DEFAULT_CENTER, initial);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const [bottomH, setBottomH] = useState(0);
+  useEffect(() => {
+    const el = bottomRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setBottomH(Math.round(e!.contentRect.height)));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const now = Math.floor(useClock(true) / 30_000) * 30_000;
   // An official weather alert in view: offer Storm Mode.
   const weatherAlert = !storm.on && items.some((i) => i.source.kind === "weather" && i.status !== "resolved");
@@ -441,7 +450,10 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
 
       {/* Right: map controls. Pinned above the tab bar; they step aside while a card is up. */}
       {!selected && (
-        <div className="pointer-events-none absolute inset-x-0 z-20 bottom-nav-offset">
+        <div
+          className="pointer-events-none absolute inset-x-0 z-20 bottom-nav-offset transition-transform duration-300"
+          style={{ transform: `translateY(-${bottomH}px)` }}
+        >
           <div className="mx-auto flex max-w-lg justify-end px-4 pb-3">
             <div className="pointer-events-auto flex flex-col items-end gap-2.5">
               <div className="glass flex flex-col overflow-hidden rounded-[18px]">
@@ -490,7 +502,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
 
       {/* Bottom: incident preview or the one-time location prompt */}
       <div className="pointer-events-none absolute inset-x-0 z-30 bottom-nav-offset">
-        <div className="mx-auto max-w-lg px-4 pb-3">
+        <div ref={bottomRef} className="mx-auto max-w-lg px-4 pb-3">
           {storm.on && !selected && (
             <div className="flex flex-col items-center gap-2">
               {!loading && !error && activeCount === 0 && (
@@ -500,27 +512,15 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
               )}
               <button
                 onClick={() => setStormReportOpen(true)}
-                className="press pointer-events-auto inline-flex h-14 items-center gap-2.5 rounded-full bg-[#ffc233] pl-5 pr-6 text-[16px] font-extrabold text-[#1b1300] shadow-[0_10px_30px_-8px_rgba(255,194,51,0.7)]"
+                className="press pointer-events-auto inline-flex h-14 items-center gap-2.5 rounded-full bg-[#ffc233] pl-5 pr-6 text-[16px] font-extrabold text-[#1b1300] shadow-[0_8px_24px_-10px_rgba(0,0,0,0.6)]"
               >
                 <Zap className="size-5 fill-current" aria-hidden />
                 {st.report}
               </button>
             </div>
           )}
-          {!storm.on && !selected && !showPrompt && !near.isLoading && (
-            <div className="mb-2">
-              <NearbyPeek items={near.items} position={position} now={now} onPick={setSelectedId} />
-            </div>
-          )}
-          <IncidentPreview
-            incident={selected}
-            distanceMi={selected ? distanceFrom(position, selected) : null}
-            onClose={() => setSelectedId(null)}
-            onChanged={() => mutate()}
-          />
-
           {showPrompt && (
-            <div className="flex justify-center">
+            <div className="mb-2 flex justify-center">
               <div className="glass haven-rise pointer-events-auto inline-flex h-11 items-center gap-1 rounded-full pl-1 pr-1">
                 <button
                   onClick={request}
@@ -539,6 +539,18 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
               </div>
             </div>
           )}
+          {!storm.on && !selected && !near.isLoading && (
+            <div className="mb-2">
+              <NearbyPeek items={near.items} position={position} now={now} onPick={setSelectedId} />
+            </div>
+          )}
+          <IncidentPreview
+            incident={selected}
+            distanceMi={selected ? distanceFrom(position, selected) : null}
+            onClose={() => setSelectedId(null)}
+            onChanged={() => mutate()}
+          />
+
         </div>
       </div>
 

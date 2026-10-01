@@ -87,12 +87,21 @@ describe("recency and privacy", () => {
 });
 
 describe("feed sections", () => {
-  it("buckets incidents by how long ago they happened", async () => {
-    const { timeSection } = await import("@/components/incident/IncidentCard");
+  it("puts live incidents first, then buckets ended ones by day", async () => {
+    const { timeSection, foldDuplicates } = await import("@/components/incident/IncidentCard");
     const now = new Date(2026, 9, 1, 15, 0).getTime();
-    expect(timeSection(new Date(now - 20 * 60_000).toISOString(), now)).toBe("Last hour");
-    expect(timeSection(new Date(2026, 9, 1, 9, 0).toISOString(), now)).toBe("Earlier today");
-    expect(timeSection(new Date(2026, 8, 30, 22, 0).toISOString(), now)).toBe("Yesterday");
-    expect(timeSection(new Date(2026, 8, 27, 12, 0).toISOString(), now)).toBe("Older");
+    const at = (d: Date, status: "active" | "resolved" = "resolved") => ({ status, createdAt: d.toISOString() });
+    expect(timeSection(at(new Date(2026, 8, 27, 12, 0), "active"), now)).toBe("Live now");
+    expect(timeSection(at(new Date(2026, 9, 1, 9, 0)), now)).toBe("Earlier today");
+    expect(timeSection(at(new Date(2026, 8, 30, 22, 0)), now)).toBe("Yesterday");
+    expect(timeSection(at(new Date(2026, 8, 27, 12, 0)), now)).toBe("Older");
+
+    const base = { category: "fire", title: "Structure fire", approximateAddress: "Main St" };
+    const folded = foldDuplicates([
+      { ...base, id: "ended", status: "resolved", createdAt: "2026-10-01T10:00:00Z" },
+      { ...base, id: "live", status: "active", createdAt: "2026-10-01T09:00:00Z" },
+      { ...base, id: "other", title: "Grass fire", status: "resolved", createdAt: "2026-10-01T08:00:00Z" },
+    ] as never[]);
+    expect(folded.map((i) => i.id)).toEqual(["live", "other"]);
   });
 });

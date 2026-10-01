@@ -41,16 +41,37 @@ export function DispatchRow({ incident, distanceMi }: { incident: PublicIncident
   );
 }
 
-/** Time buckets for the feed: newest first, with readable section headers. */
-export function timeSection(createdAt: string, now = Date.now()): string {
-  const mins = (now - new Date(createdAt).getTime()) / 60_000;
-  if (mins < 60) return "Last hour";
-  const d = new Date(createdAt);
+/** Feed sections: what's still going on, then what has ended. */
+export function timeSection(i: Pick<PublicIncident, "status" | "createdAt">, now = Date.now()): string {
+  if (i.status !== "resolved") return "Live now";
+  const d = new Date(i.createdAt);
   const today = new Date(now);
   if (d.toDateString() === today.toDateString()) return "Earlier today";
   const y = new Date(now - 86_400_000);
   if (d.toDateString() === y.toDateString()) return "Yesterday";
   return "Older";
+}
+
+/**
+ * The same event can arrive twice (a dispatch feed and a neighbor report, or
+ * an active record and its ended twin). Keep one per kind + title + block,
+ * preferring the one still active, then the newest.
+ */
+export function foldDuplicates(items: PublicIncident[]): PublicIncident[] {
+  const best = new Map<string, PublicIncident>();
+  for (const i of items) {
+    const key = `${i.category}|${i.title.trim().toLowerCase()}|${(i.approximateAddress || "").trim().toLowerCase()}`;
+    const cur = best.get(key);
+    if (!cur) {
+      best.set(key, i);
+      continue;
+    }
+    const curLive = cur.status !== "resolved";
+    const live = i.status !== "resolved";
+    if ((live && !curLive) || (live === curLive && i.createdAt > cur.createdAt)) best.set(key, i);
+  }
+  const keep = new Set([...best.values()].map((i) => i.id));
+  return items.filter((i) => keep.has(i.id));
 }
 
 /** One incident as a list row: glyph, title, place, and a two-line preview. */
@@ -103,7 +124,8 @@ export function IncidentRow({ incident, distanceMi }: { incident: PublicIncident
           </p>
         )}
         <div className="mt-2 flex items-center gap-2.5 text-[12.5px] text-faint">
-          <OriginBadge incident={incident} />
+          {/* Demo rows are covered by the one banner above the list. */}
+          {!incident.isDemo && <OriginBadge incident={incident} />}
           {incident.confirmationCount > 0 && (
             <span className="tnum">
               {incident.confirmationCount} {incident.confirmationCount === 1 ? "person" : "people"} saw this
@@ -135,8 +157,8 @@ export function TopIncidentCard({ incident, distanceMi }: { incident: PublicInci
       className="press relative mt-2 block overflow-hidden rounded-card bg-surface p-4 shadow-[inset_0_0_0_1px_var(--line)]"
     >
       <div
-        className="pointer-events-none absolute -right-10 -top-12 size-48 rounded-full opacity-35 blur-3xl"
-        style={{ background: def.color }}
+        className="pointer-events-none absolute inset-0"
+        style={{ background: `radial-gradient(55% 80% at 95% 0%, color-mix(in srgb, ${def.color} 22%, transparent), transparent 70%)` }}
         aria-hidden
       />
       <div className="relative flex items-center gap-2 text-[11.5px] font-bold uppercase tracking-[0.1em] text-muted">
@@ -144,7 +166,7 @@ export function TopIncidentCard({ incident, distanceMi }: { incident: PublicInci
         <span>Happening now</span>
       </div>
       <div className="relative mt-3 flex gap-3.5">
-        <CategoryIcon category={incident.category} size="lg" animated glow />
+        <CategoryIcon category={incident.category} size="lg" animated />
         <div className="min-w-0 flex-1">
           <h3 className="text-[21px] font-extrabold leading-[1.15] tracking-[-0.03em]">{incident.title}</h3>
           <p className="mt-1 truncate text-[13.5px] text-muted">

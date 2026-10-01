@@ -11,7 +11,7 @@ const TABS = [
   { href: "/feed", label: "Feed", icon: List },
   { href: "/report", label: "Report", icon: Plus, primary: true },
   { href: "/safety", label: "Safety", icon: ShieldHalf },
-  { href: "/community", label: "Community", icon: UsersRound },
+  { href: "/community", label: "Events", icon: UsersRound },
   { href: "/profile", label: "Profile", icon: UserRound },
 ] as const;
 

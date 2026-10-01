@@ -268,7 +268,7 @@ export function HazardIcon(p: IconProps) {
 
 export function SuspiciousIcon(p: IconProps) {
   return (
-    <Svg {...p} label="Suspicious activity">
+    <Svg {...p} label="Break-in or theft">
       <g className="aic-blink" style={origin("50%", "50%")}>
         <path
           d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6z"

@@ -4,6 +4,7 @@ import { distanceMiles, formatDistance, METERS_PER_MILE } from "@/lib/geo";
 import { limitsFor, PLAN_LIMITS } from "@/lib/plans";
 import type { AlertPreferences, IncidentRecord, NotificationItem, PlanId } from "@/lib/types";
 import { getStore } from "../store";
+import { config } from "../config";
 
 // Decides who hears about a new incident. A person is notified at most once
 // per incident, either for being near it (approximate last location, only if
@@ -124,4 +125,39 @@ export async function dispatchAlerts(inc: IncidentRecord, excludeUserId: string 
   // Delivery: notifications land in the in-app inbox (polled by clients).
   // A push provider (Web Push / APNs / FCM) plugs in here later.
   return store.insertNotifications([...out.values()]);
+}
+
+/**
+ * Demo mode: with nothing real to alert on, show a few sample alerts built
+ * from the demo incidents (links work, nothing is stored, nothing is unread).
+ */
+export async function sampleAlerts(): Promise<NotificationItem[]> {
+  if (!config.sources.enabled.includes("demo")) return [];
+  const store = getStore();
+  const since = new Date(Date.now() - 24 * 3_600_000).toISOString();
+  const recent = await store.queryIncidents({
+    center: config.sources.demoCenter,
+    radiusM: 6 * METERS_PER_MILE,
+    since,
+    limit: 60,
+  });
+  const PLACES = ["Home", "Work", "School"];
+  return recent
+    .filter((i) => i.sourceId === "demo" && !i.storm && i.status !== "resolved" && SEVERITY_RANK[i.severity] >= SEVERITY_RANK.moderate)
+    .sort((a, b) => SEVERITY_RANK[b.severity] - SEVERITY_RANK[a.severity] || b.createdAt.localeCompare(a.createdAt))
+    .slice(0, 4)
+    .map((inc, n) => {
+      const cat = getCategory(inc.category);
+      return {
+        id: `demo-alert-${inc.id}`,
+        incidentId: inc.id,
+        title: `${cat.label}${inc.severity === "critical" ? " · Critical" : ""}`,
+        body: `${inc.title} near ${PLACES[n % PLACES.length]} · ${inc.approximateAddress || "nearby"}`,
+        category: inc.category,
+        severity: inc.severity,
+        createdAt: inc.createdAt,
+        readAt: inc.createdAt,
+        isDemo: true,
+      };
+    });
 }

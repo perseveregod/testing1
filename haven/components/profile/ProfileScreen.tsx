@@ -117,7 +117,7 @@ export function ProfileScreen() {
         </Group>
 
         <div className="mt-8">
-          <EmergencyNote compact />
+          <EmergencyNote inline />
         </div>
         <p className="mt-5 pb-2 text-center text-[12px] text-faint">Haven · community safety information, not an emergency service</p>
       </div>

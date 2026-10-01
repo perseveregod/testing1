@@ -8,9 +8,8 @@ import { activeLabel, distanceFrom, nearYouParams, useIncidents, useViewer, type
 import { errorMessage } from "@/lib/client/api";
 import { useLocation } from "@/components/providers/LocationProvider";
 import {
-  DispatchRow,
+  foldDuplicates,
   IncidentRow,
-  isDispatch,
   timeSection,
   pickTopIncident,
   TopIncidentCard,
@@ -52,12 +51,12 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
   );
 
   const sorted = useMemo(() => {
-    // Ended incidents sink below active ones when sorted by distance. In time
-    // order they stay where they happened, so the section headers stay true.
-    if (filter !== "nearby" || !position) return items;
-    return [...items].sort(
+    // One row per event, live ones first (nearest or newest), then what ended.
+    const folded = foldDuplicates(items);
+    return [...folded].sort(
       (a, b) =>
-        Number(a.status === "resolved") - Number(b.status === "resolved"),
+        Number(a.status === "resolved") - Number(b.status === "resolved") ||
+        (filter === "nearby" && position ? 0 : b.createdAt.localeCompare(a.createdAt)),
     );
   }, [items, filter, position]);
 
@@ -68,8 +67,6 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
     () => (isGroup ? null : pickTopIncident(items)),
     [items, isGroup],
   );
-  // Sorted by time (not distance) whenever we don't have the person's location.
-  const byTime = !(filter === "nearby" && position);
   const rest = useMemo(
     () => (top ? sorted.filter((i) => i.id !== top.id) : sorted),
     [sorted, top],
@@ -168,10 +165,9 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
               />
             ) : (
               rest.map((i, idx) => {
-                // Section headers only when the list is in time order.
-                const section = byTime ? timeSection(i.createdAt) : null;
+                const section = timeSection(i);
                 const prev = idx > 0 ? rest[idx - 1] : null;
-                const showHeader = section != null && (!prev || timeSection(prev.createdAt) !== section);
+                const showHeader = !prev || timeSection(prev) !== section;
                 return (
                   <div
                     key={i.id}
@@ -182,11 +178,7 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
                         {section}
                       </h2>
                     )}
-                    {isDispatch(i) ? (
-                      <DispatchRow incident={i} distanceMi={distanceFrom(position, i)} />
-                    ) : (
-                      <IncidentRow incident={i} distanceMi={distanceFrom(position, i)} />
-                    )}
+                    <IncidentRow incident={i} distanceMi={distanceFrom(position, i)} />
                   </div>
                 );
               })
@@ -214,7 +206,7 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
             )}
 
           <div className="mt-8">
-            <EmergencyNote compact />
+            <EmergencyNote inline />
           </div>
         </div>
       </PullToRefresh>

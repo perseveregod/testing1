@@ -5,10 +5,10 @@ import Link from "next/link";
 import { Bell, BellOff, MapPin, Radar } from "lucide-react";
 import { apiSend } from "@/lib/client/api";
 import { useNotifications } from "@/lib/client/hooks";
-import { Button } from "@/components/ui/Button";
 import { timeAgo } from "@/lib/time";
 import { CategoryIcon } from "@/components/incident/CategoryIcon";
 import { PageHeader } from "@/components/nav/PageHeader";
+import { DemoNotice } from "@/components/incident/DemoNotice";
 import { ButtonLink } from "@/components/ui/Button";
 import { Segmented } from "@/components/ui/Controls";
 import { RowSkeleton } from "@/components/ui/States";
@@ -68,15 +68,17 @@ export function AlertsScreen() {
             <RowSkeleton />
           </div>
         ) : items.length === 0 ? (
-          <AlertsEmpty onSettings={() => setTab("settings")} />
+          <AlertsEmpty />
         ) : (
+          <>
+          {items.every((n) => n.isDemo) && <DemoNotice className="mb-1 mt-1" />}
           <ul className="divide-y divide-line">
             {items.map((n) => (
               <li key={n.id}>
                 <Link
                   href={`/incidents/${n.incidentId}`}
                   transitionTypes={["nav-forward"]}
-                  onClick={() => !n.readAt && apiSend("/api/notifications/read", "POST", { ids: [n.id] }).then(() => mutate())}
+                  onClick={() => !n.readAt && !n.isDemo && apiSend("/api/notifications/read", "POST", { ids: [n.id] }).then(() => mutate())}
                   className="-mx-4 flex items-start gap-3.5 px-4 py-4 transition active:bg-white/[0.03]"
                 >
                   <CategoryIcon category={n.category} muted={Boolean(n.readAt)} />
@@ -92,6 +94,7 @@ export function AlertsScreen() {
               </li>
             ))}
           </ul>
+          </>
         )}
       </div>
     </main>
@@ -99,7 +102,7 @@ export function AlertsScreen() {
 }
 
 /** Explains the chain Saved place → radius → incident → alert, and what is still missing. */
-function AlertsEmpty({ onSettings }: { onSettings: () => void }) {
+function AlertsEmpty() {
   const { places } = usePlaces();
   const { prefs } = useAlertPrefs();
   const hasPlace = places.length > 0;
@@ -144,9 +147,6 @@ function AlertsEmpty({ onSettings }: { onSettings: () => void }) {
             <MapPin className="size-[18px]" aria-hidden /> Add a saved place
           </ButtonLink>
         )}
-        <Button variant={hasPlace ? "primary" : "secondary"} block size="lg" onClick={onSettings}>
-          {hasPlace ? "Adjust alert settings" : "Alert settings"}
-        </Button>
       </div>
     </div>
   );

@@ -18,7 +18,7 @@ import { formatDistance } from "@/lib/geo";
 import { timeAgo } from "@/lib/time";
 import type { PublicIncident } from "@/lib/types";
 import { useLocation } from "@/components/providers/LocationProvider";
-import { DemoTag, isLive, LiveBadge } from "@/components/incident/Badges";
+import { isLive, LiveBadge } from "@/components/incident/Badges";
 import { CategoryIcon } from "@/components/incident/CategoryIcon";
 import { DemoNotice } from "@/components/incident/DemoNotice";
 import { EmergencyNote } from "@/components/EmergencyNote";
@@ -112,8 +112,8 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
             <CampusCard />
           </div>
 
-          <div className="mt-3">
-            <EmergencyNote compact />
+          <div className="mt-1">
+            <EmergencyNote inline />
           </div>
 
           {/* 2. What is going on nearby */}
@@ -262,7 +262,6 @@ function BriefRow({ incident, distanceMi }: { incident: PublicIncident; distance
           <p className="truncate text-[15px] font-semibold">{incident.title}</p>
           <p className="mt-0.5 flex items-center gap-1.5 text-[12.5px] text-muted">
             {isLive(incident) && <LiveBadge />}
-            {incident.isDemo && <DemoTag />}
             <span className="truncate">
               <span style={{ color: def.color }}>{def.short}</span> · {incident.approximateAddress}
               {distanceMi != null && <span className="tnum"> · {formatDistance(distanceMi)}</span>}
