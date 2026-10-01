@@ -1,0 +1,35 @@
+name: Haven
+
+on:
+  push:
+    branches: [main]
+    paths: ["haven/**", ".github/workflows/haven.yml"]
+  pull_request:
+    paths: ["haven/**", ".github/workflows/haven.yml"]
+
+concurrency:
+  group: haven-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Lint, typecheck, test, build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: haven
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: haven/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+        env:
+          GEOCODER_DISABLED: "1"
+          INCIDENT_SOURCES: demo
