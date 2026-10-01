@@ -107,10 +107,10 @@ body {
    sheen from the top-left and bright rims, like Apple's iOS 26 material. */
 @utility glass {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02)),
-    rgba(20, 23, 32, 0.6);
-  backdrop-filter: blur(14px) saturate(160%);
-  -webkit-backdrop-filter: blur(14px) saturate(160%);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.015)),
+    rgba(20, 23, 32, 0.34);
+  backdrop-filter: blur(22px) saturate(170%);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
   border: 0.5px solid rgba(255, 255, 255, 0.16);
   box-shadow:
     var(--glass-rim),
@@ -208,6 +208,32 @@ body {
 }
 
 /* ---- motion ------------------------------------------------------------ */
+/* Storm Mode toggle when on: deep storm-blue glass with an amber glow. */
+.storm-on {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.02)),
+    linear-gradient(160deg, #27406f, #121d36);
+  border: 0.5px solid rgba(255, 211, 77, 0.45);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 0 0 3px rgba(255, 194, 51, 0.16),
+    0 8px 24px -8px rgba(255, 194, 51, 0.55);
+}
+/* Storm bolt: two quick flickers, then dark, like real lightning. */
+@keyframes haven-bolt {
+  0%, 6%, 100% { opacity: 1; }
+  3% { opacity: 0.25; }
+  9% { opacity: 0.35; }
+  12%, 60% { opacity: 1; }
+  63% { opacity: 0.3; }
+  66% { opacity: 1; }
+}
+.haven-bolt {
+  animation: haven-bolt 4.5s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .haven-bolt { animation: none; }
+}
 @keyframes haven-pulse {
   0% {
     transform: scale(0.7);
@@ -312,25 +338,27 @@ body {
 /* Tabs: the old page sinks back slightly while the new one settles in. */
 @keyframes vt-settle {
   from {
-    scale: 0.985;
-    filter: blur(6px);
+    scale: 0.99;
   }
 }
 @keyframes vt-sink {
   to {
-    scale: 0.985;
-    filter: blur(6px);
+    scale: 0.99;
   }
+}
+/* Old and new overlap fully, so the background never shows through. */
+::view-transition-group(.tab) {
+  animation-duration: 200ms;
 }
 ::view-transition-old(.tab) {
   animation:
-    140ms ease-in both vt-fade reverse,
+    180ms ease-in both vt-fade reverse,
     200ms ease-in both vt-sink;
 }
 ::view-transition-new(.tab) {
   animation:
-    220ms var(--ease-out) 40ms both vt-fade,
-    320ms var(--ease-out) both vt-settle;
+    200ms var(--ease-out) both vt-fade,
+    260ms var(--ease-out) both vt-settle;
 }
 ::view-transition-old(.nav-forward) {
   --vt-offset: -48px;

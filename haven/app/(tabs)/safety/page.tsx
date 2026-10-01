@@ -1,16 +1,15 @@
 import { PageTransition } from "@/components/nav/PageTransition";
 import type { Metadata } from "next";
 import { SafetyScreen } from "@/components/safety/SafetyScreen";
-import { initialIncidents } from "@/server/services/initial";
 
 export const metadata: Metadata = { title: "Safety" };
-export const dynamic = "force-dynamic";
 
-export default async function SafetyPage() {
-  const initial = await initialIncidents(10, 100);
+// Static shell: switching to this tab is instant, and the briefing fills in
+// from the client's cache (the map has usually fetched these incidents already).
+export default function SafetyPage() {
   return (
     <PageTransition>
-      <SafetyScreen initial={initial} />
+      <SafetyScreen />
     </PageTransition>
   );
 }

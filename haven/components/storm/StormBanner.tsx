@@ -1,6 +1,7 @@
 "use client";
 
-import { ExternalLink, Languages, ShieldAlert } from "lucide-react";
+import { ExternalLink, Languages, Phone, Radio } from "lucide-react";
+import { StormIcon } from "./StormIcon";
 import { useState } from "react";
 import { setStormPrefs, useStormPrefs } from "@/lib/client/stormMode";
 import { OFFICIAL_SOURCES, strings } from "@/lib/storm";
@@ -16,32 +17,39 @@ export function StormBanner() {
     <>
       <div
         role="note"
-        className="pointer-events-auto rounded-[16px] border border-[#ff2d20]/40 bg-[#2a0b0a]/90 px-3.5 py-2.5 backdrop-blur-md"
+        className="pointer-events-auto glass overflow-hidden rounded-[18px]"
+        style={{ boxShadow: "inset 3px 0 0 #FFC233, inset 0 1px 0 rgba(255,255,255,0.28), 0 12px 32px -10px rgba(0,0,0,0.55)" }}
       >
-        <p className="flex items-start gap-2 text-[13px] font-semibold leading-snug text-white">
-          <ShieldAlert className="mt-0.5 size-4 shrink-0 text-[#ff6b5f]" aria-hidden />
-          <span>{t.banner}</span>
-        </p>
-        <div className="mt-2 flex items-center gap-2">
+        <div className="flex items-start gap-2.5 px-3.5 pb-2 pt-2.5">
+          <StormIcon className="mt-px size-[22px] shrink-0 text-text" active />
+          <p className="text-[12.5px] font-semibold leading-snug text-text/90">
+            <span className="text-text">{t.stormMode}</span>
+            <span className="text-faint"> · </span>
+            {t.banner}
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5 px-2.5 pb-2.5">
           <button
             onClick={() => setSourcesOpen(true)}
-            className="press inline-flex min-h-9 items-center gap-1.5 rounded-full bg-white/12 px-3 text-[12.5px] font-semibold text-white"
+            className="press inline-flex min-h-9 items-center gap-1.5 rounded-full bg-white/[0.09] px-3 text-[12.5px] font-semibold text-text"
           >
+            <Radio className="size-3.5 text-[#FFC233]" aria-hidden />
             {t.officialSources}
           </button>
           <a
             href={`tel:${EMERGENCY_NUMBER}`}
-            className="press inline-flex min-h-9 items-center rounded-full bg-[#ff2d20] px-3 text-[12.5px] font-bold text-white"
+            className="press inline-flex min-h-9 items-center gap-1 rounded-full bg-live px-3 text-[12.5px] font-bold text-white"
           >
+            <Phone className="size-3.5" aria-hidden />
             {EMERGENCY_NUMBER}
           </a>
           <button
             onClick={() => setStormPrefs({ lang: lang === "en" ? "es" : "en" })}
             aria-label={lang === "en" ? "Cambiar a español" : "Switch to English"}
-            className="press ml-auto inline-flex min-h-9 items-center gap-1 rounded-full bg-white/12 px-3 text-[12.5px] font-semibold text-white"
+            className="press ml-auto inline-flex min-h-9 items-center gap-1 rounded-full px-2.5 text-[12.5px] font-semibold text-muted"
           >
             <Languages className="size-3.5" aria-hidden />
-            {lang === "en" ? "Español" : "English"}
+            {lang === "en" ? "ES" : "EN"}
           </button>
         </div>
       </div>

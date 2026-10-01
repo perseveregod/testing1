@@ -7,7 +7,6 @@ import {
   Navigation,
   Navigation2,
   Search,
-  CloudLightning,
   SlidersHorizontal,
   Zap,
   X,
@@ -17,6 +16,7 @@ import { peekMapFocus, takeMapFocus } from "@/lib/client/mapFocus";
 import { STATE_STYLE, strings, type StormKind } from "@/lib/storm";
 import { STORM_CATEGORIES } from "@/lib/categories";
 import { StormBanner } from "@/components/storm/StormBanner";
+import { StormIcon } from "@/components/storm/StormIcon";
 import { StormReportSheet } from "@/components/storm/StormReportSheet";
 import { DEFAULT_CENTER } from "@/lib/client/defaults";
 import { distanceFrom, useIncidents, useViewer, type InitialIncidents } from "@/lib/client/hooks";
@@ -299,10 +299,10 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
               setStormPrefs({ on: !storm.on });
             }}
             className={`press relative flex size-12 shrink-0 items-center justify-center rounded-full ${
-              storm.on ? "bg-[#ff2d20] text-white shadow-[0_6px_20px_-6px_rgba(255,45,32,0.8)]" : "glass text-text"
+              storm.on ? "storm-on text-white" : "glass text-text"
             }`}
           >
-            <CloudLightning className="size-[19px]" aria-hidden />
+            <StormIcon className="size-[24px]" active={storm.on} bolt={storm.on ? "#FFD34D" : "#FFC233"} />
           </button>
           {!storm.on && (
           <button
@@ -326,11 +326,6 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
           role="toolbar"
           aria-label="Quick filters"
         >
-          {storm.on && (
-            <span className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-[#ff2d20] px-3.5 text-[13px] font-bold text-white">
-              <CloudLightning className="size-4" aria-hidden /> {st.stormMode}
-            </span>
-          )}
           {storm.on &&
             ([null, "power", "flooding", "place"] as (StormKind | null)[]).map((k) => {
               const on = stormFilter === k;
@@ -426,7 +421,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
         {weatherAlert && (
           <div className="pointer-events-auto mx-auto mt-2 flex max-w-lg px-4">
             <div className="glass inline-flex min-h-11 items-center gap-2 rounded-full py-1 pl-3.5 pr-1 text-[13px] font-semibold">
-              <CloudLightning className="size-4 text-[#ff6b5f]" aria-hidden />
+              <StormIcon className="size-5" active bolt="#FFC233" />
               <span>{st.suggest}</span>
               <button
                 onClick={() => setStormPrefs({ on: true })}
@@ -500,7 +495,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
               )}
               <button
                 onClick={() => setStormReportOpen(true)}
-                className="press pointer-events-auto inline-flex h-14 items-center gap-2 rounded-full bg-[#ffc233] px-6 text-[16px] font-extrabold text-[#1b1300] shadow-[0_10px_30px_-8px_rgba(255,194,51,0.7)]"
+                className="press pointer-events-auto inline-flex h-14 items-center gap-2.5 rounded-full bg-[#ffc233] pl-5 pr-6 text-[16px] font-extrabold text-[#1b1300] shadow-[0_10px_30px_-8px_rgba(255,194,51,0.7)]"
               >
                 <Zap className="size-5 fill-current" aria-hidden />
                 {st.report}

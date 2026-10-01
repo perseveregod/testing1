@@ -82,7 +82,8 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
           >
             {!overdue && (
               <div
-                className="pointer-events-none absolute -right-12 -top-14 size-52 rounded-full bg-brand/25 blur-3xl"
+                className="pointer-events-none absolute inset-0"
+                style={{ background: "radial-gradient(60% 90% at 92% 0%, rgba(61,139,255,0.22), rgba(61,139,255,0) 70%)" }}
                 aria-hidden
               />
             )}
