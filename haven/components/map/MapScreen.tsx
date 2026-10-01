@@ -143,7 +143,7 @@ export function MapScreen() {
           </IconButton>
         </div>
         <div className="no-scrollbar pointer-events-auto mx-auto mt-2.5 flex max-w-lg items-center gap-2 overflow-x-auto px-4 pb-1">
-          <div className="inline-flex h-8 shrink-0 items-center gap-2 rounded-full bg-bg/80 pl-1 pr-3 text-[12.5px] font-semibold text-text/90 backdrop-blur-md tnum">
+          <div className="glass inline-flex h-8 shrink-0 items-center gap-2 rounded-full pl-1 pr-3 text-[12.5px] font-semibold text-text/90 tnum">
             {isLoading || (isValidating && !items.length) ? (
               <span className="flex items-center gap-2 pl-2 text-muted">
                 <Spinner className="size-3" /> Loading
@@ -169,8 +169,8 @@ export function MapScreen() {
                 key={q.label}
                 aria-pressed={on}
                 onClick={() => setFilters((f) => ({ ...f, groups: q.id === null ? [] : [q.id] }))}
-                className={`press inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold backdrop-blur-md ${
-                  on ? "bg-text text-bg" : "bg-bg/70 text-text/85 shadow-[inset_0_0_0_1px_var(--line)]"
+                className={`press inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold ${
+                  on ? "bg-text text-bg shadow-[0_4px_14px_-4px_rgba(0,0,0,0.5)]" : "glass text-text/90"
                 }`}
               >
                 {q.color && <span className="size-2 rounded-full" style={{ background: q.color }} aria-hidden />}

@@ -93,9 +93,9 @@ export function ReportFlow() {
   }
 
   return (
-    <main className="flex min-h-dvh flex-col bg-bg">
+    <main className="flex min-h-dvh flex-col">
       {step < 5 && (
-        <header className="sticky top-0 z-20 bg-bg/85 backdrop-blur-xl" style={{ paddingTop: "var(--safe-top)" }}>
+        <header className="glass-bar sticky top-0 z-20" style={{ paddingTop: "var(--safe-top)" }}>
           <div className="mx-auto flex h-12 max-w-lg items-center px-2">
             {step > 1 ? (
               <button onClick={back} aria-label="Previous step" className="press inline-flex size-11 items-center justify-center rounded-full hover:bg-surface-2">

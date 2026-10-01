@@ -22,10 +22,11 @@ export function BottomNav() {
     <ViewTransition name="tab-bar" default="none" share="none">
       <nav
         aria-label="Main"
-        className="fixed inset-x-0 bottom-0 z-40 bg-bg/80 shadow-[inset_0_1px_0_var(--line)] backdrop-blur-2xl backdrop-saturate-150"
-        style={{ paddingBottom: "var(--safe-bottom)" }}
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3"
+        style={{ paddingBottom: "calc(var(--safe-bottom) + var(--nav-gap))" }}
       >
-        <ul className="mx-auto grid h-[var(--nav-h)] max-w-lg grid-cols-6">
+        {/* A floating Liquid Glass capsule, like the iOS 26 tab bar. */}
+        <ul className="glass pointer-events-auto mx-auto grid h-[var(--nav-h)] max-w-lg grid-cols-6 rounded-full px-1">
           {TABS.map((t) => {
             const active =
               t.href === "/" ? path === "/" : path.startsWith(t.href);
@@ -37,7 +38,7 @@ export function BottomNav() {
                     href={t.href}
                     aria-label="Report an incident"
                     transitionTypes={["nav-forward"]}
-                    className="press flex h-11 w-[60px] items-center justify-center rounded-full bg-live text-white shadow-[0_6px_22px_-6px_rgba(255,45,85,0.7)]"
+                    className="press flex h-11 w-[52px] items-center justify-center rounded-full bg-live text-white shadow-[inset_0_1px_0.5px_rgba(255,255,255,0.5),0_6px_22px_-6px_rgba(255,45,85,0.8)]"
                   >
                     <Icon
                       className="size-[22px]"
@@ -54,13 +55,15 @@ export function BottomNav() {
                   href={t.href}
                   transitionTypes={["tab"]}
                   aria-current={active ? "page" : undefined}
-                  className={`flex h-full flex-col items-center justify-center gap-[3px] text-[10.5px] font-medium tracking-[0.01em] transition-colors duration-200 ${
-                    active ? "text-text" : "text-faint hover:text-muted"
+                  className={`mx-0.5 my-1 flex h-[calc(100%-8px)] flex-col items-center justify-center gap-[2px] rounded-full text-[10px] font-semibold tracking-[0.01em] transition-[color,background-color] duration-300 ${
+                    active
+                      ? "bg-white/[0.13] text-text shadow-[inset_0_1px_0.5px_rgba(255,255,255,0.3),inset_0_0_0_0.5px_rgba(255,255,255,0.08)]"
+                      : "text-muted hover:text-text"
                   }`}
                 >
                   <span className="relative">
                     <Icon
-                      className={`size-[23px] transition-transform duration-300 ease-[var(--ease-spring)] ${active ? "scale-105" : ""}`}
+                      className={`size-[21px] transition-transform duration-300 ease-[var(--ease-spring)] ${active ? "scale-105" : ""}`}
                       strokeWidth={active ? 2.2 : 1.8}
                       aria-hidden
                     />

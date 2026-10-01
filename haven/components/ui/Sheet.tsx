@@ -111,7 +111,7 @@ export function Sheet({
         aria-modal
         aria-labelledby={title ? titleId : undefined}
         tabIndex={-1}
-        className={`relative w-full max-w-lg rounded-t-[26px] bg-surface shadow-[0_-12px_40px_rgba(0,0,0,0.45)] outline-none ${
+        className={`relative w-full max-w-lg rounded-t-[28px] glass-sheet outline-none ${
           closing ? "haven-sheet-out" : "haven-sheet-in"
         } ${className}`}
         style={{

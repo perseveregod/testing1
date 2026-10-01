@@ -47,7 +47,7 @@ export function PageHeader({
     <>
       <header
         className={`sticky top-0 z-30 transition-[background-color,box-shadow] duration-300 ${
-          scrolled ? `bg-bg/80 backdrop-blur-2xl backdrop-saturate-150 ${large && sub ? "" : "shadow-[inset_0_-1px_0_var(--line)]"}` : transparent ? "bg-transparent" : "bg-bg"
+          scrolled ? `glass-bar ${large && sub ? "!shadow-none" : ""}` : "bg-transparent"
         }`}
         style={{ paddingTop: "var(--safe-top)" }}
       >
@@ -90,7 +90,7 @@ export function PageHeader({
           {sub && (
             <div
               className={`sticky z-20 transition-[background-color,box-shadow] duration-300 ${
-                scrolled ? "bg-bg/80 shadow-[inset_0_-1px_0_var(--line)] backdrop-blur-2xl backdrop-saturate-150" : "bg-bg"
+                scrolled ? "glass-bar" : "bg-transparent"
               }`}
               style={{ top: "calc(var(--safe-top) + 48px)" }}
             >

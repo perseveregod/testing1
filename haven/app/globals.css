@@ -6,9 +6,10 @@
    status, and a single accent for interactive state. */
 :root {
   --bg: #07080a;
-  --surface: #111317;
-  --surface-2: #1b1d22;
-  --surface-3: #25282e;
+  /* Translucent so the ambient color behind the app glows through (Liquid Glass). */
+  --surface: rgba(255, 255, 255, 0.055);
+  --surface-2: rgba(255, 255, 255, 0.085);
+  --surface-3: rgba(255, 255, 255, 0.13);
   --line: rgba(255, 255, 255, 0.075);
   --line-strong: rgba(255, 255, 255, 0.12);
   --text: #f3f4f6;
@@ -24,6 +25,11 @@
   --gold: #e9c27a;
 
   --glass: rgba(22, 23, 27, 0.72);
+  --glass-tint: rgba(20, 23, 32, 0.42);
+  --glass-rim:
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.42), inset 0 -1px 1px rgba(255, 255, 255, 0.09),
+    inset 1px 0 1px rgba(255, 255, 255, 0.06), inset -1px 0 1px rgba(255, 255, 255, 0.06),
+    inset 0 0 22px rgba(255, 255, 255, 0.045);
   --shadow-float: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 10px 30px -8px rgba(0, 0, 0, 0.55);
 
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
@@ -31,7 +37,9 @@
 
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --nav-h: 58px;
+  --nav-h: 60px;
+  /* Space between the floating tab bar and the bottom of the screen. */
+  --nav-gap: 10px;
   color-scheme: dark;
 }
 
@@ -87,12 +95,41 @@ body {
 @utility tnum {
   font-variant-numeric: tabular-nums;
 }
+/* Liquid Glass: a tinted, blurred, light-boosted backdrop with a specular
+   sheen from the top-left and bright rims, like Apple's iOS 26 material. */
 @utility glass {
-  background: var(--glass);
-  backdrop-filter: saturate(160%) blur(20px);
-  -webkit-backdrop-filter: saturate(160%) blur(20px);
-  box-shadow: var(--shadow-float);
-  border: 1px solid var(--line);
+  background:
+    radial-gradient(130% 90% at 12% -15%, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0) 55%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.015) 60%),
+    var(--glass-tint);
+  backdrop-filter: blur(20px) saturate(185%) brightness(1.08);
+  -webkit-backdrop-filter: blur(20px) saturate(185%) brightness(1.08);
+  border: 0.5px solid rgba(255, 255, 255, 0.16);
+  box-shadow:
+    var(--glass-rim),
+    0 12px 32px -10px rgba(0, 0, 0, 0.55),
+    0 2px 6px -2px rgba(0, 0, 0, 0.3);
+}
+/* Edge-to-edge bars (headers) once content scrolls under them. */
+@utility glass-bar {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.01)),
+    rgba(10, 12, 18, 0.55);
+  backdrop-filter: blur(24px) saturate(190%) brightness(1.05);
+  -webkit-backdrop-filter: blur(24px) saturate(190%) brightness(1.05);
+  box-shadow: inset 0 -0.5px 0 rgba(255, 255, 255, 0.12);
+}
+/* Bottom sheets: more opaque so long text stays easy to read. */
+@utility glass-sheet {
+  background:
+    radial-gradient(120% 60% at 20% 0%, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 50%),
+    rgba(18, 21, 29, 0.78);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.35),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.1),
+    0 -14px 40px rgba(0, 0, 0, 0.5);
 }
 @utility press {
   transition:
@@ -115,10 +152,10 @@ body {
 }
 /* Space content above the bottom tab bar (+ home indicator). */
 .pb-nav {
-  padding-bottom: calc(var(--nav-h) + var(--safe-bottom) + 24px);
+  padding-bottom: calc(var(--nav-h) + var(--nav-gap) + var(--safe-bottom) + 24px);
 }
 .bottom-nav-offset {
-  bottom: calc(var(--nav-h) + var(--safe-bottom));
+  bottom: calc(var(--nav-h) + var(--nav-gap) + var(--safe-bottom));
 }
 
 .no-scrollbar {
@@ -611,6 +648,56 @@ body {
 }
 @media (prefers-reduced-motion: reduce) {
   .haven-blink {
+    animation: none;
+  }
+}
+
+/* ---- liquid glass ------------------------------------------------------------ */
+/* Solid cards get the same bright rim as the glass controls. */
+.bg-surface,
+.bg-surface-2 {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.05);
+}
+
+/* Slow-moving color behind every screen, so the glass has light to bend. */
+.ambient {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background: radial-gradient(120% 80% at 50% 0%, #0d1424 0%, var(--bg) 60%);
+}
+.ambient > span {
+  position: absolute;
+  width: 70vmax;
+  height: 70vmax;
+  border-radius: 9999px;
+  filter: blur(90px);
+  opacity: 0.5;
+}
+@keyframes haven-orbit {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(12vw, 8vh, 0) scale(1.12);
+  }
+  66% {
+    transform: translate3d(-8vw, 14vh, 0) scale(0.92);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+.ambient > span {
+  animation: haven-orbit 28s ease-in-out infinite;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ambient > span {
     animation: none;
   }
 }
