@@ -139,6 +139,11 @@ export function IncidentDetailScreen({ id }: { id: string }) {
             <SeverityLabel severity={incident.severity} />
             <span className="text-[13px] text-muted">{incident.approximateAddress}</span>
           </div>
+          {!ended && incident.endedCount > 0 && incident.source.kind === "user" && (
+            <p className="mt-2 text-[13px] text-muted tnum">
+              {incident.endedCount} of {incident.endedVotesNeeded} people needed say it&apos;s over
+            </p>
+          )}
         </div>
 
         {incident.status !== "under_review" && (

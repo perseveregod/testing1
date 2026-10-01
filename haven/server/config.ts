@@ -72,11 +72,16 @@ export const config = {
     },
   },
   sources: {
-    /** Comma list of adapters to ingest. "demo" seeds labeled demo incidents. */
-    enabled: (env.INCIDENT_SOURCES ?? "demo")
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean),
+    /**
+     * Comma list of adapters to ingest. "demo" seeds labeled demo incidents;
+     * "houston_active" is the City of Houston dispatch page (default area).
+     */
+    get enabled(): string[] {
+      return (env.INCIDENT_SOURCES ?? "demo,houston_active")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+    },
     demoCenter: {
       lat: num("DEMO_CENTER_LAT", num("NEXT_PUBLIC_DEFAULT_LAT", 29.7604)),
       lng: num("DEMO_CENTER_LNG", num("NEXT_PUBLIC_DEFAULT_LNG", -95.3698)),
@@ -86,10 +91,20 @@ export const config = {
     cronSecret: env.CRON_SECRET ?? "",
     contactEmail: env.HAVEN_CONTACT_EMAIL ?? "",
   },
+  email: {
+    /** Resend (resend.com) API key. When set, Haven emails sign-in codes itself instead of through Supabase Auth. */
+    get resendApiKey() {
+      return env.RESEND_API_KEY ?? "";
+    },
+    /** Sender shown on sign-in emails. Resend's shared sender works until a domain is verified. */
+    from: env.EMAIL_FROM || "Haven <onboarding@resend.dev>",
+  },
   geocoder: {
     /** Nominatim-compatible endpoint. Use your own or a paid provider in production. */
     url: (env.GEOCODER_URL || "https://nominatim.openstreetmap.org").replace(/\/$/, ""),
-    disabled: env.GEOCODER_DISABLED === "1",
+    get disabled() {
+      return env.GEOCODER_DISABLED === "1";
+    },
   },
   limits: {
     reportsPerHour: num("REPORTS_PER_HOUR", 5),

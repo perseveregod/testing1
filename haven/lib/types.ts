@@ -112,6 +112,8 @@ export interface PublicIncidentUpdate {
 
 export interface IncidentDetail extends PublicIncident {
   updates: PublicIncidentUpdate[];
+  /** How many "it's over" votes end a community report (official feeds end themselves). */
+  endedVotesNeeded: number;
   viewer: {
     confirmed: boolean;
     markedEnded: boolean;

@@ -93,6 +93,42 @@ export async function searchPlaces(q: string, near?: { lat: number; lng: number 
   );
 }
 
+let censusQueue: Promise<unknown> = Promise.resolve();
+const CENSUS_URL = "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress";
+
+/**
+ * US Census Bureau geocoder: free, no key, handles house numbers and
+ * intersections ("Main St & 5th Ave, Houston, TX") and returns nothing for a
+ * bare street name, which keeps imprecise points off the map. Misses are
+ * cached too, so a feed row that can't be placed isn't retried every run.
+ */
+export async function geocodeCensus(address: string): Promise<{ lat: number; lng: number } | null> {
+  if (config.geocoder.disabled) return null;
+  const key = `c:${address.toLowerCase().replace(/\s+/g, " ").trim()}`;
+  return cached(key, () => {
+    const run = censusQueue.then(
+      async () => {
+        const params = new URLSearchParams({ address, benchmark: "Public_AR_Current", format: "json" });
+        const res = await fetch(`${CENSUS_URL}?${params}`, {
+          headers: { "User-Agent": userAgent(), Accept: "application/json" },
+          signal: AbortSignal.timeout(9000),
+        });
+        if (!res.ok) throw new Error(`census geocoder HTTP ${res.status}`);
+        const body = (await res.json()) as { result?: { addressMatches?: { coordinates?: { x: number; y: number } }[] } };
+        const c = body.result?.addressMatches?.[0]?.coordinates;
+        return c && Number.isFinite(c.x) && Number.isFinite(c.y) ? { lat: c.y, lng: c.x } : null;
+      },
+      () => null,
+    );
+    // Be polite: a short gap between requests even though no limit is published.
+    censusQueue = run.then(
+      () => new Promise((r) => setTimeout(r, 250)),
+      () => new Promise((r) => setTimeout(r, 250)),
+    );
+    return run;
+  });
+}
+
 /**
  * A street-level description of a point, never including a house number,
  * e.g. "Pike St, Downtown". Falls back to "" so callers can choose wording.

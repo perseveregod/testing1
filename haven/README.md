@@ -80,7 +80,7 @@ Each feed is an adapter in `server/sources/` returning normalized incidents. Ing
 | id | Source | Notes |
 |---|---|---|
 | `demo` | Fictional seed data | Default. Labeled DEMO DATA in the API and UI; regenerated every 6 h |
-| `seattle_fire_911` | Seattle Fire real-time 911 (data.seattle.gov) | Routine aid calls and alarms skipped; addresses reduced to the hundred-block, coordinates rounded to ~100 m |
+| `houston_active, seattle_fire_911` | Seattle Fire real-time 911 (data.seattle.gov) | Routine aid calls and alarms skipped; addresses reduced to the hundred-block, coordinates rounded to ~100 m |
 | `nws_alerts` | US National Weather Service active alerts | Moderate and above; polygon center used; alerts that disappear from the feed are resolved |
 
 To add a city, write an adapter (see `seattleFire.ts`) and list it in `server/sources/registry.ts`, then enable it with `INCIDENT_SOURCES=demo,seattle_fire_911,nws_alerts,<your_id>`.
@@ -121,3 +121,19 @@ The moderation rules are a first line of defense. Before launch, add a hosted mo
 - **Rate limits:** the in-memory burst limiter is per instance. Move it to Redis/Upstash when running several instances. Per-account report limits are already durable.
 - **Light mode** is not implemented; the app is dark-only by design for now.
 - Have the Safety & Privacy copy reviewed by counsel before launch.
+
+
+## Live incident feeds
+
+| Source id | What it is | Needs |
+| --- | --- | --- |
+| `demo` | Labeled fictional incidents around the default center | nothing |
+| `houston_active` | City of Houston Fire, EMS and Police dispatches (public page, refreshed every 5 min), placed with the free US Census geocoder | nothing (`HAVEN_CONTACT_EMAIL` is polite) |
+| `seattle_fire_911` | Seattle Fire 911 dispatches from data.seattle.gov | nothing |
+| `nws_alerts` | National Weather Service alerts with a polygon | `NWS_AREA` to limit to a state |
+
+Set `INCIDENT_SOURCES` to a comma list. The default is `demo,houston_active`; drop `demo` once real data is flowing. Live feeds refresh after a response is sent (never on the request path), and new rows are geocoded a dozen at a time.
+
+## Sign-in emails
+
+With `RESEND_API_KEY` set, Haven emails 6-digit codes itself (no hourly cap). Otherwise it uses Supabase Auth's sender, whose default email carries a sign-in link that lands on `/auth/callback`. With neither, the code is shown on screen (development only).

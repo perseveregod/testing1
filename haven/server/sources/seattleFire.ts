@@ -1,6 +1,10 @@
 import { approximate } from "@/lib/geo";
 import type { CategoryId, Severity } from "@/lib/types";
+import { toBlock } from "./format";
+import { zonedLocalToIso } from "./time";
 import { fetchJson, type NormalizedIncident, type SourceAdapter } from "./types";
+
+export { toBlock };
 
 // Seattle Fire Department real-time 911 dispatches (public open data, updated
 // every few minutes). https://data.seattle.gov/resource/kzjm-xkqj
@@ -45,30 +49,10 @@ function classify(type: string): Rule | null {
   return null;
 }
 
-/** "6561 Phinney Ave N" → "6500 block of Phinney Ave N". */
-export function toBlock(address: string): string {
-  const m = address.trim().match(/^(\d+)\s+(.+)$/);
-  if (!m) return address.replace(/\s+/g, " ").trim();
-  const block = Math.floor(Number(m[1]) / 100) * 100;
-  return `${block} block of ${titleCase(m[2]!)}`;
-}
-
-function titleCase(s: string) {
-  return s.toLowerCase().replace(/\b([a-z])/g, (c) => c.toUpperCase()).replace(/\b(Ne|Nw|Se|Sw|N|S|E|W)\b/g, (x) => x.toUpperCase());
-}
 
 /** The feed's timestamps are Seattle wall-clock time without an offset. */
 export function seattleLocalToIso(local: string): string {
-  const asUtc = new Date(`${local.replace(/\.\d+$/, "")}Z`);
-  const tzName = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/Los_Angeles",
-    timeZoneName: "shortOffset",
-  })
-    .formatToParts(asUtc)
-    .find((p) => p.type === "timeZoneName")?.value;
-  const m = tzName?.match(/GMT([+-]\d+)/);
-  const offsetH = m ? Number(m[1]) : -8;
-  return new Date(asUtc.getTime() - offsetH * 3_600_000).toISOString();
+  return zonedLocalToIso(local, "America/Los_Angeles");
 }
 
 export const seattleFireAdapter: SourceAdapter = {

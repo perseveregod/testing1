@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { after } from "next/server";
 import type { IncidentRecord } from "@/lib/types";
 import { config } from "../config";
 import { ADAPTERS } from "../sources/registry";
@@ -35,14 +36,24 @@ export function stableIncidentId(sourceId: string, externalId: string): string {
 }
 
 /**
- * Make sure this instance has data before answering. The first request waits;
- * later ones refresh in the background (a no-op when nothing is due).
+ * Make sure this instance has data before answering. The first request waits
+ * only for the fast sources (demo seed); live feeds, which may geocode and
+ * take seconds, always refresh after the response has been sent.
  */
 export async function ensureIngested(): Promise<void> {
-  const ingest = ingestAll().catch((err) => console.warn("[haven] ingest failed", err));
   if (!globalThis.__havenIngestedOnce) {
-    await ingest;
     globalThis.__havenIngestedOnce = true;
+    await ingestAll(false, { fastOnly: true }).catch((err) => console.warn("[haven] ingest failed", err));
+  }
+  afterResponse(() => ingestAll().catch((err) => console.warn("[haven] ingest failed", err)));
+}
+
+/** Runs work once the response is out; falls back to fire-and-forget outside a request (tests). */
+function afterResponse(fn: () => Promise<unknown>) {
+  try {
+    after(fn);
+  } catch {
+    void fn();
   }
 }
 
@@ -55,23 +66,24 @@ export function enabledAdapters(): SourceAdapter[] {
   return ADAPTERS.filter((a) => on.has(a.meta.id));
 }
 
-/** Ingest sources that are due. `force` ignores the interval. */
-export function ingestAll(force = false): Promise<IngestResult[]> {
+/** Ingest sources that are due. `force` ignores the interval; `fastOnly` skips live feeds. */
+export function ingestAll(force = false, opts: { fastOnly?: boolean } = {}): Promise<IngestResult[]> {
   if (!running) {
-    running = runIngest(force).finally(() => {
+    running = runIngest(force, Boolean(opts.fastOnly)).finally(() => {
       running = null;
     });
   }
   return running;
 }
 
-async function runIngest(force: boolean): Promise<IngestResult[]> {
+async function runIngest(force: boolean, fastOnly: boolean): Promise<IngestResult[]> {
   const store = getStore();
   const known = new Map((await store.listSources()).map((s) => [s.id, s]));
   const results: IngestResult[] = [];
   const now = new Date();
 
   for (const adapter of enabledAdapters()) {
+    if (fastOnly && !adapter.rolling) continue;
     const prev = known.get(adapter.meta.id);
     const last = prev?.lastSyncedAt ? new Date(prev.lastSyncedAt).getTime() : 0;
     const due = adapter.rolling
@@ -94,17 +106,20 @@ async function runIngest(force: boolean): Promise<IngestResult[]> {
 async function ingestOne(adapter: SourceAdapter, now: Date): Promise<IngestResult> {
   const store = getStore();
   const sourceId = adapter.meta.id;
-  const items = await adapter.fetch({
+  const fetched = await adapter.fetch({
     now,
     demoCenter: config.sources.demoCenter,
     userAgent: `Haven/0.1 (${config.sources.contactEmail || "community safety app"})`,
+    isKnown: async (externalId) => Boolean(await store.getIncidentByExternalId(sourceId, externalId)),
   });
+  const items = Array.isArray(fetched) ? fetched : fetched.items;
   const result: IngestResult = { source: sourceId, fetched: items.length, inserted: 0, updated: 0, resolved: 0 };
 
   // Demo data is regenerated wholesale so its timestamps stay recent.
   if (adapter.rolling) await store.deleteIncidentsBySource(sourceId);
 
-  const seen = new Set<string>();
+  // Everything the source still lists as active, whether or not it was returned as an item.
+  const seen = new Set<string>(Array.isArray(fetched) ? [] : fetched.activeExternalIds);
   for (const item of items) {
     seen.add(item.externalId);
     const existing = adapter.rolling ? null : await store.getIncidentByExternalId(sourceId, item.externalId);

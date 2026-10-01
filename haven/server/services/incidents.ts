@@ -122,6 +122,7 @@ export async function getIncidentDetail(
       createdAt: u.createdAt,
       author: authorLabel(u.authorId, u.kind, viewer?.id ?? null),
     })),
+    endedVotesNeeded: votesToResolve(rec),
     viewer: {
       confirmed: votes.includes("confirm"),
       markedEnded: votes.includes("ended"),
@@ -343,6 +344,11 @@ export async function confirmIncident(id: string, user: UserRecord) {
   return added;
 }
 
+/** Community reports end after this many votes: at least the configured floor, or half the confirmers. */
+function votesToResolve(rec: Pick<IncidentRecord, "confirmationCount">): number {
+  return Math.max(config.limits.endedVotesToResolve, Math.ceil((rec.confirmationCount + 1) / 2));
+}
+
 export async function markEnded(id: string, user: UserRecord) {
   const store = getStore();
   const rec = await openIncident(id);
@@ -357,7 +363,7 @@ export async function markEnded(id: string, user: UserRecord) {
   const resolve =
     isCommunity &&
     (fresh.reporterId === user.id ||
-      fresh.endedCount >= Math.max(config.limits.endedVotesToResolve, Math.ceil((fresh.confirmationCount + 1) / 2)));
+      fresh.endedCount >= votesToResolve(fresh));
   await store.insertUpdate({
     id: randomUUID(),
     incidentId: id,

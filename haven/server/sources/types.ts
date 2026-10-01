@@ -22,6 +22,18 @@ export interface SourceContext {
   now: Date;
   demoCenter: { lat: number; lng: number };
   userAgent: string;
+  /** True when this source already stored an item with this id; lets adapters skip expensive work (geocoding) for it. */
+  isKnown: (externalId: string) => Promise<boolean>;
+}
+
+/**
+ * Adapters that can't produce every active item on each run (e.g. geocoding
+ * a few new ones per run) return this shape: `activeExternalIds` is the full
+ * active set, used to resolve items that have disappeared from the feed.
+ */
+export interface FetchResult {
+  items: NormalizedIncident[];
+  activeExternalIds: string[];
 }
 
 export interface SourceAdapter {
@@ -35,7 +47,7 @@ export interface SourceAdapter {
   rolling?: boolean;
   /** Whether new items from this source should notify subscribers. */
   notify: boolean;
-  fetch(ctx: SourceContext): Promise<NormalizedIncident[]>;
+  fetch(ctx: SourceContext): Promise<NormalizedIncident[] | FetchResult>;
 }
 
 export async function fetchJson(url: string, ctx: SourceContext, timeoutMs = 8000): Promise<unknown> {

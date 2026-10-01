@@ -20,6 +20,31 @@ function demoCode(email: string, window: number): string {
   return String(mac.readUInt32BE(0) % 1_000_000).padStart(6, "0");
 }
 
+/** Haven sends its own code emails when a Resend key is set; Supabase Auth otherwise; on-screen codes with neither. */
+function ownCodes(): boolean {
+  return Boolean(config.email.resendApiKey) || !config.store.supabaseAnonKey;
+}
+
+async function sendCodeEmail(email: string, code: string) {
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${config.email.resendApiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: config.email.from,
+      to: [email],
+      subject: `${code} is your Haven sign-in code`,
+      text: `Your Haven sign-in code is ${code}. It works for 10 minutes. If you didn't ask for it, ignore this email.`,
+      html: `<p>Your Haven sign-in code is</p><p style="font-size:28px;font-weight:700;letter-spacing:6px;margin:12px 0">${code}</p><p>It works for 10 minutes. If you didn't ask for it, ignore this email.</p>`,
+    }),
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!res.ok) {
+    const detail = (await res.text().catch(() => "")).slice(0, 300);
+    console.warn("[haven] resend failed", res.status, detail);
+    throw new ApiError(502, "Couldn't send the email. Try again shortly.", "email_failed");
+  }
+}
+
 function supabaseAuth() {
   if (!config.store.supabaseUrl || !config.store.supabaseAnonKey) return null;
   return createClient(config.store.supabaseUrl, config.store.supabaseAnonKey, {
@@ -30,6 +55,10 @@ function supabaseAuth() {
 export async function startEmailSignIn(email: string, ip: string, origin?: string): Promise<{ devCode?: string; mode: "code" | "link" }> {
   rateLimit(`otp-ip:${ip}`, 10, 3_600_000);
   rateLimit(`otp-email:${email}`, 5, 3_600_000);
+  if (config.email.resendApiKey) {
+    await sendCodeEmail(email, demoCode(email, Math.floor(Date.now() / WINDOW_MS)));
+    return { mode: "code" };
+  }
   const auth = supabaseAuth();
   if (auth) {
     // Supabase's default email (editable only with custom SMTP) carries a
@@ -54,7 +83,7 @@ export async function startEmailSignIn(email: string, ip: string, origin?: strin
 }
 
 async function verifyCode(email: string, code: string): Promise<boolean> {
-  const auth = supabaseAuth();
+  const auth = ownCodes() ? null : supabaseAuth();
   if (auth) {
     const { data, error } = await auth.verifyOtp({ email, token: code, type: "email" });
     return !error && Boolean(data.user);
