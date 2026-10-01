@@ -8,6 +8,7 @@ import { ingestAll } from "@/server/services/ingest";
 import { limitsFor } from "@/lib/plans";
 import type { IncidentRecord, Viewer } from "@/lib/types";
 import { listQuerySchema } from "@/lib/validation";
+import { config } from "@/server/config";
 
 let store: LocalStore;
 const P = { lat: 47.6097, lng: -122.3331 };
@@ -124,7 +125,9 @@ describe("community actions", () => {
 describe("listing & plans", () => {
   it("ingests labeled demo data", async () => {
     await ingestAll(true);
-    const q = listQuerySchema.parse({ lat: String(P.lat), lng: String(P.lng), radiusMi: "10" });
+    // Demo incidents are seeded around the demo center (downtown Houston).
+    const c = config.sources.demoCenter;
+    const q = listQuerySchema.parse({ lat: String(c.lat), lng: String(c.lng), radiusMi: "10" });
     const { items } = await listIncidents(q, null);
     expect(items.length).toBeGreaterThan(10);
     expect(items.every((i) => i.isDemo && i.source.kind === "demo")).toBe(true);

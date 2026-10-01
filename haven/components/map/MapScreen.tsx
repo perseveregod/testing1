@@ -7,11 +7,23 @@ import { distanceFrom, useIncidents, useViewer } from "@/lib/client/hooks";
 import type { LatLng } from "@/lib/geo";
 import { useLocation } from "@/components/providers/LocationProvider";
 import { IncidentPreview } from "@/components/incident/IncidentPreview";
+import { LiveBadge } from "@/components/incident/Badges";
+import { getCategory, type FilterGroup } from "@/lib/categories";
 import { IconButton } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/States";
 import { activeFilterCount, DEFAULT_FILTERS, FilterSheet, filterParams, type MapFilters } from "./FilterSheet";
 import { IncidentMap, type MapHandle, type Viewport } from "./IncidentMap";
 import { SearchSheet } from "./SearchSheet";
+
+/** One-tap category filters along the top of the map. */
+const QUICK: { id: FilterGroup | null; label: string; color?: string }[] = [
+  { id: null, label: "All" },
+  { id: "police", label: "Police", color: getCategory("police").color },
+  { id: "fire", label: "Fire", color: getCategory("fire").color },
+  { id: "medical", label: "Medical", color: getCategory("medical").color },
+  { id: "traffic", label: "Traffic", color: getCategory("traffic_accident").color },
+  { id: "weather", label: "Weather", color: getCategory("severe_weather").color },
+];
 
 const RADIUS_BUCKETS = [1, 2, 5, 10, 25, 50];
 
@@ -103,26 +115,42 @@ export function MapScreen() {
             )}
           </IconButton>
         </div>
-        <div className="mx-auto mt-2.5 flex max-w-lg justify-center px-4">
-          <div className="pointer-events-auto inline-flex h-7 items-center gap-2 rounded-full bg-bg/70 px-3 text-[12.5px] font-medium text-muted backdrop-blur-md tnum">
+        <div className="no-scrollbar pointer-events-auto mx-auto mt-2.5 flex max-w-lg items-center gap-2 overflow-x-auto px-4 pb-1">
+          <div className="inline-flex h-8 shrink-0 items-center gap-2 rounded-full bg-bg/80 pl-1 pr-3 text-[12.5px] font-semibold text-text/90 backdrop-blur-md tnum">
             {isLoading || (isValidating && !items.length) ? (
-              <>
+              <span className="flex items-center gap-2 pl-2 text-muted">
                 <Spinner className="size-3" /> Loading
-              </>
+              </span>
             ) : error ? (
-              <button onClick={() => mutate()} className="text-danger">
+              <button onClick={() => mutate()} className="pl-2 text-danger">
                 Couldn&apos;t load · Retry
               </button>
             ) : (
               <>
-                <span className={`size-1.5 rounded-full ${activeCount ? "bg-danger" : "bg-ok"}`} aria-hidden />
+                {activeCount > 0 ? <LiveBadge size="md" /> : <span className="ml-2 size-2 rounded-full bg-ok" aria-hidden />}
                 <span>
-                  {activeCount} active in view
-                  {demoCount > 0 && <span className="text-faint"> · demo</span>}
+                  {activeCount} active
+                  {demoCount > 0 && <span className="font-medium text-faint"> · demo</span>}
                 </span>
               </>
             )}
           </div>
+          {QUICK.map((q) => {
+            const on = q.id === null ? filters.groups.length === 0 : filters.groups.length === 1 && filters.groups[0] === q.id;
+            return (
+              <button
+                key={q.label}
+                aria-pressed={on}
+                onClick={() => setFilters((f) => ({ ...f, groups: q.id === null ? [] : [q.id] }))}
+                className={`press inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold backdrop-blur-md ${
+                  on ? "bg-text text-bg" : "bg-bg/70 text-text/85 shadow-[inset_0_0_0_1px_var(--line)]"
+                }`}
+              >
+                {q.color && <span className="size-2 rounded-full" style={{ background: q.color }} aria-hidden />}
+                {q.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 

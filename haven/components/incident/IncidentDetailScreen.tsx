@@ -16,10 +16,10 @@ import { MiniMap } from "@/components/map/MiniMap";
 import { PageHeader } from "@/components/nav/PageHeader";
 import { ActionButton, ButtonLink } from "@/components/ui/Button";
 import { EmptyState, ErrorState, Skeleton } from "@/components/ui/States";
-import { DemoTag, SeverityLabel, StatusPill } from "./Badges";
+import { DemoTag, isLive, LiveBadge, SeverityLabel, StatusPill } from "./Badges";
 import { CategoryIcon } from "./CategoryIcon";
 import { AddInfoSheet, FlagSheet } from "./IncidentActions";
-import { Timeline } from "./Timeline";
+import { StatusStepper, Timeline } from "./Timeline";
 
 export function IncidentDetailScreen({ id }: { id: string }) {
   const { position } = useLocation();
@@ -38,7 +38,7 @@ export function IncidentDetailScreen({ id }: { id: string }) {
     setBusy(kind);
     try {
       await apiSend(`/api/incidents/${id}/${kind}`, "POST");
-      toast(kind === "confirm" ? "Confirmed. Thanks for helping neighbors." : "Thanks. We'll update the status.", "success");
+      toast(kind === "confirm" ? "Thanks. Your neighbors will see it was confirmed." : "Thanks. We'll update the status.", "success");
       await mutate();
     } catch (err) {
       toast(errorMessage(err), "error");
@@ -137,6 +137,7 @@ export function IncidentDetailScreen({ id }: { id: string }) {
             <CategoryIcon category={incident.category} size="xl" muted={ended} animated glow />
           </div>
           <p className="flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.1em]" style={{ color: ended ? "var(--muted)" : def.color }}>
+            {isLive(incident) && <LiveBadge size="md" />}
             {def.label}
             {incident.isDemo && <DemoTag />}
           </p>
@@ -147,6 +148,12 @@ export function IncidentDetailScreen({ id }: { id: string }) {
             <span className="text-[13px] text-muted">{incident.approximateAddress}</span>
           </div>
         </div>
+
+        {incident.status !== "under_review" && (
+          <div className="haven-rise mt-6 rounded-[18px] bg-surface px-4 pb-3 pt-4" style={{ animationDelay: "40ms" }}>
+            <StatusStepper status={incident.status} color={def.color} />
+          </div>
+        )}
 
         {incident.description && (
           <p className="haven-rise mt-6 whitespace-pre-line break-words text-[17px] leading-[1.55] text-text/90" style={{ animationDelay: "80ms" }}>
@@ -159,7 +166,7 @@ export function IncidentDetailScreen({ id }: { id: string }) {
           <Fact label="Distance" value={incident.distanceMi != null ? `${formatDistance(incident.distanceMi)} from you` : "Location off"} />
           <Fact label="Reported" value={dateTime(incident.createdAt)} />
           <Fact label="Last update" value={timeAgo(lastUpdate)} />
-          <Fact label="Confirmations" value={String(incident.confirmationCount)} />
+          <Fact label="Saw it" value={`${incident.confirmationCount} ${incident.confirmationCount === 1 ? "person" : "people"}`} />
           <Fact
             label="Source"
             value={
@@ -191,7 +198,7 @@ export function IncidentDetailScreen({ id }: { id: string }) {
         <div className="haven-rise mt-6 grid grid-cols-4 gap-2" style={{ animationDelay: "200ms" }}>
           <ActionButton
             icon={<Check className="size-[22px]" strokeWidth={2.2} />}
-            label={incident.viewer.isReporter ? "Yours" : incident.viewer.confirmed ? "Confirmed" : "Confirm"}
+            label={incident.viewer.isReporter ? "Yours" : incident.viewer.confirmed ? "You saw it" : "I see it"}
             active={incident.viewer.confirmed}
             onClick={() => vote("confirm")}
             disabled={busy !== null || incident.viewer.confirmed || incident.viewer.isReporter || ended}

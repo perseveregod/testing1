@@ -1,5 +1,5 @@
 import { timeAgo, clockTime } from "@/lib/time";
-import type { PublicIncidentUpdate } from "@/lib/types";
+import type { IncidentStatus, PublicIncidentUpdate } from "@/lib/types";
 
 const AUTHOR: Record<PublicIncidentUpdate["author"], string> = {
   you: "You",
@@ -30,5 +30,58 @@ export function Timeline({ updates }: { updates: PublicIncidentUpdate[] }) {
         </li>
       ))}
     </ol>
+  );
+}
+
+const STEPS = ["Reported", "Responding", "Contained", "Cleared"] as const;
+const STEP_FOR: Record<IncidentStatus, number> = { under_review: 0, active: 1, contained: 2, resolved: 3 };
+
+/** Where the incident is in its life: Reported → Responding → Contained → Cleared. */
+export function StatusStepper({ status, color }: { status: IncidentStatus; color: string }) {
+  const current = STEP_FOR[status];
+  const ended = status === "resolved";
+  return (
+    <div role="group" aria-label={`Status: ${STEPS[current]}`}>
+      <div className="flex items-center">
+        {STEPS.map((label, i) => {
+          const done = i <= current;
+          const isCurrent = i === current && !ended;
+          return (
+            <div key={label} className="flex flex-1 items-center last:flex-none">
+              <span className="relative flex size-3.5 shrink-0 items-center justify-center" aria-hidden>
+                {isCurrent && <span className="haven-pulse absolute inset-0 rounded-full" style={{ background: color }} />}
+                <span
+                  className={`relative size-3.5 rounded-full ${done ? "" : "bg-surface-3 ring-1 ring-line-strong"}`}
+                  style={done ? { background: ended ? "var(--ok)" : color } : undefined}
+                />
+              </span>
+              {i < STEPS.length - 1 && (
+                <span
+                  className="mx-1.5 h-[3px] flex-1 rounded-full"
+                  style={{ background: i < current ? (ended ? "var(--ok)" : color) : "var(--surface-3)" }}
+                  aria-hidden
+                />
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <div className="relative mt-2 h-4 text-[12px] font-semibold">
+        {STEPS.map((label, i) => {
+          const pct = (i / (STEPS.length - 1)) * 100;
+          const shift = i === 0 ? "0%" : i === STEPS.length - 1 ? "-100%" : "-50%";
+          return (
+            <span
+              key={label}
+              className={`absolute top-0 whitespace-nowrap ${i === current ? "text-text" : i < current ? "text-muted" : "text-faint"}`}
+              style={{ left: `${pct}%`, transform: `translateX(${shift})` }}
+              aria-current={i === current ? "step" : undefined}
+            >
+              {label}
+            </span>
+          );
+        })}
+      </div>
+    </div>
   );
 }

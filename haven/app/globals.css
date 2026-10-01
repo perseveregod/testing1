@@ -5,8 +5,8 @@
    heavy borders. Color is reserved for meaning: incident categories,
    status, and a single accent for interactive state. */
 :root {
-  --bg: #0b0c0f;
-  --surface: #141519;
+  --bg: #07080a;
+  --surface: #111317;
   --surface-2: #1b1d22;
   --surface-3: #25282e;
   --line: rgba(255, 255, 255, 0.075);
@@ -14,8 +14,10 @@
   --text: #f3f4f6;
   --muted: #9b9fa8;
   --faint: #686d77;
-  --brand: #6ee0c6;
-  --brand-ink: #04211b;
+  --brand: #3d8bff;
+  --brand-ink: #ffffff;
+  /* Signal red for anything happening right now: LIVE badges, the report button. */
+  --live: #ff2d55;
   --danger: #ff5f57;
   --warn: #f5b84b;
   --ok: #4cd18a;
@@ -49,6 +51,7 @@
   --color-warn: var(--warn);
   --color-ok: var(--ok);
   --color-gold: var(--gold);
+  --color-live: var(--live);
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
   --ease-out-soft: var(--ease-out);
@@ -72,7 +75,7 @@ body {
 }
 
 ::selection {
-  background: rgba(110, 224, 198, 0.3);
+  background: rgba(61, 139, 255, 0.35);
 }
 
 :focus-visible {
@@ -578,4 +581,36 @@ body {
 /* Live icons get a faint bloom in their own color. */
 .aic-live {
   filter: drop-shadow(0 0 2.5px color-mix(in srgb, currentColor 65%, transparent));
+}
+
+/* ---- live ------------------------------------------------------------------ */
+/* Red "on air" badge used for incidents that are happening right now. */
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 6px;
+  background: var(--live);
+  color: #fff;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  box-shadow: 0 0 16px -2px rgba(255, 45, 85, 0.55);
+}
+@keyframes haven-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.haven-blink {
+  animation: haven-blink 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .haven-blink {
+    animation: none;
+  }
 }

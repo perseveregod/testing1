@@ -11,7 +11,7 @@ import type { PublicIncident } from "@/lib/types";
 import { useToast } from "@/components/providers/ToastProvider";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { useDragDismiss, usePresence } from "@/components/ui/Sheet";
-import { DemoTag, SeverityLabel, sourceLabel, StatusPill } from "./Badges";
+import { DemoTag, isLive, LiveBadge, SeverityLabel, sourceLabel, StatusPill } from "./Badges";
 import { CategoryIcon } from "./CategoryIcon";
 
 /** Floating preview card shown when a map marker is tapped. Drag down to dismiss. */
@@ -105,9 +105,10 @@ function PreviewCard({
           <div className="min-w-0 flex-1 pt-0.5">
             <p className="flex items-center gap-2 text-[13px] font-medium" style={{ color: ended ? "var(--muted)" : def.color }}>
               {def.label}
+              {isLive(incident) && <LiveBadge />}
               {incident.isDemo && <DemoTag />}
             </p>
-            <h2 className="mt-0.5 line-clamp-2 text-[18px] font-semibold leading-snug tracking-[-0.015em]">{incident.title}</h2>
+            <h2 className="mt-0.5 line-clamp-2 text-[19px] font-bold leading-snug tracking-[-0.02em]">{incident.title}</h2>
           </div>
           <button
             onClick={onClose}
@@ -148,7 +149,7 @@ function PreviewCard({
             aria-label={confirmed ? "Confirmed" : "Confirm you see this too"}
           >
             <Check className="size-5" strokeWidth={2.4} aria-hidden />
-            <span className="max-[360px]:sr-only">{confirmed ? "Confirmed" : "Confirm"}</span>
+            <span className="max-[360px]:sr-only">{confirmed ? "You saw it" : "I see it"}</span>
           </Button>
           <Button variant="secondary" onClick={share} aria-label="Share">
             <Share2 className="size-5" aria-hidden />

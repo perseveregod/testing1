@@ -36,7 +36,7 @@ export function BottomNav() {
                     href={t.href}
                     aria-label="Report an incident"
                     transitionTypes={["nav-forward"]}
-                    className="press flex h-10 w-14 items-center justify-center rounded-full bg-text text-bg"
+                    className="press flex h-11 w-[60px] items-center justify-center rounded-full bg-live text-white shadow-[0_6px_22px_-6px_rgba(255,45,85,0.7)]"
                   >
                     <Icon
                       className="size-[22px]"

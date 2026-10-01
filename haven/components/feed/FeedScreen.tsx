@@ -7,7 +7,7 @@ import { DEFAULT_CENTER } from "@/lib/client/defaults";
 import { distanceFrom, useIncidents, useViewer } from "@/lib/client/hooks";
 import { errorMessage } from "@/lib/client/api";
 import { useLocation } from "@/components/providers/LocationProvider";
-import { IncidentRow } from "@/components/incident/IncidentCard";
+import { IncidentRow, pickTopIncident, TopIncidentCard } from "@/components/incident/IncidentCard";
 import { EmergencyNote } from "@/components/EmergencyNote";
 import { PageHeader } from "@/components/nav/PageHeader";
 import { ButtonLink } from "@/components/ui/Button";
@@ -51,11 +51,13 @@ export function FeedScreen() {
   }, [items, filter]);
 
   const activeCount = items.filter((i) => i.status !== "resolved").length;
+  const top = useMemo(() => (isGroup ? null : pickTopIncident(items)), [items, isGroup]);
+  const rest = useMemo(() => (top ? sorted.filter((i) => i.id !== top.id) : sorted), [sorted, top]);
 
   return (
     <main className="min-h-dvh pb-nav">
       <PageHeader
-        title="Feed"
+        title="Near you"
         large
         sub={
           <div className="no-scrollbar flex gap-2 overflow-x-auto px-5 pb-3 pt-1" role="toolbar" aria-label="Feed filters">
@@ -83,6 +85,8 @@ export function FeedScreen() {
           </button>
         )}
 
+        {!isLoading && !error && top && <TopIncidentCard incident={top} distanceMi={distanceFrom(position, top)} />}
+
         {!isLoading && !error && sorted.length > 0 && (
           <p className="px-0 pb-1 pt-2 text-[13px] text-faint tnum">
             {activeCount} active · last {data?.sinceHours === 24 ? "24 hours" : `${Math.round((data?.sinceHours ?? 24) / 24)} days`}
@@ -106,7 +110,7 @@ export function FeedScreen() {
               }
             />
           ) : (
-            sorted.map((i, idx) => (
+            rest.map((i, idx) => (
               <div key={i.id} style={{ "--i": Math.min(idx, 10) } as React.CSSProperties}>
                 <IncidentRow incident={i} distanceMi={distanceFrom(position, i)} />
               </div>

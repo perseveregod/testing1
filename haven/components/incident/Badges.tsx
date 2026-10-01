@@ -63,3 +63,19 @@ export function SourceBadge({ incident }: { incident: PublicIncident }) {
   const verified = incident.source.kind !== "user" || !incident.unverified;
   return <span className={`text-[13px] ${verified ? "text-muted" : "text-faint"}`}>{sourceLabel(incident)}</span>;
 }
+
+/** Active and either fresh (under an hour) or serious: worth a LIVE badge. */
+export function isLive(i: Pick<PublicIncident, "status" | "severity" | "createdAt">, now = Date.now()): boolean {
+  if (i.status !== "active") return false;
+  const fresh = now - new Date(i.createdAt).getTime() < 60 * 60_000;
+  return fresh || i.severity === "high" || i.severity === "critical";
+}
+
+export function LiveBadge({ size = "sm" }: { size?: "sm" | "md" }) {
+  return (
+    <span className={`live-badge ${size === "md" ? "px-2 py-[3px] text-[11px]" : "px-1.5 py-[1px] text-[9.5px]"}`}>
+      <span className="haven-blink size-[5px] rounded-full bg-white" aria-hidden />
+      Live
+    </span>
+  );
+}
