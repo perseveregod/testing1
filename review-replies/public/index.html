@@ -28,7 +28,7 @@
 
   .hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 56px; align-items: center; padding-block: 40px 88px; }
   .pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); font-size: 14px; color: var(--muted); }
-  .pill b { color: var(--star); font-weight: 600; letter-spacing: 1px; }
+  .pill b { color: var(--star); font-weight: 600; letter-spacing: 1px; white-space: nowrap; }
   .hero h1 { font-size: clamp(40px, 6vw, 68px); font-weight: 800; margin-top: 18px; letter-spacing: -0.025em; }
   .hero h1 .hl { position: relative; white-space: nowrap; color: var(--brand); }
   .hero h1 .hl::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0.06em; height: 0.18em; background: var(--star); opacity: 0.45; border-radius: 4px; z-index: -1; }
@@ -103,18 +103,85 @@
   .final p { opacity: 0.85; margin-top: 10px; font-size: 18px; }
   .final .btn { background: var(--brand-ink); color: var(--brand); margin-top: 24px; }
 
+  /* ----- live layer ----- */
+  .sky { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+  .sky i { position: absolute; bottom: -40px; font-style: normal; color: var(--star); opacity: 0; animation: rise linear infinite; }
+  @keyframes rise {
+    0% { transform: translateY(0) rotate(0deg) scale(0.8); opacity: 0; }
+    12% { opacity: var(--o, 0.35); }
+    85% { opacity: var(--o, 0.35); }
+    100% { transform: translateY(-110vh) rotate(160deg) scale(1.1); opacity: 0; }
+  }
+  .pill b span { display: inline-block; animation: twinkle 2.4s ease-in-out infinite; }
+  .pill b span:nth-child(2) { animation-delay: 0.2s; } .pill b span:nth-child(3) { animation-delay: 0.4s; }
+  .pill b span:nth-child(4) { animation-delay: 0.6s; } .pill b span:nth-child(5) { animation-delay: 0.8s; }
+  @keyframes twinkle { 0%, 70%, 100% { transform: scale(1); } 80% { transform: scale(1.35) rotate(12deg); } }
+
+  .play { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 14px; }
+  .play .lbl { font-size: 13px; font-weight: 600; color: var(--muted); }
+  .seg { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); }
+  .seg button { border: 0; background: transparent; color: var(--muted); font: 600 13px var(--font-body); padding: 6px 12px; border-radius: 999px; cursor: pointer; transition: background .2s, color .2s, transform .15s; }
+  .seg button:active { transform: scale(0.94); }
+  .seg button[aria-pressed=true] { background: var(--ink); color: var(--bg); }
+  .seg.stars-seg button[aria-pressed=true] { background: var(--star); color: #1a1405; }
+  .gcard { transition: transform .5s cubic-bezier(.2,.8,.2,1), box-shadow .5s; transform-style: preserve-3d; will-change: transform; }
+  .gcard.flip { animation: pop .45s cubic-bezier(.2,.8,.2,1); }
+  @keyframes pop { 0% { transform: scale(0.97) translateY(6px); opacity: .6; } 100% { transform: none; opacity: 1; } }
+  .mood { position: absolute; left: -14px; bottom: 26px; padding: 8px 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); font-size: 13px; font-weight: 600; box-shadow: 0 12px 30px -16px rgba(0,0,0,.4); animation: bob 4s ease-in-out infinite; }
+  .mood b { color: var(--brand); }
+  @keyframes bob { 50% { transform: translateY(-6px); } }
+
+  .marquee { border-block: 1px solid var(--line); background: var(--surface); overflow: hidden; padding-block: 14px; position: relative; }
+  .marquee::before, .marquee::after { content: ""; position: absolute; top: 0; bottom: 0; width: 80px; z-index: 1; pointer-events: none; }
+  .marquee::before { left: 0; background: linear-gradient(90deg, var(--surface), transparent); }
+  .marquee::after { right: 0; background: linear-gradient(-90deg, var(--surface), transparent); }
+  .marquee .track { display: flex; gap: 36px; width: max-content; animation: slide 38s linear infinite; font: 600 17px var(--font-display); color: var(--muted); white-space: nowrap; }
+  .marquee:hover .track { animation-play-state: paused; }
+  .marquee .track span::after { content: "★"; color: var(--star); margin-left: 36px; }
+  @keyframes slide { to { transform: translateX(-50%); } }
+
+  .spot { position: relative; overflow: hidden; isolation: isolate; transition: transform .25s ease, border-color .25s; }
+  .spot::before { content: ""; position: absolute; inset: 0; z-index: -1; opacity: 0; transition: opacity .3s;
+    background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, var(--star) 16%, transparent), transparent 70%); }
+  .spot:hover::before { opacity: 1; }
+  .spot:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--brand) 40%, var(--line)); }
+
+  html.js .reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s cubic-bezier(.2,.8,.2,1); transition-delay: var(--d, 0s); }
+  html.js .reveal.in { opacity: 1; transform: none; }
+
+  .btn.shine { position: relative; overflow: hidden; }
+  .btn.shine::after { content: ""; position: absolute; top: 0; left: -60%; width: 40%; height: 100%; transform: skewX(-20deg);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent); animation: sweep 4.5s ease-in-out infinite; }
+  @keyframes sweep { 0%, 60% { left: -60%; } 100% { left: 130%; } }
+  .btn:active { transform: scale(0.97); }
+
+  .thinking { display: grid; place-items: center; gap: 14px; min-height: 220px; text-align: center; color: var(--muted); }
+  .thinking .dots3 { display: flex; gap: 6px; }
+  .thinking .dots3 i { width: 10px; height: 10px; border-radius: 50%; background: var(--brand); animation: hop 1s ease-in-out infinite; }
+  .thinking .dots3 i:nth-child(2) { animation-delay: .15s; } .thinking .dots3 i:nth-child(3) { animation-delay: .3s; }
+  @keyframes hop { 0%, 100% { transform: translateY(0); opacity: .4; } 50% { transform: translateY(-8px); opacity: 1; } }
+  .confetti { position: fixed; pointer-events: none; z-index: 50; font-size: 18px; color: var(--star); animation: burst .9s ease-out forwards; }
+  @keyframes burst { to { transform: translate(var(--tx), var(--ty)) rotate(220deg) scale(.6); opacity: 0; } }
+
   @media (max-width: 900px) {
+    .mood { display: none; }
+    .nav .btn.link:first-of-type { display: none; }
     .hero { grid-template-columns: 1fr; gap: 40px; padding-top: 20px; padding-bottom: 56px; }
     .steps, .features { grid-template-columns: 1fr; }
     .try { grid-template-columns: 1fr; }
     .pricing { grid-template-columns: 1fr; }
     section.band { padding-block: 56px; }
   }
-  @media (prefers-reduced-motion: reduce) { .caret { display: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .caret, .sky { display: none; }
+    .marquee .track, .pill b span, .mood, .btn.shine::after { animation: none; }
+    html.js .reveal { opacity: 1; transform: none; transition: none; }
+  }
 </style>
 </head>
 <body>
 <div class="top">
+  <div class="sky" id="sky" aria-hidden="true"></div>
   <div class="wrap">
     <nav class="nav">
       <a class="logo" href="/"><i>★</i>ReplyDesk</a>
@@ -126,18 +193,31 @@
 
     <header class="hero">
       <div>
-        <span class="pill"><b>★★★★★</b> For restaurants, salons, clinics and shops</span>
+        <span class="pill"><b><span>★</span><span>★</span><span>★</span><span>★</span><span>★</span></b> For restaurants, salons, clinics and shops</span>
         <h1>Reply to every review in <span class="hl">your voice</span>.</h1>
         <p class="lede">Paste a Google or Yelp review and get a thoughtful, on-brand reply in seconds. Warm thank-yous for the five-star reviews and calm, professional answers to the one-star rants.</p>
         <div class="cta">
-          <a class="btn lg" href="/app#signup">Start free: 15 replies a month</a>
+          <a class="btn lg shine" href="/app#signup">Start free: 15 replies a month</a>
           <a class="btn ghost lg" href="#try">Try it now</a>
         </div>
         <div class="assure"><span>No card needed</span><span>You approve every reply</span><span>Cancel anytime</span></div>
       </div>
 
       <div class="mock" aria-label="Example of a review and an AI-drafted reply">
-        <div class="gcard">
+        <div class="play">
+          <span class="lbl">Play with it:</span>
+          <div class="seg stars-seg" id="pickRating" role="group" aria-label="Review rating">
+            <button type="button" data-r="5" aria-pressed="true">5★</button>
+            <button type="button" data-r="3" aria-pressed="false">3★</button>
+            <button type="button" data-r="1" aria-pressed="false">1★</button>
+          </div>
+          <div class="seg" id="pickTone" role="group" aria-label="Reply tone">
+            <button type="button" data-t="warm" aria-pressed="true">Warm</button>
+            <button type="button" data-t="pro" aria-pressed="false">Pro</button>
+            <button type="button" data-t="fun" aria-pressed="false">Playful</button>
+          </div>
+        </div>
+        <div class="gcard" id="gcard">
           <span class="tag">Example</span>
           <div class="who">
             <div class="avatar" id="mAvatar"></div>
@@ -152,10 +232,17 @@
             <p class="text" id="mReply"></p>
           </div>
         </div>
-        <div class="dots" id="mDots"></div>
+        <div class="mood" id="mood" aria-hidden="true">Tone: <b id="moodText">Warm</b></div>
         <p class="mock-note">Sample reviews and replies for illustration.</p>
       </div>
     </header>
+  </div>
+</div>
+
+<div class="marquee" aria-label="Made for local businesses">
+  <div class="track">
+    <span>Taquerias</span><span>Barbershops</span><span>Dental offices</span><span>Coffee shops</span><span>Nail salons</span><span>Auto repair</span><span>Gyms</span><span>Bakeries</span><span>Pet groomers</span><span>Food trucks</span><span>Florists</span><span>Tattoo studios</span>
+    <span aria-hidden="true">Taquerias</span><span aria-hidden="true">Barbershops</span><span aria-hidden="true">Dental offices</span><span aria-hidden="true">Coffee shops</span><span aria-hidden="true">Nail salons</span><span aria-hidden="true">Auto repair</span><span aria-hidden="true">Gyms</span><span aria-hidden="true">Bakeries</span><span aria-hidden="true">Pet groomers</span><span aria-hidden="true">Food trucks</span><span aria-hidden="true">Florists</span><span aria-hidden="true">Tattoo studios</span>
   </div>
 </div>
 
@@ -191,12 +278,13 @@
           <label for="dBody">Review</label>
           <textarea id="dBody" required>Waited almost 40 minutes for our food on a Tuesday night and nobody told us why. The carnitas were honestly great once they came, but the wait killed it.</textarea>
         </div>
-        <button class="btn lg" id="dGo" type="submit">Write my reply</button>
+        <button class="btn lg shine" id="dGo" type="submit">Write my reply</button>
         <p class="msg" id="dMsg" role="status"></p>
         <p class="muted small">The review is sent to our AI provider to write the reply and isn't saved. See our <a href="/privacy">Privacy Policy</a>.</p>
       </form>
       <div class="card out" aria-live="polite">
         <div class="placeholder" id="dEmpty">Your reply will appear here.</div>
+        <div class="thinking" id="dThink" hidden><div class="dots3"><i></i><i></i><i></i></div><p id="dThinkText">Reading the review…</p></div>
         <div id="demoOut" hidden>
           <div class="owner"><div class="label">Draft reply</div><p class="text" id="dReply"></p></div>
           <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
@@ -298,52 +386,136 @@
 <script>
   const $ = (id) => document.getElementById(id);
 
-  // ----- hero example carousel -----
-  const EXAMPLES = [
-    { name: "Marco P.", initial: "M", color: "#c2410c", rating: 5, when: "2 days ago",
-      review: "Best al pastor in town, hands down. The salsa bar is unreal and the staff remembered my order from last week.",
-      reply: "Marco, this made our week! We love having you back, and we'll keep your usual ready. Next time, try the salsa macha on the al pastor. Trust us.\n\n— Rosa & the team" },
-    { name: "Priya S.", initial: "P", color: "#7c3aed", rating: 3, when: "1 week ago",
-      review: "Cut was good but I waited 25 minutes past my appointment time with no heads up.",
-      reply: "Hi Priya, thank you for the honest feedback, and we're glad you liked the cut. Waiting 25 minutes without a word isn't okay. We're now texting clients when we're running behind so it doesn't happen again.\n\n— Studio Nine" },
-    { name: "Dana K.", initial: "D", color: "#0f766e", rating: 1, when: "3 hours ago",
-      review: "Waited 45 minutes and my order was wrong. Not coming back.",
-      reply: "Dana, we're truly sorry. A long wait and a wrong order is not the experience we want for anyone. We'd like to make this right: please email rosa@example.com so we can talk directly.\n\n— Rosa" },
-  ];
-  let idx = 0, typing = null, rotate = null;
+  document.documentElement.classList.add("js");
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const dots = EXAMPLES.map((_, i) => {
-    const b = document.createElement("button");
-    b.type = "button"; b.setAttribute("aria-label", `Example ${i + 1}`);
-    b.onclick = () => { show(i); restart(); };
-    $("mDots").append(b);
-    return b;
-  });
-  function show(i) {
-    idx = i;
-    const ex = EXAMPLES[i];
+
+  // ----- hero: interactive example (rating x tone) -----
+  const EXAMPLES = {
+    5: { name: "Marco P.", initial: "M", color: "#c2410c", when: "2 days ago",
+      review: "Best al pastor in town, hands down. The salsa bar is unreal and the staff remembered my order from last week.",
+      reply: {
+        warm: "Marco, this made our week! We love having you back, and we'll keep your usual ready. Next time, try the salsa macha on the al pastor. Trust us.\n\n— Rosa & the team",
+        pro: "Thank you, Marco. We're glad the al pastor and salsa bar lived up to expectations, and our team takes pride in remembering regulars. We look forward to serving you again soon.\n\n— Rosa's Taqueria",
+        fun: "Marco!! You remembered us, we remembered you. That's basically friendship. Salsa bar says hi, and your usual is already on standby. 🌮\n\n— Rosa & the crew",
+      } },
+    3: { name: "Priya S.", initial: "P", color: "#7c3aed", when: "1 week ago",
+      review: "Cut was good but I waited 25 minutes past my appointment time with no heads up.",
+      reply: {
+        warm: "Hi Priya, thank you for the honest feedback, and we're glad you liked the cut. Waiting 25 minutes without a word isn't okay. We're now texting clients when we're running behind so it doesn't happen again.\n\n— Studio Nine",
+        pro: "Thank you for your feedback, Priya. We're pleased you were happy with your cut, and we apologize for the delay. We've introduced text alerts when appointments run late so your time is respected.\n\n— Studio Nine",
+        fun: "Priya, the cut: great. The wait: not great, and we know it. We're texting heads-ups now when we run behind, so next time you'll get a fresh cut and your 25 minutes back.\n\n— Studio Nine",
+      } },
+    1: { name: "Dana K.", initial: "D", color: "#0f766e", when: "3 hours ago",
+      review: "Waited 45 minutes and my order was wrong. Not coming back.",
+      reply: {
+        warm: "Dana, we're truly sorry. A long wait and a wrong order is not the experience we want for anyone. We'd like to make this right: please email rosa@example.com so we can talk directly.\n\n— Rosa",
+        pro: "Dana, we sincerely apologize for the wait and the error with your order. This falls short of our standards. Please contact us at rosa@example.com so we can resolve this personally.\n\n— Rosa's Taqueria",
+        fun: "Dana, we're really sorry. A 45-minute wait and the wrong order is a rough night, and that's on us. We'd love the chance to fix it. Please reach out at rosa@example.com.\n\n— Rosa",
+      } },
+  };
+  const TONE_LABEL = { warm: "Warm", pro: "Professional", fun: "Playful" };
+  let rating = 5, tone = "warm", typing = null, rotate = null, touched = false;
+
+  function typeInto(el, text, speed = 3) {
+    clearInterval(typing);
+    if (reduced) { el.textContent = text; return; }
+    let n = 0;
+    const caret = document.createElement("span"); caret.className = "caret";
+    el.textContent = "";
+    typing = setInterval(() => {
+      n = Math.min(text.length, n + speed);
+      el.textContent = text.slice(0, n);
+      el.append(caret);
+      if (n >= text.length) clearInterval(typing);
+    }, 28);
+  }
+  function render(animate = true) {
+    const ex = EXAMPLES[rating];
     $("mAvatar").textContent = ex.initial;
     $("mAvatar").style.background = ex.color;
     $("mName").textContent = ex.name;
-    $("mStars").textContent = RD.stars(ex.rating);
+    $("mStars").textContent = RD.stars(rating);
     $("mWhen").textContent = ex.when;
     $("mReview").textContent = ex.review;
-    dots.forEach((d, j) => d.setAttribute("aria-current", String(j === i)));
-    clearInterval(typing);
-    const out = $("mReply");
-    if (reduced) { out.textContent = ex.reply; return; }
-    let n = 0;
-    out.textContent = "";
-    const caret = document.createElement("span"); caret.className = "caret";
-    typing = setInterval(() => {
-      n = Math.min(ex.reply.length, n + 3);
-      out.textContent = ex.reply.slice(0, n);
-      out.append(caret);
-      if (n >= ex.reply.length) clearInterval(typing);
-    }, 30);
+    $("moodText").textContent = TONE_LABEL[tone];
+    for (const b of $("pickRating").children) b.setAttribute("aria-pressed", String(+b.dataset.r === rating));
+    for (const b of $("pickTone").children) b.setAttribute("aria-pressed", String(b.dataset.t === tone));
+    if (animate && !reduced) { const c = $("gcard"); c.classList.remove("flip"); void c.offsetWidth; c.classList.add("flip"); }
+    typeInto($("mReply"), ex.reply[tone]);
   }
-  function restart() { clearInterval(rotate); if (!reduced) rotate = setInterval(() => show((idx + 1) % EXAMPLES.length), 9000); }
-  show(0); restart();
+  const ORDER = [[5, "warm"], [3, "pro"], [1, "warm"], [5, "fun"], [3, "warm"], [1, "pro"]];
+  let step = 0;
+  function autoplay() {
+    clearInterval(rotate);
+    if (reduced || touched) return;
+    rotate = setInterval(() => { step = (step + 1) % ORDER.length; [rating, tone] = ORDER[step]; render(); }, 8000);
+  }
+  for (const b of $("pickRating").children) b.onclick = () => { touched = true; clearInterval(rotate); rating = +b.dataset.r; render(); };
+  for (const b of $("pickTone").children) b.onclick = () => { touched = true; clearInterval(rotate); tone = b.dataset.t; render(); };
+  render(false); autoplay();
+
+  // 3D tilt on the example card follows the cursor (desktop only).
+  const mock = document.querySelector(".mock"), card = $("gcard");
+  if (!reduced && matchMedia("(pointer: fine)").matches) {
+    mock.addEventListener("mousemove", (e) => {
+      const r = card.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5;
+      card.style.transform = `perspective(900px) rotateY(${x * 6}deg) rotateX(${-y * 6}deg)`;
+    });
+    mock.addEventListener("mouseleave", () => { card.style.transform = ""; });
+  }
+
+  // ----- drifting stars in the hero background -----
+  if (!reduced) {
+    const sky = $("sky");
+    for (let i = 0; i < 14; i++) {
+      const st = document.createElement("i");
+      st.textContent = "★";
+      st.style.left = Math.random() * 100 + "%";
+      st.style.fontSize = 8 + Math.random() * 16 + "px";
+      st.style.setProperty("--o", (0.15 + Math.random() * 0.3).toFixed(2));
+      st.style.animationDuration = 14 + Math.random() * 16 + "s";
+      st.style.animationDelay = -Math.random() * 30 + "s";
+      sky.append(st);
+    }
+  }
+
+  // ----- scroll reveal + cursor spotlight on cards -----
+  const revealables = document.querySelectorAll(".band-head, .step, .feature, .plan, .faq details, .try > *, .final");
+  document.querySelectorAll(".step, .feature, .plan, .try > .card").forEach((el) => el.classList.add("spot"));
+  revealables.forEach((el, i) => {
+    el.classList.add("reveal");
+    const sibs = [...el.parentElement.children];
+    el.style.setProperty("--d", (Math.max(0, sibs.indexOf(el)) % 6) * 0.07 + "s");
+  });
+  if ("IntersectionObserver" in window && !reduced) {
+    const io = new IntersectionObserver((entries) => {
+      for (const en of entries) if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); }
+    }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
+    revealables.forEach((el) => io.observe(el));
+  } else revealables.forEach((el) => el.classList.add("in"));
+  document.addEventListener("pointermove", (e) => {
+    const el = e.target.closest?.(".spot");
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    el.style.setProperty("--mx", e.clientX - r.left + "px");
+    el.style.setProperty("--my", e.clientY - r.top + "px");
+  });
+
+  function confetti(x, y) {
+    if (reduced) return;
+    for (let i = 0; i < 14; i++) {
+      const c = document.createElement("span");
+      c.className = "confetti"; c.textContent = "★";
+      const a = Math.random() * Math.PI * 2, d = 60 + Math.random() * 90;
+      c.style.left = x + "px"; c.style.top = y + "px";
+      c.style.setProperty("--tx", Math.cos(a) * d + "px");
+      c.style.setProperty("--ty", Math.sin(a) * d - 30 + "px");
+      document.body.append(c);
+      setTimeout(() => c.remove(), 1000);
+    }
+  }
+
   if (new URLSearchParams(location.search).has("deleted")) {
     const n = document.createElement("p");
     n.className = "banner"; n.setAttribute("role", "status");
@@ -360,18 +532,30 @@
     $("dGo").textContent = "Writing…";
     $("dMsg").className = "msg";
     $("dMsg").textContent = "";
+    $("dEmpty").hidden = true;
+    $("demoOut").hidden = true;
+    $("dThink").hidden = false;
+    const phases = ["Reading the review…", "Picking up the details…", "Matching the tone…", "Writing your reply…"];
+    let ph = 0;
+    $("dThinkText").textContent = phases[0];
+    const phaseTimer = setInterval(() => { ph = Math.min(phases.length - 1, ph + 1); $("dThinkText").textContent = phases[ph]; }, 1400);
     try {
       const { reply } = await RD.api("/api/demo-reply", {
         method: "POST",
         body: { businessName: $("dBiz").value, reviewer: $("dName").value, rating: stars.get(), body: $("dBody").value },
       });
-      $("dReply").textContent = reply;
-      $("dEmpty").hidden = true;
+      $("dThink").hidden = true;
       $("demoOut").hidden = false;
+      typeInto($("dReply"), reply, 4);
+      const r = $("dGo").getBoundingClientRect();
+      confetti(r.left + r.width / 2, r.top);
     } catch (err) {
+      $("dThink").hidden = true;
+      $("dEmpty").hidden = false;
       $("dMsg").className = "msg err";
       $("dMsg").textContent = err.message;
     } finally {
+      clearInterval(phaseTimer);
       $("dGo").disabled = false;
       $("dGo").textContent = "Write my reply";
     }

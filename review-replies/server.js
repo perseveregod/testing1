@@ -145,7 +145,13 @@ async function generate(business, review) {
 
 function replyError(res, err) {
   if (err instanceof replies.ReplyError) return send(res, 422, { error: err.message });
-  console.error("reply failed:", err);
+  // Spell out the common setup problems in the server log (never shown to visitors).
+  const hint = err?.status === 401 ? " -> ANTHROPIC_API_KEY is invalid. Re-copy it from console.anthropic.com."
+    : err?.status === 403 ? " -> this API key isn't allowed to use this model."
+    : /credit|balance|billing/i.test(String(err?.message)) ? " -> your Anthropic account is out of credits. Add some under Billing."
+    : err?.status === 404 ? ` -> model "${MODEL}" not found for this key. Set MODEL to one your account can use.`
+    : "";
+  console.error(`reply failed (status ${err?.status ?? "n/a"}): ${err?.message}${hint}`);
   send(res, 502, { error: "The AI is busy right now. Try again in a moment." });
 }
 

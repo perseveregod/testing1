@@ -74,14 +74,22 @@ class ReplyError extends Error {
 }
 
 async function writeReply(client, business, review, model = DEFAULT_MODEL) {
-  const response = await client.beta.messages.create({
+  const params = {
     model,
     max_tokens: 16000,
-    betas: ["server-side-fallback-2026-07-01"],
-    fallbacks: "default",
     output_config: { effort: "low" },
     messages: [{ role: "user", content: buildPrompt(business, review) }],
-  });
+  };
+  let response;
+  try {
+    // Server-side fallback reroutes a declined request to another model in the same call.
+    response = await client.beta.messages.create({ ...params, betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" });
+  } catch (err) {
+    // Some accounts/models don't accept the fallback beta: retry once without it.
+    if (err?.status !== 400 || !/fallback|beta/i.test(String(err.message))) throw err;
+    console.warn("fallback option rejected, retrying without it:", err.message);
+    response = await client.messages.create(params);
+  }
   if (response.stop_reason === "refusal") {
     throw new ReplyError("refused", "The AI couldn't write a reply to this review. Try editing the text.");
   }

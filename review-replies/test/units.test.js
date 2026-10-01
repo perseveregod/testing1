@@ -71,3 +71,15 @@ test("store keeps users' data separate and counts usage per month", () => {
   assert.strictEqual(s.usage(a, "2026-10"), 2);
   assert.strictEqual(s.usage(b, "2026-10"), 0);
 });
+
+test("writeReply retries without the fallback beta if it's rejected", async () => {
+  const calls = [];
+  const client = {
+    beta: { messages: { create: async (p) => { calls.push("beta"); throw Object.assign(new Error("Unexpected beta header: server-side-fallback"), { status: 400 }); } } },
+    messages: { create: async (p) => { calls.push(p.fallbacks === undefined ? "plain" : "bad"); return { stop_reason: "end_turn", content: [{ type: "text", text: "Thanks!" }] }; } },
+  };
+  assert.strictEqual(await replies.writeReply(client, {}, { body: "x", rating: 5, reviewer: "" }), "Thanks!");
+  assert.deepStrictEqual(calls, ["beta", "plain"]);
+  const authFail = { beta: { messages: { create: async () => { throw Object.assign(new Error("invalid x-api-key"), { status: 401 }); } } } };
+  await assert.rejects(replies.writeReply(authFail, {}, { body: "x", rating: 5, reviewer: "" }), (e) => e.status === 401);
+});
