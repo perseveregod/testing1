@@ -9,9 +9,7 @@ import { timeAgo } from "@/lib/time";
 import type { PublicIncident } from "@/lib/types";
 import { CategoryIcon } from "@/components/incident/CategoryIcon";
 import { isLive } from "@/components/incident/Badges";
-import { Spinner } from "@/components/ui/States";
-import { strings, type Lang } from "@/lib/storm";
-import { Zap } from "lucide-react";
+import type { Lang } from "@/lib/storm";
 
 /**
  * The map's bottom bar: the one shared count ("7 active · 5 mi") and, pulled
@@ -43,7 +41,7 @@ export function NearbyPeek({
   /** When set, the bar offers "Use my location" instead of naming the default area. */
   onLocate?: (() => void) | null;
   /** Storm Mode: the number is storm reports, and a Report button sits on the right. */
-  storm?: { lang: Lang; onReport: () => void } | null;
+  storm?: { lang: Lang } | null;
 }) {
   const [open, setOpen] = useState(false);
   const active = items.filter((i) => i.status !== "resolved" && i.category !== "missing_pet");
@@ -53,7 +51,6 @@ export function NearbyPeek({
   const rows = open ? sorted.slice(0, 5) : [];
 
   const n = String(activeCount).padStart(2, "0");
-  const t = storm ? strings(storm.lang) : null;
   const title = storm ? (storm.lang === "es" ? "Reportes de tormenta" : "Storm reports") : "Nearby active incidents";
   const sub = storm
     ? activeCount === 0
@@ -73,11 +70,7 @@ export function NearbyPeek({
         disabled={loading || Boolean(error) || active.length === 0}
         className="flex min-w-0 flex-1 items-end gap-3 text-left"
       >
-        {loading ? (
-          <span className="flex items-center gap-2 pb-2 text-[13.5px] text-muted">
-            <Spinner className="size-3.5" /> Loading incidents
-          </span>
-        ) : error ? (
+        {loading ? null : error ? (
           <span className="pb-2 text-[13.5px] text-danger" onClick={onRetry} role="button">
             Couldn&apos;t load · Retry
           </span>
@@ -85,18 +78,18 @@ export function NearbyPeek({
           <>
             <span
               className={`text-[52px] font-extrabold leading-[0.9] tracking-[-0.04em] tnum ${activeCount > 0 ? (storm ? "text-[#FFC233]" : "text-live") : "text-text"}`}
-              style={{ textShadow: "0 2px 12px rgba(0,0,0,.6)" }}
+              style={{ textShadow: "0 2px 12px var(--halo)" }}
             >
               {n}
             </span>
             <span className="min-w-0 pb-0.5">
-              <span className="flex items-center gap-1.5 text-[14px] font-semibold leading-tight text-text" style={{ textShadow: "0 1px 6px rgba(0,0,0,.7)" }}>
+              <span className="flex items-center gap-1.5 text-[14px] font-semibold leading-tight text-text" style={{ textShadow: "0 1px 6px var(--halo)" }}>
                 {title}
                 {active.length > 0 && (
                   <ChevronUp className={`size-4 shrink-0 text-faint transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
                 )}
               </span>
-              <span className="flex flex-wrap items-center gap-x-1.5 text-[12.5px] leading-tight text-muted" style={{ textShadow: "0 1px 6px rgba(0,0,0,.7)" }}>
+              <span className="flex flex-wrap items-center gap-x-1.5 text-[12.5px] leading-tight text-muted" style={{ textShadow: "0 1px 6px var(--halo)" }}>
                 {sub}
                 {storm ? null : onLocate && !position ? (
                   <span
@@ -112,21 +105,12 @@ export function NearbyPeek({
                 ) : (
                   <span>· {position ? "of you" : "of central Houston"}</span>
                 )}
-                {allDemo && <span className="rounded-[3px] bg-white/[0.12] px-1 text-[9.5px] font-bold uppercase tracking-wide text-text/70">Demo</span>}
+                {allDemo && <span className="rounded-[3px] bg-text/[0.1] px-1 text-[9.5px] font-bold uppercase tracking-wide text-text/70">Demo</span>}
               </span>
             </span>
           </>
         )}
       </button>
-      {storm && (
-        <button
-          onClick={storm.onReport}
-          className="press mb-0.5 inline-flex h-12 shrink-0 items-center gap-2 rounded-full bg-[#ffc233] pl-4 pr-5 text-[15px] font-extrabold text-[#1b1300] shadow-[0_8px_24px_-10px_rgba(0,0,0,0.6)]"
-        >
-          <Zap className="size-[18px] fill-current" aria-hidden />
-          {t!.report}
-        </button>
-      )}
       </div>
       {open && (
         <>
@@ -138,7 +122,7 @@ export function NearbyPeek({
                 <li key={i.id}>
                   <button
                     onClick={() => onPick(i.id)}
-                    className="flex min-h-[52px] w-full items-center gap-3 rounded-2xl px-2 py-1.5 text-left active:bg-white/[0.06]"
+                    className="flex min-h-[52px] w-full items-center gap-3 rounded-2xl px-2 py-1.5 text-left active:bg-text/[0.06]"
                   >
                     <CategoryIcon category={i.category} size="sm" animated={live} />
                     <span className="min-w-0 flex-1">
@@ -158,7 +142,7 @@ export function NearbyPeek({
           <Link
             href="/feed"
             transitionTypes={["tab"]}
-            className="flex min-h-11 items-center justify-center border-t border-white/[0.08] text-[13.5px] font-semibold text-brand"
+            className="flex min-h-11 items-center justify-center border-t border-line text-[13.5px] font-semibold text-brand"
           >
             See everything nearby
           </Link>

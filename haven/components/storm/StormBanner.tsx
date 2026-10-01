@@ -15,12 +15,12 @@ export function StormBanner() {
   const [sourcesOpen, setSourcesOpen] = useState(false);
   return (
     <>
-      <div role="note" className="pointer-events-auto flex items-center gap-2 rounded-full bg-[#0f1116]/92 py-1 pl-3 pr-1 shadow-[0_8px_30px_-10px_rgba(0,0,0,.8),inset_0_0_0_0.5px_rgba(255,255,255,.08)] backdrop-blur-xl">
+      <div role="note" className="panel pointer-events-auto flex items-center gap-2 rounded-full py-1 pl-3 pr-1">
         <StormIcon className="size-5 shrink-0 text-text" active />
         <p className="min-w-0 flex-1 truncate text-[12.5px] font-semibold text-text/90">{t.bannerShort}</p>
         <button
           onClick={() => setSourcesOpen(true)}
-          className="press inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-white/[0.09] px-2.5 text-[12px] font-semibold text-text"
+          className="press inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-text/[0.07] px-2.5 text-[12px] font-semibold text-text"
         >
           <Radio className="size-3.5 text-[#FFC233]" aria-hidden />
           {t.officialSourcesShort}

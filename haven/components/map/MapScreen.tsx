@@ -9,7 +9,7 @@ import {
   Search,
   SlidersHorizontal,
 } from "lucide-react";
-import { setStormPrefs, useStormPrefs } from "@/lib/client/stormMode";
+import { setStormPrefs, useStormPrefs, useStormReportTick } from "@/lib/client/stormMode";
 import { peekMapFocus, takeMapFocus } from "@/lib/client/mapFocus";
 import { STATE_STYLE, strings, type StormKind } from "@/lib/storm";
 import { STORM_CATEGORIES } from "@/lib/categories";
@@ -40,7 +40,7 @@ import {
   type Viewport,
 } from "./IncidentMap";
 import { LayersSheet } from "./LayersSheet";
-import { BEARING_3D, PITCH_3D, type MapMode } from "./map3d";
+import { BEARING_3D, PITCH_3D, resolveMode, type MapMode } from "./map3d";
 import { SearchSheet } from "./SearchSheet";
 
 const MODE_KEY = "haven.mapMode";
@@ -158,7 +158,10 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
   const storm = useStormPrefs();
   const st = strings(storm.lang);
   const [stormFilter, setStormFilter] = useState<StormKind | null>(null);
-  const [stormReportOpen, setStormReportOpen] = useState(false);
+  // Storm reports open from the tab bar's center button (see requestStormReport).
+  const reportTick = useStormReportTick();
+  const [reportClosedAt, setReportClosedAt] = useState(0);
+  const stormReportOpen = storm.on && reportTick > reportClosedAt;
 
   const area = useMemo(() => queryArea(viewport), [viewport]);
   const { items, isLoading, isValidating, error, mutate } = useIncidents(
@@ -255,8 +258,12 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
 
   const loading = isLoading || (isValidating && !items.length);
 
+  // The chrome follows the map: light panels over the day style.
+  // Decided on the client only (now is 0 during server render and hydration).
+  const tone = now > 0 && resolveMode(mode, new Date(now)) === "day" ? "light" : "dark";
+
   return (
-    <div className="fixed inset-0 overflow-hidden bg-bg">
+    <div className="fixed inset-0 overflow-hidden bg-bg" data-tone={tone}>
       <IncidentMap
         ref={mapRef}
         incidents={items}
@@ -283,8 +290,8 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
         className="pointer-events-none absolute inset-x-0 top-0 z-20 px-3"
         style={{ paddingTop: "calc(var(--safe-top) + 8px)" }}
       >
-        <div className="pointer-events-auto mx-auto max-w-lg rounded-[22px] bg-[#0f1116]/92 p-2 shadow-[0_8px_30px_-10px_rgba(0,0,0,.8),inset_0_0_0_0.5px_rgba(255,255,255,.08)] backdrop-blur-xl">
-        <div className="flex h-11 items-center gap-1 rounded-[14px] bg-white/[0.07] pr-1">
+        <div className="panel pointer-events-auto mx-auto max-w-lg rounded-[22px] p-2">
+        <div className="flex h-11 items-center gap-1 rounded-[14px] bg-text/[0.06] pr-1">
           <button
             onClick={() => setSearchOpen(true)}
             className="press flex h-11 min-w-0 flex-1 items-center gap-2.5 rounded-[14px] pl-3.5 pr-2 text-left"
@@ -319,7 +326,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
               onClick={() => setFilterOpen(true)}
               aria-label={`All filters${filterCount ? ` (${filterCount} active)` : ""}`}
               className={`press inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold ${
-                filterCount > 0 ? "bg-text text-bg" : "bg-white/[0.07] text-text"
+                filterCount > 0 ? "bg-text text-bg" : "bg-text/[0.06] text-text"
               }`}
             >
               <SlidersHorizontal className="size-3.5" aria-hidden />
@@ -337,7 +344,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
                   aria-pressed={on}
                   onClick={() => setStormFilter(k)}
                   className={`press inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold ${
-                    on ? "bg-text text-bg" : "bg-white/[0.07] text-text"
+                    on ? "bg-text text-bg" : "bg-text/[0.06] text-text"
                   }`}
                 >
                   {dot && <span className="size-2 rounded-full" style={{ background: dot }} aria-hidden />}
@@ -361,7 +368,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
                   }))
                 }
                 className={`press inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold ${
-                  on ? "bg-white text-[#0b0c0f]" : "bg-white/[0.07] text-text"
+                  on ? "bg-text text-bg" : "bg-text/[0.06] text-text"
                 }`}
               >
                 {q.color && (
@@ -454,7 +461,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
                 now={now}
                 onPick={setSelectedId}
                 onLocate={showPrompt ? request : null}
-                storm={storm.on ? { lang: storm.lang, onReport: () => setStormReportOpen(true) } : null}
+                storm={storm.on ? { lang: storm.lang } : null}
               />
             </div>
           )}
@@ -480,7 +487,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
       />
       <StormReportSheet
         open={stormReportOpen}
-        onClose={() => setStormReportOpen(false)}
+        onClose={() => setReportClosedAt(reportTick)}
         mapCenter={viewport?.center ?? null}
         myPosition={position}
         onSent={(id) => {

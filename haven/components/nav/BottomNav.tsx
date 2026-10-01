@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ViewTransition } from "react";
-import { List, Map as MapIcon, Plus, ShieldHalf, UserRound, UsersRound } from "lucide-react";
+import { List, Map as MapIcon, Plus, ShieldHalf, UserRound, UsersRound, Zap } from "lucide-react";
+import { requestStormReport, useStormPrefs } from "@/lib/client/stormMode";
 import { useNotifications } from "@/lib/client/hooks";
 
 const TABS = [
@@ -18,6 +19,9 @@ const TABS = [
 export function BottomNav() {
   const path = usePathname();
   const { unread } = useNotifications();
+  // On the map in Storm Mode, the one big button files a storm report.
+  const storm = useStormPrefs();
+  const stormReport = path === "/" && storm.on;
   return (
     <ViewTransition name="tab-bar" default="none" share="none">
       <nav
@@ -32,16 +36,23 @@ export function BottomNav() {
               t.href === "/" ? path === "/" : path.startsWith(t.href);
             const Icon = t.icon;
             if ("primary" in t) {
+              const cls = "press -mt-6 flex size-[60px] items-center justify-center rounded-full shadow-[inset_0_1px_0.5px_rgba(255,255,255,0.4),0_8px_24px_-6px_rgba(0,0,0,0.6)]";
               return (
                 <li key={t.href} className="flex items-center justify-center">
-                  <Link
-                    href={t.href}
-                    aria-label="Report an incident"
-                    transitionTypes={["nav-forward"]}
-                    className="press -mt-7 flex size-[64px] items-center justify-center rounded-full bg-live text-white ring-[6px] ring-bg/80 shadow-[inset_0_1px_0.5px_rgba(255,255,255,0.45),0_0_0_1px_rgba(255,45,85,0.5),0_10px_30px_-4px_rgba(255,45,85,0.75)]"
-                  >
-                    <Icon className="size-[28px]" strokeWidth={2.6} aria-hidden />
-                  </Link>
+                  {stormReport ? (
+                    <button
+                      type="button"
+                      onClick={requestStormReport}
+                      aria-label={storm.lang === "es" ? "Reportar luz, inundación o lugar abierto" : "Report power, flooding or an open place"}
+                      className={`${cls} bg-[#ffc233] text-[#1b1300]`}
+                    >
+                      <Zap className="size-[26px] fill-current" strokeWidth={2.2} aria-hidden />
+                    </button>
+                  ) : (
+                    <Link href={t.href} aria-label="Report an incident" transitionTypes={["nav-forward"]} className={`${cls} bg-live text-white`}>
+                      <Icon className="size-[28px]" strokeWidth={2.6} aria-hidden />
+                    </Link>
+                  )}
                 </li>
               );
             }

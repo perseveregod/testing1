@@ -1,7 +1,14 @@
 "use client";
 
 import "maplibre-gl/dist/maplibre-gl.css";
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 import type { GeoJSONSource, Map as MlMap, Marker } from "maplibre-gl";
 import { getCategory, SEVERITY_RANK } from "@/lib/categories";
@@ -65,15 +72,45 @@ interface Props {
 }
 
 type Visible =
-  | { key: string; kind: "point"; el: HTMLElement; id: string; category: PublicIncident["category"]; severity: number; ended: boolean; age: number; stormState: StormState | null; confirms: number; stormFadeValue: number }
-  | { key: string; kind: "cluster"; el: HTMLElement; clusterId: number; count: number; maxSev: number; lng: number; lat: number };
+  | {
+      key: string;
+      kind: "point";
+      el: HTMLElement;
+      id: string;
+      category: PublicIncident["category"];
+      severity: number;
+      ended: boolean;
+      age: number;
+      stormState: StormState | null;
+      confirms: number;
+      stormFadeValue: number;
+    }
+  | {
+      key: string;
+      kind: "cluster";
+      el: HTMLElement;
+      clusterId: number;
+      count: number;
+      maxSev: number;
+      lng: number;
+      lat: number;
+    };
 
 const RING = "haven-ring";
 const RING_METERS = 1609.344;
 const SOURCE = "incidents";
 
 export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
-  { incidents, selectedId, onSelect, userPosition, initialCenter, onViewportChange, mode, onCameraChange },
+  {
+    incidents,
+    selectedId,
+    onSelect,
+    userPosition,
+    initialCenter,
+    onViewportChange,
+    mode,
+    onCameraChange,
+  },
   ref,
 ) {
   const container = useRef<HTMLDivElement>(null);
@@ -82,6 +119,7 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
   const markers = useRef(new Map<string, Marker>());
   const userMarker = useRef<Marker | null>(null);
   const ringLabel = useRef<Marker | null>(null);
+  const drawUserRef = useRef<() => void>(() => {});
   const [visible, setVisible] = useState<Visible[]>([]);
   const [ready, setReady] = useState(false);
   const [painted, setPainted] = useState(false);
@@ -159,8 +197,15 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
     if (!m) return;
     const c = m.getCenter();
     const ne = m.getBounds().getNorthEast();
-    const radiusMi = distanceMiles({ lat: c.lat, lng: c.lng }, { lat: ne.lat, lng: ne.lng });
-    onViewport.current({ center: { lat: c.lat, lng: c.lng }, radiusMi: Math.min(50, Math.max(0.5, radiusMi)), zoom: m.getZoom() });
+    const radiusMi = distanceMiles(
+      { lat: c.lat, lng: c.lng },
+      { lat: ne.lat, lng: ne.lng },
+    );
+    onViewport.current({
+      center: { lat: c.lat, lng: c.lng },
+      radiusMi: Math.min(50, Math.max(0.5, radiusMi)),
+      zoom: m.getZoom(),
+    });
   }, []);
 
   // Reconcile HTML markers with what the clustered source currently shows.
@@ -172,13 +217,18 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
     const next = new Map<string, Visible>();
     for (const f of features) {
       const p = f.properties as Record<string, unknown>;
-      const [lng, lat] = (f.geometry as GeoJSON.Point).coordinates as [number, number];
+      const [lng, lat] = (f.geometry as GeoJSON.Point).coordinates as [
+        number,
+        number,
+      ];
       const key = p.cluster ? `c${p.cluster_id}` : `p${p.id}`;
       if (next.has(key)) continue;
       let marker = markers.current.get(key);
       if (!marker) {
         const el = document.createElement("div");
-        marker = new ml.Marker({ element: el, anchor: "bottom" }).setLngLat([lng, lat]).addTo(m);
+        marker = new ml.Marker({ element: el, anchor: "bottom" })
+          .setLngLat([lng, lat])
+          .addTo(m);
         markers.current.set(key, marker);
       } else {
         marker.setLngLat([lng, lat]);
@@ -187,8 +237,29 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
       next.set(
         key,
         p.cluster
-          ? { key, kind: "cluster", el, clusterId: Number(p.cluster_id), count: Number(p.point_count), maxSev: Number(p.maxSev ?? 0), lng, lat }
-          : { key, kind: "point", el, id: String(p.id), category: p.category as PublicIncident["category"], severity: Number(p.sevRank), ended: Boolean(p.ended), age: Number(p.age ?? 0), stormState: (p.stormState as StormState | undefined) || null, confirms: Number(p.confirms ?? 0), stormFadeValue: Number(p.stormFade ?? 1) },
+          ? {
+              key,
+              kind: "cluster",
+              el,
+              clusterId: Number(p.cluster_id),
+              count: Number(p.point_count),
+              maxSev: Number(p.maxSev ?? 0),
+              lng,
+              lat,
+            }
+          : {
+              key,
+              kind: "point",
+              el,
+              id: String(p.id),
+              category: p.category as PublicIncident["category"],
+              severity: Number(p.sevRank),
+              ended: Boolean(p.ended),
+              age: Number(p.age ?? 0),
+              stormState: (p.stormState as StormState | undefined) || null,
+              confirms: Number(p.confirms ?? 0),
+              stormFadeValue: Number(p.stormFade ?? 1),
+            },
       );
     }
     for (const [key, marker] of markers.current) {
@@ -229,7 +300,10 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
         // individual tile errors are retried by MapLibre.
         if (!fellBack && isStyleError(e.error, styleUrlFor(resolved.current))) {
           fellBack = true;
-          console.warn("[haven] map style failed, using fallback", e.error?.message);
+          console.warn(
+            "[haven] map style failed, using fallback",
+            e.error?.message,
+          );
           m.setStyle(FALLBACK_RASTER_STYLE);
         }
       });
@@ -254,22 +328,58 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
             id: "incidents-glow",
             type: "circle",
             source: SOURCE,
-            filter: ["all", ["!", ["has", "point_count"]], ["!", ["get", "ended"]]],
+            filter: [
+              "all",
+              ["!", ["has", "point_count"]],
+              ["!", ["get", "ended"]],
+            ],
             paint: {
               "circle-color": ["get", "color"],
-              "circle-radius": ["interpolate", ["linear"], ["zoom"], 11, 18, 14, 34, 17, 70],
+              "circle-radius": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                11,
+                18,
+                14,
+                34,
+                17,
+                70,
+              ],
               "circle-blur": 1,
-              "circle-opacity": ["match", ["get", "sevRank"], 3, 0.5, 2, 0.4, 1, 0.3, 0.2],
+              "circle-opacity": [
+                "match",
+                ["get", "sevRank"],
+                3,
+                0.5,
+                2,
+                0.4,
+                1,
+                0.3,
+                0.2,
+              ],
             },
           });
           // Invisible layer so the source's tiles load and can be queried.
-          m.addLayer({ id: "incidents-hit", type: "circle", source: SOURCE, paint: { "circle-opacity": 0, "circle-radius": 1 } });
+          m.addLayer({
+            id: "incidents-hit",
+            type: "circle",
+            source: SOURCE,
+            paint: { "circle-opacity": 0, "circle-radius": 1 },
+          });
         }
         addActivityLayer(m, "incidents-glow");
-        (m.getSource(ACTIVITY) as GeoJSONSource | undefined)?.setData(activityGeoJson(latest.current));
+        (m.getSource(ACTIVITY) as GeoJSONSource | undefined)?.setData(
+          activityGeoJson(latest.current),
+        );
+        drawUserRef.current();
         // A style swap drops sources; restore the current incidents.
-        (m.getSource(SOURCE) as GeoJSONSource).setData(toGeoJson(latest.current));
-        (m.getSource(BEACONS) as GeoJSONSource | undefined)?.setData(beaconGeoJson(latest.current));
+        (m.getSource(SOURCE) as GeoJSONSource).setData(
+          toGeoJson(latest.current),
+        );
+        (m.getSource(BEACONS) as GeoJSONSource | undefined)?.setData(
+          beaconGeoJson(latest.current),
+        );
         setReady(true);
         // Tiles arrive after "load"; keep the placeholder until the first full paint.
         const done = () => setPainted(true);
@@ -282,12 +392,15 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
         emitViewport();
         onCamera.current?.({ bearing: m.getBearing(), pitch: m.getPitch() });
       });
-      m.on("rotate", () => onCamera.current?.({ bearing: m.getBearing(), pitch: m.getPitch() }));
+      m.on("rotate", () =>
+        onCamera.current?.({ bearing: m.getBearing(), pitch: m.getPitch() }),
+      );
       m.on("sourcedata", (e) => {
         if (e.sourceId === SOURCE && e.isSourceLoaded) syncMarkers();
       });
       m.on("click", (e) => {
-        if ((e.originalEvent.target as HTMLElement).closest(".haven-marker")) return;
+        if ((e.originalEvent.target as HTMLElement).closest(".haven-marker"))
+          return;
         onSelectRef.current(null);
       });
     })().catch((err) => {
@@ -311,8 +424,12 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
     const src = map.current?.getSource(SOURCE) as GeoJSONSource | undefined;
     if (!ready || !src) return;
     src.setData(toGeoJson(incidents));
-    (map.current?.getSource(BEACONS) as GeoJSONSource | undefined)?.setData(beaconGeoJson(incidents));
-    (map.current?.getSource(ACTIVITY) as GeoJSONSource | undefined)?.setData(activityGeoJson(incidents));
+    (map.current?.getSource(BEACONS) as GeoJSONSource | undefined)?.setData(
+      beaconGeoJson(incidents),
+    );
+    (map.current?.getSource(ACTIVITY) as GeoJSONSource | undefined)?.setData(
+      activityGeoJson(incidents),
+    );
   }, [incidents, ready]);
 
   // Switch between day, night and satellite. Re-checks auto mode every few minutes.
@@ -331,46 +448,71 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
     return () => clearInterval(t);
   }, [mode, ready]);
 
-  // User location dot.
+  // User location dot and the 1-mile ring. Redrawn whenever the position or
+  // the style changes (a style swap drops the ring's source and layers).
   useEffect(() => {
-    const m = map.current;
-    const ml = lib.current;
-    if (!ready || !m || !ml) return;
-    if (!userPosition) {
-      userMarker.current?.remove();
-      userMarker.current = null;
-      ringLabel.current?.remove();
-      ringLabel.current = null;
-      return;
-    }
-    // A soft 1-mile ring so "near you" has a visible meaning.
-    const ring = circlePolygon(userPosition, RING_METERS);
-    const ringSrc = m.getSource(RING) as GeoJSONSource | undefined;
-    if (ringSrc) ringSrc.setData(ring);
-    else {
-      m.addSource(RING, { type: "geojson", data: ring });
-      m.addLayer({ id: `${RING}-fill`, type: "fill", source: RING, paint: { "fill-color": "#ffffff", "fill-opacity": 0.05 } });
-      m.addLayer({ id: `${RING}-line`, type: "line", source: RING, paint: { "line-color": "#ffffff", "line-opacity": 0.28, "line-width": 1.2 } });
-    }
-    if (!ringLabel.current) {
-      const el = document.createElement("div");
-      el.textContent = "1 mi";
-      el.style.cssText = "pointer-events:none;color:rgba(255,255,255,.8);font:600 11px/1 system-ui;letter-spacing:.02em;text-shadow:0 1px 2px rgba(0,0,0,.8);transform:translateY(-8px)";
-      ringLabel.current = new ml.Marker({ element: el }).setLngLat([userPosition.lng, ring.properties.topLat]).addTo(m);
-    } else {
-      ringLabel.current.setLngLat([userPosition.lng, ring.properties.topLat]);
-    }
-    if (!userMarker.current) {
-      const el = document.createElement("div");
-      el.setAttribute("aria-label", "Your location");
-      el.innerHTML =
-        '<span style="position:absolute;inset:0;border-radius:9999px;background:rgba(61,139,255,.35)" class="haven-pulse"></span>' +
-        '<span style="position:absolute;inset:4px;border-radius:9999px;background:#3d8bff;border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.5)"></span>';
-      el.style.cssText = "position:relative;width:24px;height:24px;pointer-events:none;z-index:4";
-      userMarker.current = new ml.Marker({ element: el }).setLngLat([userPosition.lng, userPosition.lat]).addTo(m);
-    } else {
-      userMarker.current.setLngLat([userPosition.lng, userPosition.lat]);
-    }
+    drawUserRef.current = () => {
+      const m = map.current;
+      const ml = lib.current;
+      const p = userPosition;
+      if (!m || !ml || !m.isStyleLoaded()) return;
+      if (!p) {
+        userMarker.current?.remove();
+        userMarker.current = null;
+        ringLabel.current?.remove();
+        ringLabel.current = null;
+        return;
+      }
+      const day = resolved.current === "day";
+      const ink = day ? "#111318" : "#ffffff";
+      const ring = circlePolygon(p, RING_METERS);
+      const ringSrc = m.getSource(RING) as GeoJSONSource | undefined;
+      if (ringSrc) ringSrc.setData(ring);
+      else {
+        m.addSource(RING, { type: "geojson", data: ring });
+        m.addLayer({
+          id: `${RING}-fill`,
+          type: "fill",
+          source: RING,
+          paint: { "fill-color": ink, "fill-opacity": day ? 0.035 : 0.05 },
+        });
+        m.addLayer({
+          id: `${RING}-line`,
+          type: "line",
+          source: RING,
+          paint: {
+            "line-color": ink,
+            "line-opacity": day ? 0.22 : 0.28,
+            "line-width": 1.2,
+          },
+        });
+      }
+      if (!ringLabel.current) {
+        const el = document.createElement("div");
+        el.textContent = "1 mi";
+        ringLabel.current = new ml.Marker({ element: el })
+          .setLngLat([p.lng, ring.properties.topLat])
+          .addTo(m);
+      } else {
+        ringLabel.current.setLngLat([p.lng, ring.properties.topLat]);
+      }
+      ringLabel.current.getElement().style.cssText = `pointer-events:none;color:${ink};opacity:.8;font:600 11px/1 system-ui;letter-spacing:.02em;text-shadow:0 1px 2px ${day ? "rgba(255,255,255,.9)" : "rgba(0,0,0,.8)"};transform:translateY(-8px)`;
+      if (!userMarker.current) {
+        const el = document.createElement("div");
+        el.setAttribute("aria-label", "Your location");
+        el.innerHTML =
+          '<span style="position:absolute;inset:0;border-radius:9999px;background:rgba(61,139,255,.35)" class="haven-pulse"></span>' +
+          '<span style="position:absolute;inset:4px;border-radius:9999px;background:#3d8bff;border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.5)"></span>';
+        el.style.cssText =
+          "position:relative;width:24px;height:24px;pointer-events:none;z-index:4";
+        userMarker.current = new ml.Marker({ element: el })
+          .setLngLat([p.lng, p.lat])
+          .addTo(m);
+      } else {
+        userMarker.current.setLngLat([p.lng, p.lat]);
+      }
+    };
+    if (ready) drawUserRef.current();
   }, [userPosition, ready]);
 
   // Marker containers are separate stacking contexts, so layer them here:
@@ -378,14 +520,22 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
   useEffect(() => {
     for (const v of visible) {
       const el = markers.current.get(v.key)?.getElement();
-      if (el) el.style.zIndex = v.kind === "cluster" ? "5" : v.id === selectedId ? "30" : String(10 + v.severity);
+      if (el)
+        el.style.zIndex =
+          v.kind === "cluster"
+            ? "5"
+            : v.id === selectedId
+              ? "30"
+              : String(10 + v.severity);
     }
   }, [visible, selectedId]);
 
   // Keep the selected incident visible above the preview sheet.
   useEffect(() => {
     const m = map.current;
-    const inc = selectedId ? latest.current.find((i) => i.id === selectedId) : null;
+    const inc = selectedId
+      ? latest.current.find((i) => i.id === selectedId)
+      : null;
     if (!m || !inc) return;
     const pt = m.project([inc.longitude, inc.latitude]);
     const h = m.getContainer().clientHeight;
@@ -393,7 +543,8 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
     // ~1.5 zoom levels closer, never past street level, never zooming out.
     const tilted = m.getPitch() > 5;
     const zoom = Math.max(m.getZoom(), Math.min(m.getZoom() + 1.5, 16.5));
-    const move = zoom > m.getZoom() + 0.05 || tilted || pt.y > h * 0.42 || pt.y < 120;
+    const move =
+      zoom > m.getZoom() + 0.05 || tilted || pt.y > h * 0.42 || pt.y < 120;
     if (move) {
       m.easeTo({
         center: [inc.longitude, inc.latitude],
@@ -406,22 +557,38 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
     }
   }, [selectedId]);
 
-  const zoomIntoCluster = useCallback(async (clusterId: number, lng: number, lat: number) => {
-    const m = map.current;
-    const src = m?.getSource(SOURCE) as GeoJSONSource | undefined;
-    if (!m || !src) return;
-    const zoom = await src.getClusterExpansionZoom(clusterId);
-    m.easeTo({ center: [lng, lat], zoom: Math.min(zoom + 0.2, 17), duration: 650, easing: (t) => 1 - Math.pow(1 - t, 3) });
-  }, []);
+  const zoomIntoCluster = useCallback(
+    async (clusterId: number, lng: number, lat: number) => {
+      const m = map.current;
+      const src = m?.getSource(SOURCE) as GeoJSONSource | undefined;
+      if (!m || !src) return;
+      const zoom = await src.getClusterExpansionZoom(clusterId);
+      m.easeTo({
+        center: [lng, lat],
+        zoom: Math.min(zoom + 0.2, 17),
+        duration: 650,
+        easing: (t) => 1 - Math.pow(1 - t, 3),
+      });
+    },
+    [],
+  );
 
   return (
     <>
       {/* maplibre forces position:relative on its container, so size it from a wrapper. */}
       <div className="absolute inset-0 isolate">
-        <div ref={container} className="h-full w-full" role="region" aria-label="Incident map" />
+        <div
+          ref={container}
+          className="h-full w-full"
+          role="region"
+          aria-label="Incident map"
+        />
       </div>
       {!painted && !failed && (
-        <div className="map-skeleton pointer-events-none absolute inset-0 transition-opacity duration-500" aria-hidden>
+        <div
+          className="map-skeleton pointer-events-none absolute inset-0 transition-opacity duration-500"
+          aria-hidden
+        >
           <div className="haven-shimmer absolute inset-0 opacity-60" />
         </div>
       )}
@@ -433,18 +600,21 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
       {visible.map((v) =>
         createPortal(
           v.kind === "cluster" ? (
-            <ClusterMarker count={v.count} maxSev={v.maxSev} onClick={() => zoomIntoCluster(v.clusterId, v.lng, v.lat)} />
+            <ClusterMarker
+              count={v.count}
+              maxSev={v.maxSev}
+              onClick={() => zoomIntoCluster(v.clusterId, v.lng, v.lat)}
+            />
+          ) : v.stormState ? (
+            <StormPin
+              category={v.category}
+              state={v.stormState}
+              confirms={v.confirms}
+              fade={v.stormFadeValue}
+              selected={v.id === selectedId}
+              onClick={() => onSelect(v.id)}
+            />
           ) : (
-            v.stormState ? (
-              <StormPin
-                category={v.category}
-                state={v.stormState}
-                confirms={v.confirms}
-                fade={v.stormFadeValue}
-                selected={v.id === selectedId}
-                onClick={() => onSelect(v.id)}
-              />
-            ) : (
             <PointMarker
               category={v.category}
               severity={v.severity}
@@ -453,7 +623,6 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
               selected={v.id === selectedId}
               onClick={() => onSelect(v.id)}
             />
-            )
           ),
           v.el,
           v.key,
@@ -467,7 +636,10 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
 export const tuneStyle = tuneNightStyle;
 
 /** A circle on the ground as a polygon; `topLat` is where its label goes. */
-function circlePolygon(c: LatLng, meters: number): GeoJSON.Feature<GeoJSON.Polygon, { topLat: number }> {
+function circlePolygon(
+  c: LatLng,
+  meters: number,
+): GeoJSON.Feature<GeoJSON.Polygon, { topLat: number }> {
   const dLat = (meters / 6_371_000) * (180 / Math.PI);
   const dLng = dLat / Math.max(0.01, Math.cos((c.lat * Math.PI) / 180));
   const ring: [number, number][] = [];
@@ -475,7 +647,11 @@ function circlePolygon(c: LatLng, meters: number): GeoJSON.Feature<GeoJSON.Polyg
     const a = (i / 64) * 2 * Math.PI;
     ring.push([c.lng + dLng * Math.cos(a), c.lat + dLat * Math.sin(a)]);
   }
-  return { type: "Feature", properties: { topLat: c.lat + dLat }, geometry: { type: "Polygon", coordinates: [ring] } };
+  return {
+    type: "Feature",
+    properties: { topLat: c.lat + dLat },
+    geometry: { type: "Polygon", coordinates: [ring] },
+  };
 }
 
 function toGeoJson(incidents: PublicIncident[]): GeoJSON.FeatureCollection {
@@ -528,7 +704,12 @@ function PointMarker({
   // Ended incidents recede to a small gray dot so live ones own the map.
   if (ended && !selected) {
     return (
-      <button type="button" onClick={press} aria-label={label} className="haven-marker relative flex size-4 items-center justify-center">
+      <button
+        type="button"
+        onClick={press}
+        aria-label={label}
+        className="haven-marker relative flex size-4 items-center justify-center"
+      >
         <span className="size-3 rounded-full border-2 border-white/80 bg-[#6b7280] shadow-[0_1px_4px_rgba(0,0,0,.5)]" />
       </button>
     );
@@ -537,10 +718,17 @@ function PointMarker({
   const color = ended ? "#6b7280" : def.color;
   // Recency: full strength for 2h, then fades gently (never below 75%) toward 24h.
   const fade = age <= 2 ? 1 : Math.max(0.75, 1 - ((age - 2) / 22) * 0.25);
-  const size = selected ? 50 : [38, 40, 42, 46][Math.max(0, Math.min(3, severity))];
+  const size = selected
+    ? 50
+    : [38, 40, 42, 46][Math.max(0, Math.min(3, severity))];
   const live = age < 1 && severity >= 1;
   const mins = Math.round(age * 60);
-  const when = mins < 60 ? `${Math.max(1, mins)}m` : age < 24 ? `${Math.round(age)}h` : `${Math.round(age / 24)}d`;
+  const when =
+    mins < 60
+      ? `${Math.max(1, mins)}m`
+      : age < 24
+        ? `${Math.round(age)}h`
+        : `${Math.round(age / 24)}d`;
   return (
     <button
       type="button"
@@ -548,7 +736,11 @@ function PointMarker({
       aria-label={label}
       aria-pressed={selected}
       className="haven-marker haven-pop relative flex items-center justify-center"
-      style={{ width: size + 8, height: size + 8, opacity: selected ? 1 : fade }}
+      style={{
+        width: size + 8,
+        height: size + 8,
+        opacity: selected ? 1 : fade,
+      }}
     >
       {live && !selected && (
         <span
@@ -569,12 +761,19 @@ function PointMarker({
           transition: "box-shadow 160ms",
         }}
       >
-        <CategoryGlyph category={category} animated={false} style={{ width: size * 0.5, height: size * 0.5 }} />
+        <CategoryGlyph
+          category={category}
+          animated={false}
+          style={{ width: size * 0.5, height: size * 0.5 }}
+        />
       </span>
       {/* When it was reported, as a small tag on the rim. */}
       <span
         className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 rounded-full px-1.5 text-[10px] font-bold leading-[15px] text-white tnum"
-        style={{ background: live ? "#ff2d55" : "#2a2e38", boxShadow: "0 0 0 1.5px #0b0c0f" }}
+        style={{
+          background: live ? "#ff2d55" : "#2a2e38",
+          boxShadow: "0 0 0 1.5px #0b0c0f",
+        }}
         aria-hidden
       >
         {when}
@@ -616,10 +815,22 @@ function StormPin({
       aria-label={label}
       aria-pressed={selected}
       className="haven-marker haven-pop relative flex items-center justify-center"
-      style={{ width: size, height: size + 7, opacity: selected ? 1 : Math.max(0.45, fade) }}
+      style={{
+        width: size,
+        height: size + 7,
+        opacity: selected ? 1 : Math.max(0.45, fade),
+      }}
     >
       {flooded && (
-        <span className="haven-pulse absolute left-1/2 top-0 -translate-x-1/2 rounded-full" style={{ width: size, height: size, background: "rgba(255,45,32,.55)" }} aria-hidden />
+        <span
+          className="haven-pulse absolute left-1/2 top-0 -translate-x-1/2 rounded-full"
+          style={{
+            width: size,
+            height: size,
+            background: "rgba(255,45,32,.55)",
+          }}
+          aria-hidden
+        />
       )}
       <span
         className="absolute left-1/2 top-0 flex -translate-x-1/2 items-center justify-center"
@@ -635,7 +846,11 @@ function StormPin({
             : `0 0 0 2px ${flooded ? "#fff" : `color-mix(in srgb, ${style.color} 75%, transparent)`}, 0 4px 12px rgba(0,0,0,.55)`,
         }}
       >
-        <CategoryGlyph category={category} animated={false} style={{ width: size * 0.56, height: size * 0.56 }} />
+        <CategoryGlyph
+          category={category}
+          animated={false}
+          style={{ width: size * 0.56, height: size * 0.56 }}
+        />
         {/* Good news gets a check, bad news an x: readable without color. */}
         <span
           className="absolute -bottom-1 -left-1 flex size-[17px] items-center justify-center rounded-full bg-white text-[11px] font-black leading-none text-[#0b0c0f]"
@@ -654,15 +869,32 @@ function StormPin({
       )}
       <span
         className="absolute left-1/2 -translate-x-1/2"
-        style={{ bottom: 0, width: 0, height: 0, borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderTop: "8px solid #fff" }}
+        style={{
+          bottom: 0,
+          width: 0,
+          height: 0,
+          borderLeft: "6px solid transparent",
+          borderRight: "6px solid transparent",
+          borderTop: "8px solid #fff",
+        }}
         aria-hidden
       />
     </button>
   );
 }
 
-function ClusterMarker({ count, maxSev, onClick }: { count: number; maxSev: number; onClick: () => void }) {
-  const ring = ["#6b7280", "#f5b84b", "#ff8a5c", "#ff2d55"][Math.max(0, Math.min(3, maxSev))];
+function ClusterMarker({
+  count,
+  maxSev,
+  onClick,
+}: {
+  count: number;
+  maxSev: number;
+  onClick: () => void;
+}) {
+  const ring = ["#6b7280", "#f5b84b", "#ff8a5c", "#ff2d55"][
+    Math.max(0, Math.min(3, maxSev))
+  ];
   const size = count >= 50 ? 48 : count >= 10 ? 42 : 38;
   return (
     <button
@@ -673,7 +905,11 @@ function ClusterMarker({ count, maxSev, onClick }: { count: number; maxSev: numb
       }}
       aria-label={`${count} incidents here. Zoom in.`}
       className="haven-marker haven-pop flex items-center justify-center rounded-full bg-[#15181f] text-[14px] font-bold text-white tnum"
-      style={{ width: size, height: size, boxShadow: `0 0 0 2px ${ring}, 0 4px 12px rgba(0,0,0,.5)` }}
+      style={{
+        width: size,
+        height: size,
+        boxShadow: `0 0 0 2px ${ring}, 0 4px 12px rgba(0,0,0,.5)`,
+      }}
     >
       {count}
     </button>

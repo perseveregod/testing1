@@ -55,9 +55,10 @@ export function PlacesSection() {
     <>
       <Group
         id="places"
-        title={`Saved places · ${places.length}/${max}`}
+        title={places.length === 0 ? "Saved places" : `Saved places · ${places.length}/${max}`}
         action={
-          !atLimit && (
+          // With no places yet, the "Add a place" row below is the only call to action.
+          !atLimit && places.length > 0 && (
             <button onClick={() => setAdding(true)} className="press inline-flex min-h-11 items-center gap-1 rounded-full px-2 text-[14px] font-medium text-brand">
               <Plus className="size-4" aria-hidden /> Add
             </button>

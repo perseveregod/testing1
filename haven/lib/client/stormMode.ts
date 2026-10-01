@@ -81,3 +81,25 @@ export async function preparePhoto(file: File): Promise<string> {
     URL.revokeObjectURL(url);
   }
 }
+
+// "Report" in Storm Mode lives on the tab bar's center button, which is
+// outside the map screen. A tick lets the button ask the map to open the
+// report sheet without routing or shared React state.
+let reportTick = 0;
+const reportListeners = new Set<() => void>();
+
+export function requestStormReport() {
+  reportTick += 1;
+  reportListeners.forEach((l) => l());
+}
+
+export function useStormReportTick(): number {
+  return useSyncExternalStore(
+    (cb) => {
+      reportListeners.add(cb);
+      return () => reportListeners.delete(cb);
+    },
+    () => reportTick,
+    () => 0,
+  );
+}

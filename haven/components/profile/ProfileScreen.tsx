@@ -13,7 +13,6 @@ import { CategoryIcon } from "@/components/incident/CategoryIcon";
 import { DemoTag, StatusPill } from "@/components/incident/Badges";
 import { EmergencyNote } from "@/components/EmergencyNote";
 import { PageHeader } from "@/components/nav/PageHeader";
-import { ButtonLink } from "@/components/ui/Button";
 import { Group, Row } from "@/components/ui/Controls";
 import { Skeleton } from "@/components/ui/States";
 import { PlacesSection } from "./PlacesSection";
@@ -137,7 +136,7 @@ function MyReports() {
           <Skeleton className="h-10 w-full" />
         </div>
       ) : items.length === 0 ? (
-        <Row title={<span className="text-[15px] text-muted">Nothing reported recently</span>} trailing={<ButtonLink href="/report" variant="secondary" size="sm">Report</ButtonLink>} />
+        <Row title={<span className="text-[15px] text-muted">Nothing reported in the last 24 hours</span>} />
       ) : (
         items.slice(0, 10).map((i) => (
           <Row
