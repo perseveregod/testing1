@@ -19,8 +19,8 @@ import type { ListQuery } from "@/lib/validation";
 import { config } from "../config";
 import { describeLocation } from "../geocode";
 import { ApiError, rateLimit } from "../http";
-import { publicSource } from "../sources/registry";
-import { getStore } from "../store";
+import { publicSource, USER_SOURCE } from "../sources/registry";
+import { getStore, type Store } from "../store";
 import type { UserRecord } from "../store/types";
 import { dispatchAlerts } from "./alerts";
 
@@ -198,12 +198,29 @@ export async function findDuplicate(
   return open[0] ?? null;
 }
 
+// Incidents reference a data_sources row. The feeds register theirs while
+// ingesting; community reports have no adapter, so register "user" once per
+// store before the first report (a failed attempt is retried next time).
+const userSourceReady = new WeakMap<Store, Promise<void>>();
+function ensureUserSource(store: Store): Promise<void> {
+  let p = userSourceReady.get(store);
+  if (!p) {
+    p = store.upsertSource({ ...USER_SOURCE, enabled: true, lastSyncedAt: null }).catch((err) => {
+      userSourceReady.delete(store);
+      throw err;
+    });
+    userSourceReady.set(store, p);
+  }
+  return p;
+}
+
 export async function createReport(
   input: CreateReportInput,
   user: UserRecord,
   ip: string,
 ): Promise<CreateReportResult> {
   const store = getStore();
+  await ensureUserSource(store);
 
   if (input.clientRequestId) {
     const prior = await store.findReportByClientId(user.id, input.clientRequestId);

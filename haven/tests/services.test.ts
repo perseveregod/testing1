@@ -259,3 +259,27 @@ describe("demo email sign-in", () => {
     expect(u.email).toBe("test@example.com");
   });
 });
+
+describe("community reports on a database with foreign keys", () => {
+  // Postgres rejects an incident whose source_id has no data_sources row. The
+  // feeds register their rows while ingesting; community reports must too.
+  class StrictStore extends LocalStore {
+    async insertIncident(rec: IncidentRecord) {
+      const known = (await this.listSources()).map((s) => s.id);
+      if (!known.includes(rec.sourceId)) {
+        throw new Error('[supabase] insert or update on table "incidents" violates foreign key constraint "incidents_source_id_fkey"');
+      }
+      return super.insertIncident(rec);
+    }
+  }
+
+  it("registers the user source before the first report", async () => {
+    store = new StrictStore(null);
+    setStoreForTests(store);
+    const u = await user();
+    const r = await report(u);
+    expect(r.merged).toBe(false);
+    const sources = await store.listSources();
+    expect(sources.find((s) => s.id === "user")).toMatchObject({ kind: "user", enabled: true });
+  });
+});
