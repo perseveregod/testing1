@@ -33,3 +33,15 @@ jobs:
         env:
           GEOCODER_DISABLED: "1"
           INCIDENT_SOURCES: demo
+      - name: Install Chromium for the smoke tests
+        run: npx playwright install --with-deps chromium
+      - name: Smoke tests (feed, map, report)
+        run: npm run e2e
+        env:
+          CI: "1"
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: haven/test-results
+          retention-days: 7

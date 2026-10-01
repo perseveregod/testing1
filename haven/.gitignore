@@ -43,3 +43,7 @@ next-env.d.ts
 
 # local data store (dev)
 /.data/
+
+# Playwright
+test-results/
+playwright-report/

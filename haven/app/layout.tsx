@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import { AppProviders } from "@/components/providers/AppProviders";
 import "./globals.css";
 
@@ -48,6 +49,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <div className="relative z-[1] min-h-full">
           <AppProviders>{children}</AppProviders>
         </div>
+        {/* Vercel Web Analytics: page views only, no cookies, no personal data. The
+            script is a 404 until it's switched on in the Vercel dashboard. */}
+        {process.env.VERCEL && <Script src="/_vercel/insights/script.js" strategy="afterInteractive" />}
       </body>
     </html>
   );
