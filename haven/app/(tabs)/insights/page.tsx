@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: "Area insights" };
 
 export default function InsightsPage() {
   return (
-    <PageTransition>
+    <PageTransition push>
       <InsightsScreen />
     </PageTransition>
   );

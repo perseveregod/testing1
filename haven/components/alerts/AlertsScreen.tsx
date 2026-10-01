@@ -77,6 +77,7 @@ export function AlertsScreen() {
               <li key={n.id}>
                 <Link
                   href={`/incidents/${n.incidentId}`}
+                  prefetch={false}
                   transitionTypes={["nav-forward"]}
                   onClick={() => !n.readAt && !n.isDemo && apiSend("/api/notifications/read", "POST", { ids: [n.id] }).then(() => mutate())}
                   className="-mx-4 flex items-start gap-3.5 px-4 py-4 transition active:bg-white/[0.03]"

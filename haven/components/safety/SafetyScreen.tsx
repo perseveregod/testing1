@@ -44,14 +44,16 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
   const overdue = walk != null && now > 0 && now > walk.endsAt;
 
   const briefing = useMemo(() => {
-    const active = items.filter((i) => i.status !== "resolved" && i.category !== "missing_pet");
+    // Same number as the Map and Feed: everything still active, pets included.
+    const active = items.filter((i) => i.status !== "resolved");
+    const incidents = active.filter((i) => i.category !== "missing_pet");
     const byGroup = FILTER_GROUPS.map((g) => ({
       ...g,
       count: active.filter((i) => getCategory(i.category).group === g.id).length,
     }))
       .filter((g) => g.count > 0)
       .sort((a, b) => b.count - a.count);
-    const top = [...active]
+    const top = [...incidents]
       .sort((a, b) => SEV[b.severity] - SEV[a.severity] || b.createdAt.localeCompare(a.createdAt))
       .slice(0, 3);
     const pets = items.filter((i) => i.category === "missing_pet" && i.status !== "resolved");
@@ -254,6 +256,7 @@ function BriefRow({ incident, distanceMi }: { incident: PublicIncident; distance
     <li>
       <Link
         href={`/incidents/${incident.id}`}
+        prefetch={false}
         transitionTypes={["nav-forward"]}
         className="flex items-center gap-3 py-3 active:opacity-70"
       >

@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: "Incident" };
 
 export default async function IncidentPage(props: PageProps<"/incidents/[id]">) {
   const { id } = await props.params;
-  return <PageTransition>
+  return <PageTransition push>
       <IncidentDetailScreen id={id} />
     </PageTransition>;
 }

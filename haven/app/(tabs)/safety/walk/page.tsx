@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: "Safe Walk" };
 
 export default function SafeWalkPage() {
   return (
-    <PageTransition>
+    <PageTransition push>
       <SafeWalkScreen />
     </PageTransition>
   );

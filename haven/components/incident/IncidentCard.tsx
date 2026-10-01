@@ -21,6 +21,7 @@ export function DispatchRow({ incident, distanceMi }: { incident: PublicIncident
   return (
     <Link
       href={`/incidents/${incident.id}`}
+      prefetch={false}
       transitionTypes={["nav-forward"]}
       className="relative -mx-4 flex min-h-[60px] items-center gap-3 px-4 py-2.5 transition-colors active:bg-white/[0.03]"
     >
@@ -83,6 +84,7 @@ export function IncidentRow({ incident, distanceMi }: { incident: PublicIncident
   return (
     <Link
       href={`/incidents/${incident.id}`}
+      prefetch={false}
       transitionTypes={["nav-forward"]}
       className="group relative -mx-4 flex gap-3.5 px-4 py-4 transition-colors active:bg-white/[0.03]"
     >
@@ -153,6 +155,7 @@ export function TopIncidentCard({ incident, distanceMi }: { incident: PublicInci
   return (
     <Link
       href={`/incidents/${incident.id}`}
+      prefetch={false}
       transitionTypes={["nav-forward"]}
       className="press relative mt-2 block overflow-hidden rounded-card bg-surface p-4 shadow-[inset_0_0_0_1px_var(--line)]"
     >

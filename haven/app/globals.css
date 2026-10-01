@@ -166,8 +166,8 @@ body {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.01)),
     rgba(14, 16, 22, 0.74);
-  backdrop-filter: blur(22px) saturate(150%);
-  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
   border: 0.5px solid rgba(255, 255, 255, 0.16);
   box-shadow:
     var(--glass-rim),
@@ -176,12 +176,12 @@ body {
 }
 /* Floating panel over the map: the surface color, slightly see-through. */
 @utility panel {
-  background: color-mix(in srgb, var(--surface) 92%, transparent);
-  backdrop-filter: blur(20px) saturate(150%);
-  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  /* No backdrop blur: a dozen blurred layers over a moving WebGL map is the
+     single most expensive thing a phone GPU can be asked to do. */
+  background: color-mix(in srgb, var(--surface) 95%, transparent);
   box-shadow:
     inset 0 0 0 0.5px var(--line-strong),
-    0 8px 30px -10px rgba(0, 0, 0, 0.5);
+    0 6px 24px -10px rgba(0, 0, 0, 0.45);
 }
 /* Edge-to-edge bars (headers) once content scrolls under them. */
 @utility glass-bar {
@@ -267,10 +267,9 @@ body {
   animation: haven-drift 22s ease-in-out infinite reverse;
   will-change: transform;
 }
-/* Staggered entrance for lists: set --i on each child. */
+/* Lists appear at once. (A staggered build-in read as the app being slow.) */
 .stagger > * {
-  animation: haven-rise 520ms var(--ease-out) both;
-  animation-delay: calc(var(--i, 0) * 45ms);
+  animation: none;
 }
 
 /* ---- motion ------------------------------------------------------------ */
@@ -356,11 +355,11 @@ body {
 @keyframes haven-rise {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(4px);
   }
 }
 .haven-rise {
-  animation: haven-rise 420ms var(--ease-out) both;
+  animation: haven-rise 180ms var(--ease-out) both;
 }
 
 @keyframes haven-pop {
@@ -392,16 +391,31 @@ body {
   inset: 0;
   z-index: 0;
 }
-/* Hidden only after the page above has settled, so there is never a flash. */
+/* Off the map tab the map is hidden at once: the page above is opaque, and
+   compositing WebGL under it would only cost frames. */
 .map-host[data-active="false"] {
   visibility: hidden;
-  transition: visibility 0s linear 320ms;
 }
 .page-root {
   position: relative;
   z-index: 2;
   min-height: 100dvh;
   background: var(--bg);
+}
+/* Detail screens slide in from the right; going back is instant. */
+@keyframes page-push {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+}
+.page-push {
+  animation: page-push 240ms var(--ease-out) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-push {
+    animation: none;
+  }
 }
 
 /* ---- page transitions (React <ViewTransition>) -------------------------- */

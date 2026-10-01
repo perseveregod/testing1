@@ -165,7 +165,7 @@ export function Row({
     </>
   );
   const cls = "flex min-h-[52px] w-full items-center gap-3 py-2.5 text-left";
-  if (href) return <Link href={href} className={`${cls} active:opacity-60`}>{body}</Link>;
+  if (href) return <Link href={href} prefetch={href.startsWith("/incidents/") ? false : undefined} className={`${cls} active:opacity-60`}>{body}</Link>;
   if (onClick) return <button onClick={onClick} className={`${cls} active:opacity-60`}>{body}</button>;
   return <div className={cls}>{body}</div>;
 }

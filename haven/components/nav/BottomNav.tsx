@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ViewTransition } from "react";
 import { List, Map as MapIcon, Plus, ShieldHalf, UserRound, UsersRound, Zap } from "lucide-react";
 import { useNotifications } from "@/lib/client/hooks";
 import { useMapTone } from "@/lib/client/mapTone";
@@ -28,7 +27,6 @@ export function BottomNav() {
   const tone = useMapTone();
 
   return (
-    <ViewTransition name="tab-bar" default="none" share="none">
       <nav
         aria-label="Main"
         className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3"
@@ -92,6 +90,5 @@ export function BottomNav() {
           })}
         </ul>
       </nav>
-    </ViewTransition>
   );
 }

@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Lifetime" };
 
 export default function UpgradePage() {
   return (
-    <PageTransition>
+    <PageTransition push>
       <Suspense>
         <UpgradeScreen />
       </Suspense>

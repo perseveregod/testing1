@@ -5,7 +5,7 @@ import { ReportFlow } from "@/components/report/ReportFlow";
 export const metadata: Metadata = { title: "Report" };
 
 export default function ReportPage() {
-  return <PageTransition>
+  return <PageTransition push>
       <ReportFlow />
     </PageTransition>;
 }

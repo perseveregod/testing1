@@ -5,7 +5,7 @@ import { AlertsScreen } from "@/components/alerts/AlertsScreen";
 export const metadata: Metadata = { title: "Alerts" };
 
 export default function AlertsPage() {
-  return <PageTransition>
+  return <PageTransition push>
       <AlertsScreen />
     </PageTransition>;
 }

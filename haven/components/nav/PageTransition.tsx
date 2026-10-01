@@ -1,14 +1,7 @@
-import { ViewTransition } from "react";
-
-// Wraps each page so route changes animate: a quick fade between tabs, a
-// directional slide when drilling into or out of a detail screen.
-// Navigations without a type (browser back, refresh) don't animate.
-// `.page-root` gives every page an opaque surface above the always-mounted map.
-export function PageTransition({ children }: { children: React.ReactNode }) {
-  const map = { tab: "tab", "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" };
-  return (
-    <ViewTransition enter={map} exit={map} default="none">
-      <div className="page-root">{children}</div>
-    </ViewTransition>
-  );
+// Pages sit on an opaque surface above the always-mounted map. Tab switches
+// are instant, like a native tab bar. Detail screens (`push`) slide in with a
+// plain CSS animation: no View Transition snapshots, which cost ~200 ms of
+// frozen UI per navigation on a phone.
+export function PageTransition({ children, push }: { children: React.ReactNode; push?: boolean }) {
+  return <div className={push ? "page-root page-push" : "page-root"}>{children}</div>;
 }

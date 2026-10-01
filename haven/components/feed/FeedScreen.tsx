@@ -39,6 +39,8 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
   const { position, status, request } = useLocation();
   const { viewer } = useViewer();
   const [filter, setFilter] = useState<FeedFilter>("nearby");
+  // Mount a short list first; the rest comes on request. Keeps the tab instant.
+  const [limit, setLimit] = useState(30);
   const center = position ?? DEFAULT_CENTER;
   const isGroup = filter !== "nearby" && filter !== "newest";
 
@@ -164,7 +166,7 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
                 }
               />
             ) : (
-              rest.map((i, idx) => {
+              rest.slice(0, limit).map((i, idx) => {
                 const section = timeSection(i);
                 const prev = idx > 0 ? rest[idx - 1] : null;
                 const showHeader = !prev || timeSection(prev) !== section;
@@ -184,6 +186,14 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
               })
             )}
           </div>
+          {!isLoading && !error && rest.length > limit && (
+            <button
+              onClick={() => setLimit((n) => n + 50)}
+              className="press mt-2 flex min-h-12 w-full items-center justify-center rounded-2xl bg-surface text-[14.5px] font-semibold text-brand"
+            >
+              Show {Math.min(50, rest.length - limit)} more
+            </button>
+          )}
 
           {!isLoading &&
             !error &&

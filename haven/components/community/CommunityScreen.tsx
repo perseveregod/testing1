@@ -148,6 +148,7 @@ function EventCard({ event, now }: { event: CommunityEvent; now: number }) {
     <li>
       <Link
         href={`/community/${encodeURIComponent(event.id)}`}
+        prefetch={false}
         transitionTypes={["nav-forward"]}
         className="press block rounded-card bg-surface p-4 shadow-[inset_0_0_0_1px_var(--line)]"
       >
