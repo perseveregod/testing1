@@ -17,9 +17,11 @@ import { STATE_STYLE, strings, type StormKind } from "@/lib/storm";
 import { STORM_CATEGORIES } from "@/lib/categories";
 import { StormBanner } from "@/components/storm/StormBanner";
 import { StormIcon } from "@/components/storm/StormIcon";
+import { NearbyPeek } from "@/components/map/NearbyPeek";
+import { useClock } from "@/lib/client/safewalk";
 import { StormReportSheet } from "@/components/storm/StormReportSheet";
 import { DEFAULT_CENTER } from "@/lib/client/defaults";
-import { distanceFrom, useIncidents, useViewer, type InitialIncidents } from "@/lib/client/hooks";
+import { activeLabel, distanceFrom, useIncidents, useNearYou, useViewer, type InitialIncidents } from "@/lib/client/hooks";
 import type { LatLng } from "@/lib/geo";
 import { useLocation } from "@/components/providers/LocationProvider";
 import { IncidentPreview } from "@/components/incident/IncidentPreview";
@@ -187,6 +189,9 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
         },
     storm.on ? null : initial,
   );
+  // The count in the status chip is the shared "near you" number every tab uses.
+  const near = useNearYou(position ?? DEFAULT_CENTER, initial);
+  const now = Math.floor(useClock(true) / 30_000) * 30_000;
   // An official weather alert in view: offer Storm Mode.
   const weatherAlert = !storm.on && items.some((i) => i.source.kind === "weather" && i.status !== "resolved");
 
@@ -393,7 +398,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
             ) : (
               <>
                 <span
-                  className={`size-1.5 rounded-full ${activeCount > 0 ? "bg-live" : "bg-ok"}`}
+                  className={`size-1.5 rounded-full ${(storm.on ? activeCount : near.activeCount) > 0 ? "bg-live" : "bg-ok"}`}
                   aria-hidden
                 />
                 <span>
@@ -401,7 +406,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
                     ? storm.lang === "es"
                       ? `${activeCount} reportes de tormenta · últimas 6 h`
                       : `${activeCount} storm reports · last 6h`
-                    : `${activeCount} active · last 24h`}
+                    : activeLabel(near.activeCount)}
                 </span>
                 {allDemo && (
                   <span className="rounded-[4px] bg-white/[0.1] px-1.5 py-px text-[10.5px] font-semibold uppercase tracking-[0.06em] text-text/80">
@@ -500,6 +505,11 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
                 <Zap className="size-5 fill-current" aria-hidden />
                 {st.report}
               </button>
+            </div>
+          )}
+          {!storm.on && !selected && !showPrompt && !near.isLoading && (
+            <div className="mb-2">
+              <NearbyPeek items={near.items} position={position} now={now} onPick={setSelectedId} />
             </div>
           )}
           <IncidentPreview

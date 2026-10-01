@@ -78,6 +78,7 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
   const userMarker = useRef<Marker | null>(null);
   const [visible, setVisible] = useState<Visible[]>([]);
   const [ready, setReady] = useState(false);
+  const [painted, setPainted] = useState(false);
   const [failed, setFailed] = useState(false);
   const onViewport = useRef(onViewportChange);
   const latest = useRef<PublicIncident[]>(incidents);
@@ -262,6 +263,10 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
         (m.getSource(SOURCE) as GeoJSONSource).setData(toGeoJson(latest.current));
         (m.getSource(BEACONS) as GeoJSONSource | undefined)?.setData(beaconGeoJson(latest.current));
         setReady(true);
+        // Tiles arrive after "load"; keep the placeholder until the first full paint.
+        const done = () => setPainted(true);
+        m.once("idle", done);
+        setTimeout(done, 4000);
         emitViewport();
       });
       m.on("moveend", () => {
@@ -356,15 +361,18 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
     if (!m || !inc) return;
     const pt = m.project([inc.longitude, inc.latitude]);
     const h = m.getContainer().clientHeight;
-    // Glide in and tilt toward the incident, like tapping a place in a maps app.
+    // Glide in toward the incident, like tapping a place in a maps app: at most
+    // ~1.5 zoom levels closer, never past street level, never zooming out.
     const tilted = m.getPitch() > 5;
-    if (tilted || pt.y > h * 0.42 || pt.y < 120) {
+    const zoom = Math.max(m.getZoom(), Math.min(m.getZoom() + 1.5, 16.5));
+    const move = zoom > m.getZoom() + 0.05 || tilted || pt.y > h * 0.42 || pt.y < 120;
+    if (move) {
       m.easeTo({
         center: [inc.longitude, inc.latitude],
         offset: [0, -Math.round(h * 0.2)],
-        zoom: tilted ? Math.max(m.getZoom(), 15.6) : m.getZoom(),
+        zoom,
         pitch: tilted ? 62 : 0,
-        duration: tilted ? 1100 : 600,
+        duration: tilted ? 1100 : 650,
         easing: (t) => 1 - Math.pow(1 - t, 3),
       });
     }
@@ -384,8 +392,8 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
       <div className="absolute inset-0 isolate">
         <div ref={container} className="h-full w-full" role="region" aria-label="Incident map" />
       </div>
-      {!ready && !failed && (
-        <div className="map-skeleton pointer-events-none absolute inset-0" aria-hidden>
+      {!painted && !failed && (
+        <div className="map-skeleton pointer-events-none absolute inset-0 transition-opacity duration-500" aria-hidden>
           <div className="haven-shimmer absolute inset-0 opacity-60" />
         </div>
       )}

@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { MapPinned, Navigation, ShieldCheck } from "lucide-react";
 import { categoriesInGroup, type FilterGroup } from "@/lib/categories";
 import { DEFAULT_CENTER } from "@/lib/client/defaults";
-import { distanceFrom, useIncidents, useViewer, type InitialIncidents } from "@/lib/client/hooks";
+import { activeLabel, distanceFrom, nearYouParams, useIncidents, useViewer, type InitialIncidents } from "@/lib/client/hooks";
 import { errorMessage } from "@/lib/client/api";
 import { useLocation } from "@/components/providers/LocationProvider";
 import {
@@ -36,8 +36,6 @@ const FILTERS: { id: FeedFilter; label: string }[] = [
   { id: "other", label: "Other" },
 ];
 
-const FEED_RADIUS_MI = 10;
-
 export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
   const { position, status, request } = useLocation();
   const { viewer } = useViewer();
@@ -45,13 +43,13 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
   const center = position ?? DEFAULT_CENTER;
   const isGroup = filter !== "nearby" && filter !== "newest";
 
-  const { items, data, error, isLoading, mutate } = useIncidents({
-    center,
-    radiusMi: filter === "nearby" ? 5 : FEED_RADIUS_MI,
-    sort: filter === "nearby" && position ? "distance" : "newest",
-    categories: isGroup ? categoriesInGroup(filter) : undefined,
-    limit: 100,
-  }, initial);
+  const { items, error, isLoading, mutate } = useIncidents(
+    nearYouParams(center, {
+      sort: filter === "nearby" && position ? "distance" : "newest",
+      categories: isGroup ? categoriesInGroup(filter) : undefined,
+    }),
+    initial,
+  );
 
   const sorted = useMemo(() => {
     // Ended incidents sink below active ones when sorted by distance. In time
@@ -131,10 +129,7 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
 
           {!isLoading && !error && sorted.length > 0 && (
             <p className="px-0 pb-1 pt-2 text-[13px] text-faint tnum">
-              {activeCount} active · last{" "}
-              {data?.sinceHours === 24
-                ? "24 hours"
-                : `${Math.round((data?.sinceHours ?? 24) / 24)} days`}
+              {activeLabel(activeCount)} · last 24h
             </p>
           )}
 
@@ -200,7 +195,6 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
 
           {!isLoading &&
             !error &&
-            data &&
             viewer?.plan === "free" &&
             sorted.length > 0 && (
               <div className="mt-6 flex items-center justify-between gap-3 rounded-2xl bg-surface px-4 py-3.5">

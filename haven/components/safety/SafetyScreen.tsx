@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { getCategory, FILTER_GROUPS } from "@/lib/categories";
 import { DEFAULT_CENTER } from "@/lib/client/defaults";
-import { distanceFrom, useIncidents, type InitialIncidents } from "@/lib/client/hooks";
+import { activeLabel, distanceFrom, NEAR_RADIUS_MI, useNearYou, type InitialIncidents } from "@/lib/client/hooks";
 import { formatRemaining, useClock, useSafeWalk } from "@/lib/client/safewalk";
 import { RESOURCE_AREA, RESOURCES } from "@/lib/resources";
 import { formatDistance } from "@/lib/geo";
@@ -37,10 +37,7 @@ const SEV = { low: 0, moderate: 1, high: 2, critical: 3 } as const;
 export function SafetyScreen({ initial }: { initial?: InitialIncidents | null }) {
   const { position } = useLocation();
   const center = position ?? DEFAULT_CENTER;
-  const { items, isLoading, mutate } = useIncidents(
-    { center, radiusMi: 10, sort: "newest", limit: 100 },
-    initial,
-  );
+  const { items, isLoading, mutate } = useNearYou(center, initial);
   const refresh = useCallback(() => mutate(), [mutate]);
   const walk = useSafeWalk()?.walk ?? null;
   const now = useClock(walk != null);
@@ -125,7 +122,7 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
               <h2 id="briefing" className="text-[13px] font-semibold text-muted">
                 Nearby right now
               </h2>
-              <span className="text-[12.5px] text-faint tnum">10 mi · 24 h</span>
+              <span className="text-[12.5px] text-faint tnum">{NEAR_RADIUS_MI} mi · 24 h</span>
             </div>
             {briefing.allDemo && <DemoNotice className="mb-2.5 mt-0" />}
             {isLoading ? (
@@ -138,7 +135,7 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
                   <ShieldCheck className="size-6" aria-hidden />
                 </span>
                 <div>
-                  <p className="text-[15.5px] font-semibold">All quiet within 10 miles</p>
+                  <p className="text-[15.5px] font-semibold">All quiet within 5 miles</p>
                   <p className="mt-0.5 text-[13.5px] leading-snug text-muted">
                     Nothing active in the last 24 hours. Official feeds and neighbor reports are checked continuously.
                   </p>
@@ -148,9 +145,7 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
               <div className="rounded-card bg-surface px-4 pt-4">
                 <p className="text-[15px] leading-snug">
                   <span className="text-[22px] font-bold tracking-[-0.02em] tnum">{briefing.active}</span>{" "}
-                  <span className="text-muted">
-                    active {briefing.active === 1 ? "incident" : "incidents"} nearby
-                  </span>
+                  <span className="text-muted">{activeLabel(briefing.active).replace(/^\d+ /, "")}</span>
                 </p>
                 {briefing.byGroup.length > 0 && (
                   <p className="mt-1.5 text-[13px] text-muted tnum">
@@ -195,7 +190,7 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
               !isLoading && (
                 <div className="flex items-center gap-3 rounded-card bg-surface px-4 py-3">
                   <PawPrint className="size-5 shrink-0 text-faint" aria-hidden />
-                  <p className="text-[14px] leading-snug text-muted">No missing pets reported within 10 miles.</p>
+                  <p className="text-[14px] leading-snug text-muted">No missing pets reported within 5 miles.</p>
                 </div>
               )
             )}

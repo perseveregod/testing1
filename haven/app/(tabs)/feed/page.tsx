@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Feed" };
 export const dynamic = "force-dynamic";
 
 export default async function FeedPage() {
-  const initial = await initialIncidents(5, 100);
+  const initial = await initialIncidents(5, 200);
   return (
     <PageTransition>
       <FeedScreen initial={initial} />

@@ -111,3 +111,25 @@ export function useIncidents(p: IncidentParams, initial?: InitialIncidents | nul
 export function distanceFrom(user: LatLng | null, i: { latitude: number; longitude: number }): number | null {
   return user ? distanceMiles(user, { lat: i.latitude, lng: i.longitude }) : null;
 }
+
+/**
+ * "Near you" is one query everywhere (Map count, Feed, Safety): the same
+ * radius, window and cap, so every tab shows the same number.
+ */
+export const NEAR_RADIUS_MI = 5;
+export const NEAR_LIMIT = 200;
+
+export function nearYouParams(center: LatLng | null, extra: Partial<IncidentParams> = {}): IncidentParams {
+  return { center, radiusMi: NEAR_RADIUS_MI, sort: "newest", limit: NEAR_LIMIT, ...extra };
+}
+
+export function useNearYou(center: LatLng | null, initial?: InitialIncidents | null) {
+  const r = useIncidents(nearYouParams(center), initial);
+  const active = r.items.filter((i) => i.status !== "resolved");
+  return { ...r, active, activeCount: active.length, label: activeLabel(active.length) };
+}
+
+/** "18 active · 5 mi" — the one wording for the shared count. */
+export function activeLabel(n: number, radiusMi = NEAR_RADIUS_MI): string {
+  return `${n} active · ${radiusMi} mi`;
+}
