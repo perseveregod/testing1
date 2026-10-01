@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ALPR_ATTRIBUTION, parseOverpass, type AlprCamera, type OverpassElement } from "@/lib/alpr";
+import snapshot from "@/lib/alpr-houston.snapshot.json";
 
 // License plate reader cameras (Flock Safety and others) as mapped by
 // volunteers in OpenStreetMap, the DeFlock project. Open data under ODbL.
@@ -7,6 +8,9 @@ import { ALPR_ATTRIBUTION, parseOverpass, type AlprCamera, type OverpassElement 
 // This handler is static: Next renders it once at build time and Vercel
 // refreshes it in the background every 6 hours (ISR), so the map never waits
 // on Overpass and the public instance sees one query every few hours.
+//
+// If every mirror fails during a build, the committed snapshot is served
+// instead of an empty layer (Overpass returns 503 under load fairly often).
 export const dynamic = "force-static";
 export const revalidate = 21600;
 
@@ -41,6 +45,11 @@ export async function GET() {
     } catch (err) {
       console.warn(`[haven] ALPR fetch failed (${new URL(url).host}): ${(err as Error).message}`);
     }
+  }
+  if (cameras.length === 0) {
+    console.warn(`[haven] ALPR: no mirror answered, serving the committed snapshot from ${snapshot.updatedAt}`);
+    cameras = snapshot.cameras;
+    updatedAt = snapshot.updatedAt;
   }
   return NextResponse.json(
     { updatedAt, attribution: ALPR_ATTRIBUTION, cameras },

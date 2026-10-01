@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { parseOverpass, type OverpassElement } from "@/lib/alpr";
+import { parseOverpass, type AlprCamera, type OverpassElement } from "@/lib/alpr";
+import snapshot from "@/lib/alpr-houston.snapshot.json";
 
 const sample: { elements: OverpassElement[] } = {
   elements: [
@@ -17,5 +18,20 @@ describe("ALPR parser", () => {
     expect(cams[0]).toMatchObject({ lat: 29.80001, manufacturer: "Flock Safety", operator: "Houston Police Department", direction: 180 });
     expect(cams[1]!.direction).toBe(45);
     expect(cams[2]!.direction).toBeNull();
+  });
+});
+
+describe("ALPR snapshot", () => {
+  it("is a usable fallback when Overpass is down", () => {
+    const cams = snapshot.cameras as AlprCamera[];
+    expect(cams.length).toBeGreaterThan(1000);
+    expect(Number.isNaN(Date.parse(snapshot.updatedAt))).toBe(false);
+    for (const c of cams.slice(0, 50)) {
+      expect(c.id).toMatch(/^osm-\d+$/);
+      expect(c.lat).toBeGreaterThan(29);
+      expect(c.lat).toBeLessThan(31);
+      expect(c.lng).toBeGreaterThan(-96);
+      expect(c.lng).toBeLessThan(-94);
+    }
   });
 });
