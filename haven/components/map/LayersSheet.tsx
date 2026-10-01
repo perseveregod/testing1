@@ -2,6 +2,8 @@
 
 import { Check } from "lucide-react";
 import { Sheet } from "@/components/ui/Sheet";
+import { Toggle } from "@/components/ui/Controls";
+import { setLayerPrefs, useLayerPrefs } from "@/lib/client/layers";
 import { MAPTILER_KEY, type MapMode } from "./map3d";
 
 const MODES: { id: MapMode; label: string; detail: string; preview: string }[] = [
@@ -46,6 +48,7 @@ export function LayersSheet({
   tilted?: boolean;
   onToggle3D?: () => void;
 }) {
+  const layers = useLayerPrefs();
   return (
     <Sheet open={open} onClose={onClose} title="Map style">
       {onToggle3D && (
@@ -70,7 +73,7 @@ export function LayersSheet({
           })}
         </div>
       )}
-      <div className="grid grid-cols-2 gap-2.5 pb-2">
+      <div className="grid grid-cols-2 gap-2.5">
         {MODES.map((m) => {
           const disabled = m.id === "satellite" && !MAPTILER_KEY;
           const on = value === m.id;
@@ -98,6 +101,17 @@ export function LayersSheet({
           );
         })}
       </div>
+      <div className="mt-4 overflow-hidden rounded-[18px] bg-surface-2">
+        <Toggle
+          checked={layers.cameras}
+          onChange={(v) => setLayerPrefs({ cameras: v })}
+          label="License plate readers"
+          description="Flock and other ALPR cameras mapped by volunteers on OpenStreetMap"
+        />
+      </div>
+      <p className="mt-2 px-1 pb-2 text-[12px] leading-snug text-faint">
+        Camera locations © OpenStreetMap contributors, via the DeFlock project. Volunteer-mapped: some are missing, a few may have moved.
+      </p>
     </Sheet>
   );
 }

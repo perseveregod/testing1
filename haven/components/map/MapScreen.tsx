@@ -17,6 +17,10 @@ import { STATE_STYLE, strings, type StormKind } from "@/lib/storm";
 import { STORM_CATEGORIES } from "@/lib/categories";
 import { OfficialSourcesSheet } from "@/components/storm/StormBanner";
 import { StormPrepSheet } from "@/components/storm/StormPrepSheet";
+import { CameraSheet, type PickedCamera } from "@/components/map/CameraSheet";
+import { useLayerPrefs } from "@/lib/client/layers";
+import useSWR from "swr";
+import { fetcher } from "@/lib/client/api";
 import { StormIcon } from "@/components/storm/StormIcon";
 import { NearbyPeek } from "@/components/map/NearbyPeek";
 import { useClock } from "@/lib/client/safewalk";
@@ -163,6 +167,26 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
   const [filterOpen, setFilterOpen] = useState(false);
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [prepOpen, setPrepOpen] = useState(false);
+  // Optional layers. Cameras come from OpenStreetMap, 25 mi around the default area.
+  const layerPrefs = useLayerPrefs();
+  const [pickedCamera, setPickedCamera] = useState<PickedCamera | null>(null);
+  const camCenter = position ?? DEFAULT_CENTER;
+  const { data: camData } = useSWR<{ cameras: { id: string; lat: number; lng: number; operator: string | null; manufacturer: string | null; direction: number | null; note: string | null }[] }>(
+    layerPrefs.cameras ? `/api/cameras?lat=${camCenter.lat.toFixed(2)}&lng=${camCenter.lng.toFixed(2)}&radiusMi=30` : null,
+    fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 600_000 },
+  );
+  const cameraGeo = useMemo<GeoJSON.FeatureCollection | null>(() => {
+    if (!layerPrefs.cameras || !camData) return null;
+    return {
+      type: "FeatureCollection",
+      features: camData.cameras.map((c) => ({
+        type: "Feature",
+        geometry: { type: "Point", coordinates: [c.lng, c.lat] },
+        properties: { operator: c.operator, manufacturer: c.manufacturer, direction: c.direction, note: c.note },
+      })),
+    };
+  }, [layerPrefs.cameras, camData]);
   const [filters, setFilters] = useState<MapFilters>(DEFAULT_FILTERS);
   const [searchLabel, setSearchLabel] = useState<string | null>(() => peekMapFocus()?.label ?? null);
   const [promptDismissed] = useState(promptWasDismissed);
@@ -303,6 +327,17 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
         onSelect={setSelectedId}
         userPosition={position}
         initialCenter={DEFAULT_CENTER}
+        cameras={cameraGeo}
+        onCameraPick={(props, at) =>
+          setPickedCamera({
+            operator: (props.operator as string | null) ?? null,
+            manufacturer: (props.manufacturer as string | null) ?? null,
+            direction: typeof props.direction === "number" ? props.direction : null,
+            note: (props.note as string | null) ?? null,
+            lat: at.lat,
+            lng: at.lng,
+          })
+        }
         onViewportChange={setViewport}
         mode={mode}
         onCameraChange={setCamera}
@@ -503,6 +538,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
       />
       <OfficialSourcesSheet open={sourcesOpen} onClose={() => setSourcesOpen(false)} />
       <StormPrepSheet open={prepOpen} onClose={() => setPrepOpen(false)} />
+      <CameraSheet camera={pickedCamera} onClose={() => setPickedCamera(null)} />
       <LayersSheet
         open={layersOpen}
         onClose={() => setLayersOpen(false)}

@@ -70,6 +70,9 @@ interface Props {
   onViewportChange: (v: Viewport) => void;
   mode: MapMode;
   onCameraChange?: (c: Camera) => void;
+  /** License plate reader cameras to draw (null hides the layer). */
+  cameras?: GeoJSON.FeatureCollection | null;
+  onCameraPick?: (props: Record<string, unknown>, at: LatLng) => void;
 }
 
 type Visible =
@@ -98,6 +101,7 @@ type Visible =
     };
 
 const RING = "haven-ring";
+const CAMERAS = "alpr-cameras";
 const RING_METERS = 1609.344;
 const SOURCE = "incidents";
 
@@ -111,9 +115,15 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
     onViewportChange,
     mode,
     onCameraChange,
+    cameras,
+    onCameraPick,
   },
   ref,
 ) {
+  const onCameraPickRef = useRef(onCameraPick);
+  useEffect(() => {
+    onCameraPickRef.current = onCameraPick;
+  }, [onCameraPick]);
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MlMap | null>(null);
   const lib = useRef<typeof import("maplibre-gl") | null>(null);
@@ -124,6 +134,8 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
   const [visible, setVisible] = useState<Visible[]>([]);
   const [ready, setReady] = useState(false);
   const [painted, setPainted] = useState(false);
+  // Bumps on every style load, so layers added by effects come back after a swap.
+  const [styleEpoch, setStyleEpoch] = useState(0);
   const [failed, setFailed] = useState(false);
   const onViewport = useRef(onViewportChange);
   const latest = useRef<PublicIncident[]>(incidents);
@@ -392,6 +404,7 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
           beaconGeoJson(latest.current),
         );
         setReady(true);
+        setStyleEpoch((n) => n + 1);
         // Tiles arrive after "load"; keep the placeholder until the first full paint.
         const done = () => {
           setPainted(true);
@@ -419,6 +432,20 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
       m.on("click", (e) => {
         if ((e.originalEvent.target as HTMLElement).closest(".haven-marker"))
           return;
+        if (m.getLayer(CAMERAS)) {
+          const hit = m.queryRenderedFeatures(
+            [
+              [e.point.x - 12, e.point.y - 12],
+              [e.point.x + 12, e.point.y + 12],
+            ],
+            { layers: [CAMERAS] },
+          )[0];
+          if (hit) {
+            const [lng, lat] = (hit.geometry as GeoJSON.Point).coordinates;
+            onCameraPickRef.current?.(hit.properties ?? {}, { lat, lng });
+            return;
+          }
+        }
         onSelectRef.current(null);
       });
     })().catch((err) => {
@@ -548,6 +575,34 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
               : String(10 + v.severity);
     }
   }, [visible, selectedId]);
+
+  // License plate reader cameras: a small square per camera, under the pins.
+  useEffect(() => {
+    const m = map.current;
+    if (!ready || !m) return;
+    const data = cameras ?? { type: "FeatureCollection" as const, features: [] };
+    const src = m.getSource(CAMERAS) as GeoJSONSource | undefined;
+    if (src) src.setData(data);
+    else {
+      m.addSource(CAMERAS, { type: "geojson", data });
+      m.addLayer(
+        {
+          id: CAMERAS,
+          type: "circle",
+          source: CAMERAS,
+          paint: {
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 2.5, 14, 5, 17, 7],
+            "circle-color": "#b48cff",
+            "circle-stroke-color": resolved.current === "day" ? "#ffffff" : "#0b0c0f",
+            "circle-stroke-width": 1.5,
+            "circle-opacity": 0.95,
+          },
+        },
+        m.getLayer("incidents-glow") ? "incidents-glow" : undefined,
+      );
+    }
+    m.setLayoutProperty(CAMERAS, "visibility", cameras ? "visible" : "none");
+  }, [cameras, ready, styleEpoch]);
 
   // Keep the selected incident visible above the preview sheet.
   useEffect(() => {
