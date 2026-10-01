@@ -755,19 +755,22 @@ export class SupabaseStore implements Store {
 
   // push ---------------------------------------------------------------------
   async savePushSubscription(rec: PushSubscriptionRecord) {
-    check(
-      await this.db.from("push_subscriptions").upsert(
-        {
-          endpoint: rec.endpoint,
-          user_id: rec.userId,
-          p256dh: rec.p256dh,
-          auth: rec.auth,
-          user_agent: rec.userAgent,
-          created_at: rec.createdAt,
-        },
-        { onConflict: "endpoint" },
-      ),
+    const res = await this.db.from("push_subscriptions").upsert(
+      {
+        endpoint: rec.endpoint,
+        user_id: rec.userId,
+        p256dh: rec.p256dh,
+        auth: rec.auth,
+        user_agent: rec.userAgent,
+        created_at: rec.createdAt,
+      },
+      { onConflict: "endpoint" },
     );
+    if (res.error && /push_subscriptions|does not exist|schema cache/i.test(res.error.message)) {
+      // The database hasn't had the push migration yet.
+      throw new ApiError(503, "Alerts need a one-time database update before they can be turned on.", "schema_update_needed");
+    }
+    check(res);
   }
   async deletePushSubscription(endpoint: string) {
     check(await this.db.from("push_subscriptions").delete().eq("endpoint", endpoint));
