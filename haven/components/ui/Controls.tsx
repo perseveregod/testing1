@@ -121,12 +121,12 @@ export function Group({
   return (
     <section id={id} className={`mt-7 scroll-mt-24 ${className}`}>
       {(title || action) && (
-        <div className="mb-2 flex min-h-6 items-end justify-between px-4">
+        <div className="mb-2 flex min-h-6 items-center justify-between px-4">
           {title && <h2 className="text-[13px] font-medium text-muted">{title}</h2>}
           {action}
         </div>
       )}
-      <div className="divide-y divide-line overflow-hidden rounded-[20px] bg-surface px-4">{children}</div>
+      <div className="divide-y divide-line overflow-hidden rounded-card bg-surface px-4">{children}</div>
       {footer && <div className="px-4 pt-2 text-[13px] leading-snug text-faint">{footer}</div>}
     </section>
   );

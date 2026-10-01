@@ -55,7 +55,7 @@ export function BottomNav() {
                   href={t.href}
                   transitionTypes={["tab"]}
                   aria-current={active ? "page" : undefined}
-                  className={`mx-0.5 my-1 flex h-[calc(100%-8px)] flex-col items-center justify-center gap-[2px] rounded-full text-[10px] font-semibold tracking-[0.01em] transition-[color,background-color] duration-300 ${
+                  className={`mx-0.5 my-1 flex h-[calc(100%-8px)] flex-col items-center justify-center gap-[2px] rounded-full text-[10.5px] font-semibold tracking-[0.01em] transition-[color,background-color] duration-300 ${
                     active
                       ? "bg-white/[0.13] text-text shadow-[inset_0_1px_0.5px_rgba(255,255,255,0.3),inset_0_0_0_0.5px_rgba(255,255,255,0.08)]"
                       : "text-muted hover:text-text"

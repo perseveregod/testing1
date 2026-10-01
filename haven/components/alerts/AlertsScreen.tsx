@@ -2,15 +2,17 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { BellOff } from "lucide-react";
+import { Bell, BellOff, MapPin, Radar } from "lucide-react";
 import { apiSend } from "@/lib/client/api";
 import { useNotifications } from "@/lib/client/hooks";
+import { Button } from "@/components/ui/Button";
 import { timeAgo } from "@/lib/time";
 import { CategoryIcon } from "@/components/incident/CategoryIcon";
 import { PageHeader } from "@/components/nav/PageHeader";
 import { ButtonLink } from "@/components/ui/Button";
 import { Segmented } from "@/components/ui/Controls";
-import { EmptyState, RowSkeleton } from "@/components/ui/States";
+import { RowSkeleton } from "@/components/ui/States";
+import { usePlaces, useAlertPrefs } from "@/lib/client/hooks";
 import { AlertSettings } from "./AlertSettings";
 
 export function AlertsScreen() {
@@ -66,21 +68,7 @@ export function AlertsScreen() {
             <RowSkeleton />
           </div>
         ) : items.length === 0 ? (
-          <EmptyState
-            icon={<BellOff className="size-9" strokeWidth={1.5} aria-hidden />}
-            title="No alerts yet"
-            body="Save a place or turn on alerts near you, and new incidents within your radius will show up here."
-            action={
-              <div className="flex flex-col items-center gap-2">
-                <button onClick={() => setTab("settings")} className="press h-12 rounded-full bg-text px-6 text-[15px] font-semibold text-bg">
-                  Set up alerts
-                </button>
-                <ButtonLink href="/profile#places" variant="ghost" size="sm" transitionTypes={["tab"]}>
-                  Add a saved place
-                </ButtonLink>
-              </div>
-            }
-          />
+          <AlertsEmpty onSettings={() => setTab("settings")} />
         ) : (
           <ul className="divide-y divide-line">
             {items.map((n) => (
@@ -107,5 +95,59 @@ export function AlertsScreen() {
         )}
       </div>
     </main>
+  );
+}
+
+/** Explains the chain Saved place → radius → incident → alert, and what is still missing. */
+function AlertsEmpty({ onSettings }: { onSettings: () => void }) {
+  const { places } = usePlaces();
+  const { prefs } = useAlertPrefs();
+  const hasPlace = places.length > 0;
+  const on = prefs?.enabled ?? true;
+  const nearMe = prefs?.nearMe ?? false;
+  const covered = on && (hasPlace || nearMe);
+  const steps = [
+    { icon: MapPin, title: "Choose where", body: hasPlace ? `${places.length} saved ${places.length === 1 ? "place" : "places"}` : nearMe ? "Your current area" : "Save Home, Work or School, or use your current area", done: hasPlace || nearMe },
+    { icon: Radar, title: "Set a radius", body: prefs ? `${prefs.radiusMi} mi around each place` : "How far around each place to watch", done: Boolean(prefs) },
+    { icon: Bell, title: "Get alerted", body: covered ? "New incidents inside your radius land here." : "Alerts arrive here once a place is set.", done: covered },
+  ];
+  return (
+    <div className="haven-rise pt-2">
+      <div className="flex flex-col items-center px-4 pb-6 pt-8 text-center">
+        <BellOff className="mb-4 size-9 text-faint" strokeWidth={1.5} aria-hidden />
+        <h3 className="text-[17px] font-semibold tracking-[-0.01em]">{covered ? "Nothing to report yet" : "No alerts yet"}</h3>
+        <p className="mt-1.5 max-w-[300px] text-[15px] leading-relaxed text-muted">
+          {covered
+            ? "You're covered. When something happens inside your radius, it shows up here."
+            : "Alerts only arrive for places you choose. Set one up in under a minute."}
+        </p>
+      </div>
+      <ol className="divide-y divide-line rounded-card bg-surface px-4">
+        {steps.map((s, i) => (
+          <li key={s.title} className="flex items-center gap-3.5 py-3">
+            <span className={`flex size-9 shrink-0 items-center justify-center rounded-full ${s.done ? "bg-ok/15 text-ok" : "bg-surface-3 text-muted"}`} aria-hidden>
+              <s.icon className="size-[18px]" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] font-medium tracking-[-0.01em]">
+                <span className="sr-only">Step {i + 1}{s.done ? ", done" : ""}: </span>
+                {s.title}
+              </span>
+              <span className="block text-[13px] leading-snug text-muted">{s.body}</span>
+            </span>
+          </li>
+        ))}
+      </ol>
+      <div className="mt-4 grid gap-2">
+        {!hasPlace && (
+          <ButtonLink href="/profile#places" block size="lg" transitionTypes={["tab"]}>
+            <MapPin className="size-[18px]" aria-hidden /> Add a saved place
+          </ButtonLink>
+        )}
+        <Button variant={hasPlace ? "primary" : "secondary"} block size="lg" onClick={onSettings}>
+          {hasPlace ? "Adjust alert settings" : "Alert settings"}
+        </Button>
+      </div>
+    </div>
   );
 }

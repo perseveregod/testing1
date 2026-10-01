@@ -13,6 +13,7 @@ import {
   TopIncidentCard,
 } from "@/components/incident/IncidentCard";
 import { EmergencyNote } from "@/components/EmergencyNote";
+import { DemoNotice } from "@/components/incident/DemoNotice";
 import { PageHeader } from "@/components/nav/PageHeader";
 import { ButtonLink } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Controls";
@@ -59,6 +60,7 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
   }, [items, filter]);
 
   const activeCount = items.filter((i) => i.status !== "resolved").length;
+  const allDemo = items.length > 0 && items.every((i) => i.isDemo);
   const refresh = useCallback(() => mutate(), [mutate]);
   const top = useMemo(
     () => (isGroup ? null : pickTopIncident(items)),
@@ -118,6 +120,8 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
               distanceMi={distanceFrom(position, top)}
             />
           )}
+
+          {!isLoading && !error && allDemo && <DemoNotice />}
 
           {!isLoading && !error && sorted.length > 0 && (
             <p className="px-0 pb-1 pt-2 text-[13px] text-faint tnum">

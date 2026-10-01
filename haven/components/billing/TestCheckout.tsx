@@ -29,7 +29,7 @@ export function TestCheckout({ formatted }: { formatted: string }) {
         <FlaskConical className="size-5 shrink-0" aria-hidden />
         TEST CHECKOUT: no real payment. Configure Stripe to take real payments.
       </div>
-      <div className="mt-6 rounded-[20px] bg-surface p-5">
+      <div className="mt-6 rounded-card bg-surface p-5">
         <p className="text-[13px] text-muted">Order summary</p>
         <div className="mt-2 flex items-baseline justify-between">
           <p className="text-[17px] font-semibold">Haven Lifetime</p>

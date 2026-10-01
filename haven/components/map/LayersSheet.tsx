@@ -58,7 +58,7 @@ export function LayersSheet({
                 onChange(m.id);
                 onClose();
               }}
-              className={`press relative overflow-hidden rounded-[20px] bg-surface-2 p-2 text-left disabled:opacity-50 ${
+              className={`press relative overflow-hidden rounded-card bg-surface-2 p-2 text-left disabled:opacity-50 ${
                 on ? "ring-2 ring-brand" : ""
               }`}
             >

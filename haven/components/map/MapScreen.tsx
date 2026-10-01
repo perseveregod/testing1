@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Footprints,
   Layers,
   LocateFixed,
   Navigation,
@@ -10,15 +9,12 @@ import {
   Search,
   SlidersHorizontal,
 } from "lucide-react";
-import Link from "next/link";
 import { DEFAULT_CENTER } from "@/lib/client/defaults";
 import { distanceFrom, useIncidents, useViewer, type InitialIncidents } from "@/lib/client/hooks";
 import type { LatLng } from "@/lib/geo";
 import { useLocation } from "@/components/providers/LocationProvider";
 import { IncidentPreview } from "@/components/incident/IncidentPreview";
-import { LiveBadge } from "@/components/incident/Badges";
 import { getCategory, type FilterGroup } from "@/lib/categories";
-import { IconButton } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/States";
 import {
   activeFilterCount,
@@ -35,6 +31,7 @@ import {
 } from "./IncidentMap";
 import { LayersSheet } from "./LayersSheet";
 import { BEARING_3D, PITCH_3D, type MapMode } from "./map3d";
+import { SearchSheet } from "./SearchSheet";
 
 const MODE_KEY = "haven.mapMode";
 
@@ -47,7 +44,6 @@ function savedMode(): MapMode {
     return "auto";
   }
 }
-import { SearchSheet } from "./SearchSheet";
 
 /** One-tap category filters along the top of the map. */
 const QUICK: { id: FilterGroup | null; label: string; color?: string }[] = [
@@ -83,6 +79,31 @@ function queryArea(
     },
     radiusMi,
   };
+}
+
+/** Round floating control over the map. 44 px, glass. */
+function MapControl({
+  label,
+  onClick,
+  children,
+  className = "",
+}: {
+  label: string;
+  onClick: () => void;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      className={`press flex size-11 items-center justify-center text-text ${className}`}
+    >
+      {children}
+    </button>
+  );
 }
 
 export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
@@ -135,8 +156,8 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
 
   const selected = items.find((i) => i.id === selectedId) ?? null;
   const filterCount = activeFilterCount(filters);
-  const demoCount = items.filter((i) => i.isDemo).length;
   const activeCount = items.filter((i) => i.status !== "resolved").length;
+  const allDemo = items.length > 0 && items.every((i) => i.isDemo);
 
   const locate = useCallback(() => {
     if (position) mapRef.current?.flyTo(position, 15);
@@ -148,6 +169,8 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
     !position &&
     !promptDismissed &&
     (status === "prompt" || status === "denied" || status === "unavailable");
+
+  const loading = isLoading || (isValidating && !items.length);
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-bg">
@@ -164,15 +187,15 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
       />
       {/* Soft gradients so the controls read over the map. */}
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-bg/90 via-bg/40 to-transparent"
+        className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-bg/85 via-bg/35 to-transparent"
         aria-hidden
       />
       <div
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-bg/90 via-bg/40 to-transparent"
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-bg/85 via-bg/35 to-transparent"
         aria-hidden
       />
 
-      {/* Top: search + filters */}
+      {/* Top: search, filters, one status line, quick chips */}
       <div
         className="pointer-events-none absolute inset-x-0 top-0 z-20"
         style={{ paddingTop: "calc(var(--safe-top) + 10px)" }}
@@ -189,10 +212,11 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
               {searchLabel ?? "Search a place"}
             </span>
           </button>
-          <IconButton
-            label={`Filters${filterCount ? ` (${filterCount} active)` : ""}`}
+          <button
+            type="button"
+            aria-label={`Filters${filterCount ? ` (${filterCount} active)` : ""}`}
             onClick={() => setFilterOpen(true)}
-            className="relative"
+            className="glass press relative flex size-12 shrink-0 items-center justify-center rounded-full text-text"
           >
             <SlidersHorizontal className="size-[18px]" aria-hidden />
             {filterCount > 0 && (
@@ -200,37 +224,14 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
                 {filterCount}
               </span>
             )}
-          </IconButton>
+          </button>
         </div>
-        <div className="no-scrollbar pointer-events-auto mx-auto mt-2.5 flex max-w-lg items-center gap-2 overflow-x-auto px-4 pb-1">
-          <div className="inline-flex h-11 shrink-0 items-center gap-2 bg-surface/95 rounded-full pl-1 pr-3 text-[12.5px] font-semibold text-text/90 tnum">
-            {isLoading || (isValidating && !items.length) ? (
-              <span className="flex items-center gap-2 pl-2 text-muted">
-                <Spinner className="size-3" /> Loading
-              </span>
-            ) : error ? (
-              <button onClick={() => mutate()} className="pl-2 text-danger">
-                Couldn&apos;t load · Retry
-              </button>
-            ) : (
-              <>
-                {activeCount > 0 ? (
-                  <LiveBadge size="md" />
-                ) : (
-                  <span
-                    className="ml-2 size-2 rounded-full bg-ok"
-                    aria-hidden
-                  />
-                )}
-                <span>
-                  {activeCount} active · last 24h
-                  {demoCount > 0 && (
-                    <span className="font-medium text-faint"> · demo</span>
-                  )}
-                </span>
-              </>
-            )}
-          </div>
+
+        <div
+          className="no-scrollbar pointer-events-auto mx-auto mt-2 flex max-w-lg items-center gap-2 overflow-x-auto px-4 py-1"
+          role="toolbar"
+          aria-label="Quick filters"
+        >
           {QUICK.map((q) => {
             const on =
               q.id === null
@@ -246,10 +247,8 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
                     groups: q.id === null ? [] : [q.id],
                   }))
                 }
-                className={`press inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold ${
-                  on
-                    ? "bg-text text-bg"
-                    : "bg-surface/95 text-text/90"
+                className={`press inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold ${
+                  on ? "bg-text text-bg" : "glass text-text"
                 }`}
               >
                 {q.color && (
@@ -264,78 +263,93 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
             );
           })}
         </div>
-      </div>
 
-      {/* Bottom: locate button + preview / location prompt */}
-      <div className="pointer-events-none absolute inset-x-0 z-20 bottom-nav-offset">
-        <div className="mx-auto flex max-w-lg flex-col items-end gap-3 px-4 pb-3">
-          <div className="glass pointer-events-auto flex flex-col overflow-hidden rounded-[20px]">
-            <button
-              type="button"
-              onClick={() => setLayersOpen(true)}
-              aria-label="Map style"
-              title="Map style"
-              className="press flex size-12 items-center justify-center"
-            >
-              <Layers className="size-[19px]" aria-hidden />
-            </button>
-            <span className="mx-2.5 h-px bg-line-strong" aria-hidden />
-            <button
-              type="button"
-              onClick={() => mapRef.current?.toggle3D()}
-              aria-label={
-                camera.pitch > 5
-                  ? "Switch to flat 2D view"
-                  : "Switch to 3D view"
-              }
-              className="press flex size-12 items-center justify-center text-[13px] font-extrabold tracking-[0.02em]"
-            >
-              {camera.pitch > 5 ? "2D" : "3D"}
-            </button>
-            {Math.abs(camera.bearing) > 2 && (
+        {/* Status: what the map is showing, and whether it is real. */}
+        <div className="pointer-events-auto mx-auto mt-1 flex max-w-lg px-4">
+          <p
+            className="inline-flex h-7 items-center gap-2 rounded-full bg-bg/70 px-3 text-[12px] font-medium text-muted backdrop-blur-md tnum"
+            aria-live="polite"
+          >
+            {loading ? (
               <>
-                <span className="mx-2.5 h-px bg-line-strong" aria-hidden />
-                <button
-                  type="button"
-                  onClick={() => mapRef.current?.resetNorth()}
-                  aria-label="Point the map north"
-                  className="press haven-pop flex size-12 flex-col items-center justify-center"
-                >
-                  <Navigation2
-                    className="size-[17px] fill-live text-live transition-transform duration-150"
-                    style={{ transform: `rotate(${-camera.bearing}deg)` }}
-                    aria-hidden
-                  />
-                  <span className="text-[8.5px] font-bold leading-none text-muted">
-                    N
+                <Spinner className="size-3" /> Loading incidents
+              </>
+            ) : error ? (
+              <button onClick={() => mutate()} className="text-danger">
+                Couldn&apos;t load · Retry
+              </button>
+            ) : (
+              <>
+                <span
+                  className={`size-1.5 rounded-full ${activeCount > 0 ? "bg-live" : "bg-ok"}`}
+                  aria-hidden
+                />
+                <span>
+                  {activeCount} active · last 24h
+                </span>
+                {allDemo && (
+                  <span className="rounded-[4px] bg-white/[0.1] px-1.5 py-px text-[10.5px] font-semibold uppercase tracking-[0.06em] text-text/80">
+                    Demo data
                   </span>
-                </button>
+                )}
               </>
             )}
-          </div>
-          <Link
-            href="/safety/walk"
-            transitionTypes={["nav-forward"]}
-            aria-label="Start a Safe Walk"
-            className="glass press pointer-events-auto flex size-12 items-center justify-center rounded-full text-brand"
-          >
-            <Footprints className="size-[20px]" aria-hidden />
-          </Link>
-          <IconButton
-            label={position ? "Center on my location" : "Use my location"}
-            onClick={locate}
-            className="pointer-events-auto"
-          >
-            {status === "locating" ? (
-              <Spinner className="size-[18px]" />
-            ) : (
-              <LocateFixed
-                className={`size-[18px] ${position ? "text-brand" : ""}`}
-                aria-hidden
-              />
-            )}
-          </IconButton>
+          </p>
+        </div>
+      </div>
 
+      {/* Right: map controls. Pinned above the tab bar; they step aside while a card is up. */}
+      {!selected && !showPrompt && (
+        <div className="pointer-events-none absolute inset-x-0 z-20 bottom-nav-offset">
+          <div className="mx-auto flex max-w-lg justify-end px-4 pb-3">
+            <div className="pointer-events-auto flex flex-col items-end gap-2.5">
+              <div className="glass flex flex-col overflow-hidden rounded-[18px]">
+                <MapControl label="Map style" onClick={() => setLayersOpen(true)}>
+                  <Layers className="size-[18px]" aria-hidden />
+                </MapControl>
+                <span className="mx-2.5 h-px bg-line-strong" aria-hidden />
+                <MapControl
+                  label={camera.pitch > 5 ? "Switch to flat 2D view" : "Switch to 3D view"}
+                  onClick={() => mapRef.current?.toggle3D()}
+                  className="text-[12.5px] font-bold tracking-[0.02em]"
+                >
+                  {camera.pitch > 5 ? "2D" : "3D"}
+                </MapControl>
+                {Math.abs(camera.bearing) > 2 && (
+                  <>
+                    <span className="mx-2.5 h-px bg-line-strong" aria-hidden />
+                    <MapControl label="Point the map north" onClick={() => mapRef.current?.resetNorth()} className="haven-pop">
+                      <Navigation2
+                        className="size-[16px] fill-live text-live transition-transform duration-150"
+                        style={{ transform: `rotate(${-camera.bearing}deg)` }}
+                        aria-hidden
+                      />
+                    </MapControl>
+                  </>
+                )}
+              </div>
+              <MapControl
+                label={position ? "Center on my location" : "Use my location"}
+                onClick={locate}
+                className="glass rounded-full"
+              >
+                {status === "locating" ? (
+                  <Spinner className="size-[18px]" />
+                ) : (
+                  <LocateFixed
+                    className={`size-[18px] ${position ? "text-brand" : ""}`}
+                    aria-hidden
+                  />
+                )}
+              </MapControl>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bottom: incident preview or the one-time location prompt */}
+      <div className="pointer-events-none absolute inset-x-0 z-30 bottom-nav-offset">
+        <div className="mx-auto max-w-lg px-4 pb-3">
           <IncidentPreview
             incident={selected}
             distanceMi={selected ? distanceFrom(position, selected) : null}
@@ -344,7 +358,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
           />
 
           {showPrompt && (
-            <div className="glass haven-rise pointer-events-auto w-full rounded-[20px] p-4">
+            <div className="glass haven-rise pointer-events-auto rounded-card p-4">
               <div className="flex items-start gap-3">
                 <Navigation
                   className="mt-0.5 size-5 shrink-0 text-brand"
@@ -372,7 +386,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
                 )}
                 <button
                   onClick={() => setPromptDismissed(true)}
-                  className="press h-11 rounded-full bg-white/[0.06] px-5 text-[14.5px] font-medium text-muted"
+                  className="press h-11 flex-1 rounded-full bg-white/[0.08] px-4 text-[14.5px] font-medium text-text"
                 >
                   Not now
                 </button>

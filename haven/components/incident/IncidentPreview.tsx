@@ -95,15 +95,15 @@ function PreviewCard({
     <div
       role="dialog"
       aria-label={`${def.label} details`}
-      className={`glass pointer-events-auto relative mx-auto flex w-full max-w-lg flex-col overflow-hidden rounded-[20px] ${closing ? "haven-sheet-out" : "haven-sheet-in"}`}
+      className={`glass pointer-events-auto relative mx-auto flex w-full max-w-lg flex-col overflow-hidden rounded-card ${closing ? "haven-sheet-out" : "haven-sheet-in"}`}
       style={{
         transform: dy ? `translateY(${dy}px)` : undefined,
         transition: dy ? "none" : "transform 260ms var(--ease-out), max-height 320ms var(--ease-out)",
-        maxHeight: expanded ? "78dvh" : "46dvh",
+        maxHeight: expanded ? "78dvh" : "min(56dvh, 440px)",
       }}
     >
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-32 rounded-t-[24px] opacity-30"
+        className="pointer-events-none absolute inset-x-0 top-0 h-32 rounded-t-card opacity-30"
         style={{ background: `radial-gradient(80% 100% at 50% 0%, ${def.color} 0%, transparent 70%)` }}
         aria-hidden
       />
@@ -120,12 +120,12 @@ function PreviewCard({
         <div className="flex items-start gap-3">
           <CategoryIcon category={incident.category} size="lg" muted={ended} animated glow />
           <div className="min-w-0 flex-1 pt-0.5">
-            <p className="flex items-center gap-2 text-[13px] font-medium" style={{ color: ended ? "var(--muted)" : def.color }}>
-              {def.label}
+            <p className="flex min-w-0 items-center gap-2 text-[13px] font-medium" style={{ color: ended ? "var(--muted)" : def.color }}>
+              <span className="truncate">{def.label}</span>
               {isLive(incident) && <LiveBadge />}
               <OriginBadge incident={incident} />
             </p>
-            <h2 className="mt-0.5 line-clamp-2 text-[19px] font-bold leading-snug tracking-[-0.02em]">{incident.title}</h2>
+            <h2 className="mt-0.5 line-clamp-2 text-[18px] font-bold leading-snug tracking-[-0.02em]">{incident.title}</h2>
           </div>
           <button
             onClick={onClose}
@@ -184,7 +184,7 @@ function PreviewCard({
         {expanded && (
           <div className="mt-5 border-t border-line pt-4">
             {incident.status !== "under_review" && (
-              <div className="rounded-[20px] bg-surface px-4 pb-3 pt-4">
+              <div className="rounded-card bg-surface px-4 pb-3 pt-4">
                 <StatusStepper status={incident.status} color={def.color} />
               </div>
             )}

@@ -37,6 +37,19 @@ export function SafeWalkScreen() {
   const [phone, setPhone] = useState("");
   const soundBlocked = useAlarmBlocked();
   const wake = useRef<WakeLockLike | null>(null);
+  // Ending a walk takes two taps so a pocket tap can't silently stop it.
+  const [armed, setArmed] = useState(false);
+  const armTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function safeTap() {
+    if (armed) {
+      if (armTimer.current) clearTimeout(armTimer.current);
+      setArmed(false);
+      finish("Glad you made it. Safe Walk ended.");
+      return;
+    }
+    setArmed(true);
+    armTimer.current = setTimeout(() => setArmed(false), 4000);
+  }
 
   const update = setSafeWalk;
   const walk = state?.walk ?? null;
@@ -172,8 +185,8 @@ export function SafeWalkScreen() {
           </div>
 
           <div className="mt-7 grid gap-2.5">
-            <Button size="lg" block onClick={() => finish("Glad you made it. Safe Walk ended.")} className="!bg-ok !text-[#03210f]">
-              <Check className="size-5" strokeWidth={2.6} aria-hidden /> I&apos;m safe
+            <Button size="lg" block onClick={safeTap} aria-live="polite" className={armed ? "!bg-ok/80 !text-[#03210f]" : "!bg-ok !text-[#03210f]"}>
+              <Check className="size-5" strokeWidth={2.6} aria-hidden /> {armed ? "Tap again to end the walk" : "I'm safe"}
             </Button>
             <div className="grid grid-cols-2 gap-2.5">
               <Button variant="secondary" onClick={() => extend(5)}>
@@ -212,7 +225,7 @@ export function SafeWalkScreen() {
               </Button>
               <a
                 href={`tel:${EMERGENCY_NUMBER}`}
-                className="press inline-flex min-h-12 items-center justify-center gap-2 rounded-[14px] bg-live text-[15px] font-semibold text-white"
+                className="press inline-flex min-h-12 items-center justify-center gap-2 rounded-control bg-live text-[15px] font-semibold text-white"
               >
                 <Phone className="size-4" aria-hidden /> Call {EMERGENCY_NUMBER}
               </a>
@@ -238,9 +251,25 @@ export function SafeWalkScreen() {
       <PageHeader title="Safe Walk" back="/safety" large />
       <div className="mx-auto max-w-lg px-5">
         <p className="text-[15px] leading-relaxed text-muted">
-          Set a timer for your walk. If you don&apos;t check in when it ends, Haven sounds an alarm and gets a message ready for
-          the people you trust, with your location.
+          A check-in timer for walking somewhere alone. Everything stays on this phone.
         </p>
+        <ol className="mt-4 divide-y divide-line rounded-card bg-surface px-4">
+          {[
+            ["Start the timer", "Pick how long the walk should take. Tap “I'm safe” when you arrive."],
+            ["Miss the check-in", "If the timer runs out, Haven sounds an alarm on this phone."],
+            ["Alert your contacts", "A text with your location is ready to send. You send it; Haven never messages anyone on its own."],
+          ].map(([t, b], i) => (
+            <li key={t} className="flex gap-3.5 py-3">
+              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-surface-3 text-[12px] font-bold text-muted tnum" aria-hidden>
+                {i + 1}
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[15px] font-medium tracking-[-0.01em]">{t}</span>
+                <span className="block text-[13px] leading-snug text-muted">{b}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
 
         <section className="mt-6">
           <label htmlFor="dest" className="mb-2 block text-[13px] font-medium text-muted">
@@ -252,7 +281,7 @@ export function SafeWalkScreen() {
             onChange={(e) => setDestination(e.target.value)}
             placeholder="e.g. home, the train station"
             maxLength={60}
-            className="h-12 w-full rounded-[14px] bg-surface-2 px-4 text-[16px] outline-none ring-brand/60 placeholder:text-faint focus:ring-2"
+            className="h-12 w-full rounded-control bg-surface-2 px-4 text-[16px] outline-none ring-brand/60 placeholder:text-faint focus:ring-2"
           />
         </section>
 
@@ -299,7 +328,7 @@ export function SafeWalkScreen() {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Name"
                 maxLength={40}
-                className="h-12 min-w-0 rounded-[14px] bg-surface-2 px-3.5 text-[16px] outline-none ring-brand/60 placeholder:text-faint focus:ring-2"
+                className="h-12 min-w-0 rounded-control bg-surface-2 px-3.5 text-[16px] outline-none ring-brand/60 placeholder:text-faint focus:ring-2"
               />
               <input
                 aria-label="Contact phone number"
@@ -308,12 +337,12 @@ export function SafeWalkScreen() {
                 placeholder="Phone"
                 inputMode="tel"
                 autoComplete="tel"
-                className="h-12 min-w-0 rounded-[14px] bg-surface-2 px-3.5 text-[16px] outline-none ring-brand/60 placeholder:text-faint focus:ring-2"
+                className="h-12 min-w-0 rounded-control bg-surface-2 px-3.5 text-[16px] outline-none ring-brand/60 placeholder:text-faint focus:ring-2"
               />
               <button
                 onClick={addContact}
                 aria-label="Add contact"
-                className="press flex size-12 items-center justify-center rounded-[14px] bg-surface-3 text-text"
+                className="press flex size-12 items-center justify-center rounded-control bg-surface-3 text-text"
               >
                 <UserPlus className="size-[18px]" aria-hidden />
               </button>

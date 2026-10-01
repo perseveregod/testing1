@@ -6,9 +6,7 @@ import {
   ChevronRight,
   ExternalLink,
   Footprints,
-  Newspaper,
   PawPrint,
-  Phone,
   ShieldCheck,
 } from "lucide-react";
 import { getCategory, FILTER_GROUPS } from "@/lib/categories";
@@ -22,6 +20,7 @@ import type { PublicIncident } from "@/lib/types";
 import { useLocation } from "@/components/providers/LocationProvider";
 import { DemoTag, isLive, LiveBadge } from "@/components/incident/Badges";
 import { CategoryIcon } from "@/components/incident/CategoryIcon";
+import { DemoNotice } from "@/components/incident/DemoNotice";
 import { EmergencyNote } from "@/components/EmergencyNote";
 import { PageHeader } from "@/components/nav/PageHeader";
 import { RowSkeleton } from "@/components/ui/States";
@@ -29,6 +28,11 @@ import { PullToRefresh } from "@/components/ui/PullToRefresh";
 
 const SEV = { low: 0, moderate: 1, high: 2, critical: 3 } as const;
 
+/**
+ * Safety tab. Order follows what someone opening it most likely needs:
+ * 1. act now (Safe Walk, emergency number), 2. know what is going on nearby,
+ * 3. look something up (official resources).
+ */
 export function SafetyScreen({ initial }: { initial?: InitialIncidents | null }) {
   const { position } = useLocation();
   const center = position ?? DEFAULT_CENTER;
@@ -39,32 +43,26 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
   const refresh = useCallback(() => mutate(), [mutate]);
   const walk = useSafeWalk()?.walk ?? null;
   const now = useClock(walk != null);
+  const overdue = walk != null && now > 0 && now > walk.endsAt;
 
   const briefing = useMemo(() => {
-    const active = items.filter((i) => i.status !== "resolved");
+    const active = items.filter((i) => i.status !== "resolved" && i.category !== "missing_pet");
     const byGroup = FILTER_GROUPS.map((g) => ({
       ...g,
-      count: active.filter((i) => getCategory(i.category).group === g.id)
-        .length,
-    })).filter((g) => g.count > 0);
-    const top = [...items]
-      .filter((i) => i.status !== "resolved" && i.category !== "missing_pet")
-      .sort(
-        (a, b) =>
-          SEV[b.severity] - SEV[a.severity] ||
-          b.createdAt.localeCompare(a.createdAt),
-      )
+      count: active.filter((i) => getCategory(i.category).group === g.id).length,
+    }))
+      .filter((g) => g.count > 0)
+      .sort((a, b) => b.count - a.count);
+    const top = [...active]
+      .sort((a, b) => SEV[b.severity] - SEV[a.severity] || b.createdAt.localeCompare(a.createdAt))
       .slice(0, 3);
-    const pets = items.filter(
-      (i) => i.category === "missing_pet" && i.status !== "resolved",
-    );
+    const pets = items.filter((i) => i.category === "missing_pet" && i.status !== "resolved");
     return {
-      total: items.length,
       active: active.length,
       byGroup,
       top,
       pets,
-      demo: items.some((i) => i.isDemo),
+      allDemo: items.length > 0 && items.every((i) => i.isDemo),
     };
   }, [items]);
 
@@ -73,183 +71,162 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
       <PageHeader title="Safety" large />
       <PullToRefresh onRefresh={refresh}>
         <div className="relative mx-auto max-w-lg px-4">
-          {/* Safe Walk */}
+          {/* 1. Act now */}
           <Link
             href="/safety/walk"
             transitionTypes={["nav-forward"]}
-            className="press relative block overflow-hidden rounded-[20px] bg-surface p-4 shadow-[inset_0_0_0_1px_var(--line)]"
+            className={`press relative block overflow-hidden rounded-card p-4 shadow-[inset_0_0_0_1px_var(--line)] ${
+              overdue ? "bg-live text-white" : "bg-surface"
+            }`}
           >
-            <div
-              className="pointer-events-none absolute -right-12 -top-14 size-52 rounded-full bg-brand/30 blur-3xl"
-              aria-hidden
-            />
+            {!overdue && (
+              <div
+                className="pointer-events-none absolute -right-12 -top-14 size-52 rounded-full bg-brand/25 blur-3xl"
+                aria-hidden
+              />
+            )}
             <div className="relative flex items-center gap-3.5">
-              <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-brand text-brand-ink">
+              <span
+                className={`flex size-12 shrink-0 items-center justify-center rounded-control ${
+                  overdue ? "bg-white/20 text-white" : "bg-brand text-brand-ink"
+                }`}
+              >
                 <Footprints className="size-6" aria-hidden />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-[19px] font-extrabold tracking-[-0.025em]">
-                  Safe Walk
+                <p className="text-[18px] font-bold tracking-[-0.02em]">
+                  {walk ? (overdue ? "Check-in missed" : "Safe Walk in progress") : "Safe Walk"}
                 </p>
-                <p className="mt-0.5 text-[13.5px] leading-snug text-muted">
+                <p className={`mt-0.5 text-[13.5px] leading-snug ${overdue ? "text-white/90" : "text-muted"}`}>
                   {walk
-                    ? now > walk.endsAt
-                      ? "Check-in missed. Tap to respond."
-                      : `Walk in progress · ${formatRemaining(walk.endsAt - now)} left`
-                    : "Walking alone? Set a check-in timer and let people you trust know."}
+                    ? overdue
+                      ? "Tap to say you're OK or alert your contacts."
+                      : `${formatRemaining(walk.endsAt - now)} until your check-in`
+                    : "Walking alone? Set a check-in timer and let someone you trust know."}
                 </p>
               </div>
-              <ChevronRight
-                className="size-5 shrink-0 text-faint"
-                aria-hidden
-              />
+              <ChevronRight className={`size-5 shrink-0 ${overdue ? "text-white/80" : "text-faint"}`} aria-hidden />
             </div>
           </Link>
 
-          {/* Briefing */}
-          <section className="mt-8">
-            <SectionTitle icon={<Newspaper className="size-4" aria-hidden />}>
-              Today&apos;s briefing
-            </SectionTitle>
+          <div className="mt-3">
+            <EmergencyNote compact />
+          </div>
+
+          {/* 2. What is going on nearby */}
+          <section className="mt-8" aria-labelledby="briefing">
+            <div className="mb-2.5 flex items-baseline justify-between px-1">
+              <h2 id="briefing" className="text-[13px] font-semibold text-muted">
+                Nearby right now
+              </h2>
+              <span className="text-[12.5px] text-faint tnum">10 mi · 24 h</span>
+            </div>
+            {briefing.allDemo && <DemoNotice className="mb-2.5 mt-0" />}
             {isLoading ? (
-              <RowSkeleton />
-            ) : briefing.total === 0 ? (
-              <div className="flex items-center gap-3.5 rounded-[20px] bg-surface p-4">
+              <div className="rounded-card bg-surface px-4">
+                <RowSkeleton />
+              </div>
+            ) : briefing.active === 0 ? (
+              <div className="flex items-center gap-3.5 rounded-card bg-surface p-4">
                 <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-ok/15 text-ok">
                   <ShieldCheck className="size-6" aria-hidden />
                 </span>
                 <div>
                   <p className="text-[15.5px] font-semibold">All quiet within 10 miles</p>
                   <p className="mt-0.5 text-[13.5px] leading-snug text-muted">
-                    Nothing reported in the last 24 hours. We&apos;ll keep watching official feeds and neighbor reports.
+                    Nothing active in the last 24 hours. Official feeds and neighbor reports are checked continuously.
                   </p>
                 </div>
               </div>
             ) : (
-              <div className="rounded-[20px] bg-surface p-4">
-                <p className="text-[15px] leading-relaxed">
-                  <span className="font-bold tnum">{briefing.active}</span>{" "}
-                  active {briefing.active === 1 ? "incident" : "incidents"}{" "}
-                  within 10 miles in the last 24 hours
-                  {briefing.demo && (
-                    <>
-                      {" "}
-                      <DemoTag />
-                    </>
-                  )}
+              <div className="rounded-card bg-surface px-4 pt-4">
+                <p className="text-[15px] leading-snug">
+                  <span className="text-[22px] font-bold tracking-[-0.02em] tnum">{briefing.active}</span>{" "}
+                  <span className="text-muted">
+                    active {briefing.active === 1 ? "incident" : "incidents"} nearby
+                  </span>
                 </p>
                 {briefing.byGroup.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {briefing.byGroup.map((g) => (
-                      <span
-                        key={g.id}
-                        className="rounded-full bg-surface-2 px-2.5 py-1 text-[12.5px] font-semibold text-text/85 tnum"
-                      >
-                        {g.label} {g.count}
-                      </span>
-                    ))}
-                  </div>
+                  <p className="mt-1.5 text-[13px] text-muted tnum">
+                    {briefing.byGroup.map((g) => `${g.label} ${g.count}`).join(" · ")}
+                  </p>
                 )}
                 {briefing.top.length > 0 && (
                   <ul className="mt-3 divide-y divide-line border-t border-line">
                     {briefing.top.map((i) => (
-                      <BriefRow
-                        key={i.id}
-                        incident={i}
-                        distanceMi={distanceFrom(position, i)}
-                      />
+                      <BriefRow key={i.id} incident={i} distanceMi={distanceFrom(position, i)} />
                     ))}
                   </ul>
                 )}
+                <Link
+                  href="/feed"
+                  transitionTypes={["tab"]}
+                  className="-mx-4 flex min-h-12 items-center justify-center border-t border-line text-[14px] font-semibold text-brand active:opacity-60"
+                >
+                  See everything nearby
+                </Link>
               </div>
             )}
           </section>
 
-          {/* Missing pets */}
-          <section className="mt-8">
-            <SectionTitle icon={<PawPrint className="size-4" aria-hidden />}>
-              Missing pets nearby
-            </SectionTitle>
-            <div className="rounded-[20px] bg-surface p-1.5">
-              {briefing.pets.length > 0 ? (
-                <ul className="divide-y divide-line">
-                  {briefing.pets.map((i) => (
-                    <BriefRow
-                      key={i.id}
-                      incident={i}
-                      distanceMi={distanceFrom(position, i)}
-                      inset
-                    />
-                  ))}
-                </ul>
-              ) : (
-                !isLoading && (
-                  <div className="flex items-center gap-3 px-3 py-3">
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-muted">
-                      <PawPrint className="size-5" aria-hidden />
-                    </span>
-                    <div>
-                      <p className="text-[14.5px] font-semibold">No missing pets nearby</p>
-                      <p className="text-[13px] leading-snug text-muted">Lost or found one? Post it and neighbors within 10 miles will see it.</p>
-                    </div>
-                  </div>
-                )
-              )}
-              <Link
-                href="/report"
-                transitionTypes={["nav-forward"]}
-                className="press mt-1 flex min-h-12 items-center justify-center rounded-[16px] bg-surface-2 text-[14.5px] font-semibold"
-              >
-                Report a lost or found pet
+          {/* Missing pets: only takes space when there is something to show. */}
+          <section className="mt-8" aria-labelledby="pets">
+            <div className="mb-2.5 flex items-baseline justify-between px-1">
+              <h2 id="pets" className="text-[13px] font-semibold text-muted">
+                Missing pets nearby
+              </h2>
+              <Link href="/report" transitionTypes={["nav-forward"]} className="text-[13px] font-medium text-brand">
+                Post a lost or found pet
               </Link>
             </div>
-            <p className="mt-2 px-1 text-[12.5px] leading-relaxed text-faint">
-              For missing people, use the official bulletins below. Haven
-              doesn&apos;t post missing-person reports from the public, to
-              protect people who may not want to be found by someone else.
-            </p>
+            {briefing.pets.length > 0 ? (
+              <ul className="divide-y divide-line rounded-card bg-surface px-4">
+                {briefing.pets.map((i) => (
+                  <BriefRow key={i.id} incident={i} distanceMi={distanceFrom(position, i)} />
+                ))}
+              </ul>
+            ) : (
+              !isLoading && (
+                <div className="flex items-center gap-3 rounded-card bg-surface px-4 py-3">
+                  <PawPrint className="size-5 shrink-0 text-faint" aria-hidden />
+                  <p className="text-[14px] leading-snug text-muted">No missing pets reported within 10 miles.</p>
+                </div>
+              )
+            )}
           </section>
 
-          {/* Resources */}
-          <section className="mt-8">
-            <SectionTitle icon={<Phone className="size-4" aria-hidden />}>
-              Resources · {RESOURCE_AREA}
-            </SectionTitle>
-            <div className="space-y-4">
-              {RESOURCES.map((g) => (
-                <div key={g.id}>
-                  <p className="mb-1.5 px-1 text-[12.5px] font-semibold uppercase tracking-[0.08em] text-faint">
+          {/* 3. Look something up */}
+          <section className="mt-8" aria-labelledby="resources">
+            <div className="mb-2.5 flex items-baseline justify-between px-1">
+              <h2 id="resources" className="text-[13px] font-semibold text-muted">
+                Official resources
+              </h2>
+              <span className="text-[12.5px] text-faint">{RESOURCE_AREA}</span>
+            </div>
+            <div className="overflow-hidden rounded-card bg-surface">
+              {RESOURCES.map((g, gi) => (
+                <div key={g.id} className={gi > 0 ? "border-t-4 border-bg/60" : ""}>
+                  <p className="px-4 pb-1 pt-3 text-[11.5px] font-semibold uppercase tracking-[0.08em] text-faint">
                     {g.title}
                   </p>
-                  <ul className="divide-y divide-line overflow-hidden rounded-[20px] bg-surface">
+                  <ul className="divide-y divide-line">
                     {g.items.map((r) => {
                       const external = r.href.startsWith("http");
                       return (
                         <li key={r.id}>
                           <a
                             href={r.href}
-                            {...(external
-                              ? { target: "_blank", rel: "noopener noreferrer" }
-                              : {})}
-                            className="flex min-h-[56px] items-center gap-3 px-4 py-3 active:bg-surface-2"
+                            {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                            className="flex min-h-[52px] items-center gap-3 px-4 py-2.5 active:bg-surface-2"
                           >
                             <div className="min-w-0 flex-1">
-                              <p className="text-[15px] font-semibold">
-                                {r.title}
-                              </p>
-                              <p className="mt-0.5 text-[13px] leading-snug text-muted">
-                                {r.detail}
-                              </p>
+                              <p className="text-[15px] font-medium tracking-[-0.01em]">{r.title}</p>
+                              <p className="mt-0.5 text-[13px] leading-snug text-muted">{r.detail}</p>
                             </div>
                             {r.label ? (
-                              <span className="shrink-0 text-[13.5px] font-semibold text-brand tnum">
-                                {r.label}
-                              </span>
+                              <span className="shrink-0 text-[13.5px] font-semibold text-brand tnum">{r.label}</span>
                             ) : (
-                              <ExternalLink
-                                className="size-4 shrink-0 text-faint"
-                                aria-label="Opens another site"
-                              />
+                              <ExternalLink className="size-4 shrink-0 text-faint" aria-label="Opens another site" />
                             )}
                           </a>
                         </li>
@@ -259,64 +236,40 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
                 </div>
               ))}
             </div>
+            <p className="mt-2 px-1 text-[12.5px] leading-relaxed text-faint">
+              Haven links to these agencies and does not re-host their data. Missing-person reports go through the
+              official bulletins, never Haven, to protect people who may not want to be found.
+            </p>
           </section>
-
-          <div className="mt-8">
-            <EmergencyNote compact />
-          </div>
         </div>
       </PullToRefresh>
     </main>
   );
 }
 
-function SectionTitle({
-  icon,
-  children,
-}: {
-  icon: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <h2 className="mb-2.5 flex items-center gap-2 px-1 text-[13px] font-semibold text-muted">
-      {icon}
-      {children}
-    </h2>
-  );
-}
-
-function BriefRow({
-  incident,
-  distanceMi,
-  inset,
-}: {
-  incident: PublicIncident;
-  distanceMi: number | null;
-  inset?: boolean;
-}) {
+function BriefRow({ incident, distanceMi }: { incident: PublicIncident; distanceMi: number | null }) {
   const def = getCategory(incident.category);
   return (
     <li>
       <Link
         href={`/incidents/${incident.id}`}
         transitionTypes={["nav-forward"]}
-        className={`flex items-center gap-3 py-3 active:opacity-70 ${inset ? "px-2.5" : ""}`}
+        className="flex items-center gap-3 py-3 active:opacity-70"
       >
         <CategoryIcon category={incident.category} size="md" />
         <div className="min-w-0 flex-1">
-          <p className="flex items-center gap-1.5 text-[15px] font-semibold">
+          <p className="truncate text-[15px] font-semibold">{incident.title}</p>
+          <p className="mt-0.5 flex items-center gap-1.5 text-[12.5px] text-muted">
             {isLive(incident) && <LiveBadge />}
-            <span className="truncate">{incident.title}</span>
-          </p>
-          <p className="truncate text-[12.5px] text-muted">
-            <span style={{ color: def.color }}>{def.short}</span> ·{" "}
-            {incident.approximateAddress}
-            {distanceMi != null && (
-              <span className="tnum"> · {formatDistance(distanceMi)}</span>
-            )}
-            <span className="tnum"> · {timeAgo(incident.createdAt)}</span>
+            {incident.isDemo && <DemoTag />}
+            <span className="truncate">
+              <span style={{ color: def.color }}>{def.short}</span> · {incident.approximateAddress}
+              {distanceMi != null && <span className="tnum"> · {formatDistance(distanceMi)}</span>}
+              <span className="tnum"> · {timeAgo(incident.createdAt)}</span>
+            </span>
           </p>
         </div>
+        <ChevronRight className="size-4 shrink-0 text-faint" aria-hidden />
       </Link>
     </li>
   );

@@ -108,7 +108,7 @@ export function MiniMap({
   }, [recenterKey]);
 
   return (
-    <div className={`relative overflow-hidden rounded-[20px] bg-surface-2 ${className}`}>
+    <div className={`relative overflow-hidden rounded-card bg-surface-2 ${className}`}>
       <div className="absolute inset-0">
         <div ref={container} className="h-full w-full" role="img" aria-label={label} />
       </div>

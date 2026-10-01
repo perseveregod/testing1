@@ -43,9 +43,13 @@ export function SeverityLabel({ severity }: { severity: Severity }) {
   );
 }
 
-export function DemoTag() {
+/** Fictional example data. Always visible wherever a demo incident appears. */
+export function DemoTag({ size = "sm" }: { size?: "sm" | "md" }) {
   return (
-    <span className="rounded-[5px] bg-white/[0.07] px-1.5 py-[1px] text-[10.5px] font-semibold uppercase tracking-[0.06em] text-muted">
+    <span
+      className={`rounded-[5px] bg-white/[0.09] font-semibold uppercase tracking-[0.06em] text-text/75 ${size === "md" ? "px-2 py-[3px] text-[11px]" : "px-1.5 py-[1px] text-[10.5px]"}`}
+      title="Fictional example, not a real event"
+    >
       Demo
     </span>
   );
@@ -64,9 +68,12 @@ export function SourceBadge({ incident }: { incident: PublicIncident }) {
   return <span className={`text-[13px] ${verified ? "text-muted" : "text-faint"}`}>{sourceLabel(incident)}</span>;
 }
 
-/** Active and either fresh (under an hour) or serious: worth a LIVE badge. */
-export function isLive(i: Pick<PublicIncident, "status" | "severity" | "createdAt">, now = Date.now()): boolean {
-  if (i.status !== "active") return false;
+/**
+ * Active and either fresh (under an hour) or serious: worth a LIVE badge.
+ * Demo incidents are never "live": the red badge is reserved for real events.
+ */
+export function isLive(i: Pick<PublicIncident, "status" | "severity" | "createdAt"> & { isDemo?: boolean }, now = Date.now()): boolean {
+  if (i.status !== "active" || i.isDemo) return false;
   const fresh = now - new Date(i.createdAt).getTime() < 60 * 60_000;
   return fresh || i.severity === "high" || i.severity === "critical";
 }

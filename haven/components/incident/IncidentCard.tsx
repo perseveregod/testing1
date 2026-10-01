@@ -3,7 +3,7 @@ import { getCategory } from "@/lib/categories";
 import { formatDistance } from "@/lib/geo";
 import { timeAgo } from "@/lib/time";
 import type { PublicIncident } from "@/lib/types";
-import { DemoTag, isLive, LiveBadge, OriginBadge } from "./Badges";
+import { isLive, LiveBadge, OriginBadge } from "./Badges";
 import { CategoryIcon } from "./CategoryIcon";
 
 /** One incident as a list row: glyph, title, place, and a two-line preview. */
@@ -34,13 +34,15 @@ export function IncidentRow({ incident, distanceMi }: { incident: PublicIncident
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-3">
-          <h3 className={`flex min-w-0 flex-1 items-center gap-2 text-[16.5px] font-bold tracking-[-0.02em] ${ended ? "text-muted" : ""}`}>
-            {live && <LiveBadge />}
-            <span className="truncate">{incident.title}</span>
+          <h3 className={`min-w-0 flex-1 truncate text-[16.5px] font-bold tracking-[-0.02em] ${ended ? "text-muted" : ""}`}>
+            {incident.title}
           </h3>
           <span className="shrink-0 text-[13px] text-faint tnum">{timeAgo(incident.createdAt)}</span>
         </div>
+        {/* WHERE and WHAT KIND, then live / ended state, on one predictable line. */}
         <p className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[13.5px] text-muted">
+          {live && <LiveBadge />}
+          {ended && <span className="shrink-0 text-faint">Ended ·</span>}
           <span className="truncate">
             <span style={{ color: ended ? undefined : def.color }}>{def.short}</span>
             <span className="text-faint"> · </span>
@@ -55,13 +57,10 @@ export function IncidentRow({ incident, distanceMi }: { incident: PublicIncident
         )}
         <div className="mt-2 flex items-center gap-2.5 text-[12.5px] text-faint">
           <OriginBadge incident={incident} />
-          {(ended || incident.confirmationCount > 0) && (
-            <>
-            {ended && <span>Ended</span>}
-            {incident.confirmationCount > 0 && <span className="tnum">
-                {incident.confirmationCount} {incident.confirmationCount === 1 ? "person" : "people"} saw this
-              </span>}
-            </>
+          {incident.confirmationCount > 0 && (
+            <span className="tnum">
+              {incident.confirmationCount} {incident.confirmationCount === 1 ? "person" : "people"} saw this
+            </span>
           )}
         </div>
       </div>
@@ -73,6 +72,7 @@ const SEV_RANK = { low: 0, moderate: 1, high: 2, critical: 3 } as const;
 
 /** The most serious incident that is live right now, if any. */
 export function pickTopIncident(items: PublicIncident[]): PublicIncident | null {
+  // Real, live and serious. Demo examples never get the "happening now" slot.
   const live = items.filter((i) => isLive(i) && SEV_RANK[i.severity] >= SEV_RANK.high);
   live.sort((a, b) => SEV_RANK[b.severity] - SEV_RANK[a.severity] || b.createdAt.localeCompare(a.createdAt));
   return live[0] ?? null;
@@ -85,7 +85,7 @@ export function TopIncidentCard({ incident, distanceMi }: { incident: PublicInci
     <Link
       href={`/incidents/${incident.id}`}
       transitionTypes={["nav-forward"]}
-      className="press relative mt-2 block overflow-hidden rounded-[20px] bg-surface p-4 shadow-[inset_0_0_0_1px_var(--line)]"
+      className="press relative mt-2 block overflow-hidden rounded-card bg-surface p-4 shadow-[inset_0_0_0_1px_var(--line)]"
     >
       <div
         className="pointer-events-none absolute -right-10 -top-12 size-48 rounded-full opacity-35 blur-3xl"
@@ -95,7 +95,6 @@ export function TopIncidentCard({ incident, distanceMi }: { incident: PublicInci
       <div className="relative flex items-center gap-2 text-[11.5px] font-bold uppercase tracking-[0.1em] text-muted">
         <LiveBadge size="md" />
         <span>Happening now</span>
-        {incident.isDemo && <DemoTag />}
       </div>
       <div className="relative mt-3 flex gap-3.5">
         <CategoryIcon category={incident.category} size="lg" animated glow />

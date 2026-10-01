@@ -66,7 +66,7 @@ export function IncidentDetailScreen({ id }: { id: string }) {
               <Skeleton className="h-6 w-3/4" />
             </div>
           </div>
-          <Skeleton className="mt-5 h-44 w-full rounded-[20px]" />
+          <Skeleton className="mt-5 h-44 w-full rounded-card" />
           <Skeleton className="mt-4 h-4 w-full" />
           <Skeleton className="mt-2 h-4 w-5/6" />
         </div>
@@ -142,7 +142,7 @@ export function IncidentDetailScreen({ id }: { id: string }) {
         </div>
 
         {incident.status !== "under_review" && (
-          <div className="haven-rise mt-6 rounded-[20px] bg-surface px-4 pb-3 pt-4" style={{ animationDelay: "40ms" }}>
+          <div className="haven-rise mt-6 rounded-card bg-surface px-4 pb-3 pt-4" style={{ animationDelay: "40ms" }}>
             <StatusStepper status={incident.status} color={def.color} />
           </div>
         )}
@@ -158,7 +158,7 @@ export function IncidentDetailScreen({ id }: { id: string }) {
           <Fact label="Distance" value={incident.distanceMi != null ? `${formatDistance(incident.distanceMi)} from you` : "Location off"} />
           <Fact label="Reported" value={dateTime(incident.createdAt)} />
           <Fact label="Last update" value={timeAgo(lastUpdate)} />
-          <Fact label="Saw it" value={`${incident.confirmationCount} ${incident.confirmationCount === 1 ? "person" : "people"}`} />
+          <Fact label="Confirmed by" value={incident.confirmationCount === 0 ? "No one yet" : `${incident.confirmationCount} ${incident.confirmationCount === 1 ? "person" : "people"} nearby`} />
           <Fact
             label="Source"
             value={
@@ -173,15 +173,6 @@ export function IncidentDetailScreen({ id }: { id: string }) {
                   </>
                 )}
               </>
-            }
-            wrap
-          />
-          <Fact
-            label="Map"
-            value={
-              <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">
-                © OpenStreetMap contributors · OpenFreeMap
-              </a>
             }
             wrap
           />
@@ -221,11 +212,19 @@ export function IncidentDetailScreen({ id }: { id: string }) {
           <EmergencyNote compact />
         </div>
 
+        <p className="mt-6 text-center text-[11.5px] text-faint">
+          Map ©{" "}
+          <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" className="underline-offset-2 hover:underline">
+            OpenStreetMap contributors
+          </a>{" "}
+          · OpenFreeMap
+        </p>
+
         {!incident.viewer.isReporter && (
           <button
             onClick={() => setFlagOpen(true)}
             disabled={incident.viewer.flagged}
-            className="mx-auto mt-5 flex min-h-11 items-center gap-2 rounded-full px-3 text-[13.5px] text-faint hover:text-muted disabled:opacity-60"
+            className="mx-auto mt-2 flex min-h-11 items-center gap-2 rounded-full px-3 text-[13.5px] text-faint hover:text-muted disabled:opacity-60"
           >
             <Flag className="size-3.5" aria-hidden />
             {incident.viewer.flagged ? "You reported a problem" : "Report a problem"}

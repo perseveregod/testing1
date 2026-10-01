@@ -18,7 +18,7 @@ const VARIANTS: Record<Variant, string> = {
 // Every size keeps a ≥44px touch target.
 const SIZES: Record<Size, string> = {
   sm: "min-h-11 px-4 text-[14px] rounded-full gap-1.5",
-  md: "min-h-12 px-5 text-[15px] rounded-[14px] gap-2",
+  md: "min-h-12 px-5 text-[15px] rounded-control gap-2",
   lg: "min-h-[54px] px-6 text-[16px] rounded-2xl gap-2",
 };
 
