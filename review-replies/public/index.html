@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ReplyDesk</title>
+<meta name="description" content="Reply to every Google and Yelp review in your own voice, in seconds. Free for 15 replies a month.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;600&display=swap">
+<link rel="stylesheet" href="/style.css">
+<style>
+  .hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 48px; align-items: start; padding-block: 40px 64px; }
+  .hero h1 { font-size: clamp(36px, 5.4vw, 60px); font-weight: 800; }
+  .hero h1 em { font-style: normal; color: var(--brand); }
+  .hero .lede { font-size: 19px; color: var(--muted); margin-top: 18px; max-width: 34em; }
+  .hero .cta { display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
+  .proof { display: flex; gap: 22px; margin-top: 32px; flex-wrap: wrap; }
+  .proof div { font-size: 14px; color: var(--muted); max-width: 14em; }
+  .proof b { display: block; font: 800 26px var(--font-display); color: var(--ink); }
+
+  .demo h2 { font-size: 20px; margin-bottom: 4px; }
+  .demo .fields { margin-top: 16px; }
+  #demoOut { margin-top: 16px; }
+  #demoOut[hidden] { display: none; }
+
+  section.band { padding-block: 64px; border-top: 1px solid var(--line); }
+  section.band > .wrap > h2 { font-size: clamp(28px, 3.6vw, 40px); max-width: 20em; }
+  .points { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; margin-top: 32px; }
+  .points h3 { font-size: 19px; margin-bottom: 6px; }
+
+  .pricing { display: grid; grid-template-columns: repeat(2, minmax(0, 340px)); gap: 20px; margin-top: 32px; }
+  .plan h3 { font-size: 20px; }
+  .plan .price { font: 800 44px var(--font-display); margin-top: 8px; }
+  .plan .price span { font: 400 16px var(--font-body); color: var(--muted); }
+  .plan ul { padding-left: 18px; margin: 16px 0 20px; color: var(--muted); }
+  .plan ul li { margin-bottom: 6px; }
+  .plan.pro { border: 2px solid var(--brand); }
+  .plan .btn { width: 100%; }
+
+  .faq { margin-top: 24px; max-width: 46em; }
+  .faq details { border-bottom: 1px solid var(--line); padding-block: 14px; }
+  .faq summary { font-weight: 600; cursor: pointer; }
+  .faq p { margin-top: 8px; color: var(--muted); }
+
+  footer { padding-block: 32px; color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); }
+
+  @media (max-width: 860px) {
+    .hero { grid-template-columns: 1fr; gap: 32px; padding-top: 16px; }
+    .points { grid-template-columns: 1fr; }
+    .pricing { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="nav">
+    <a class="logo" href="/"><i>★</i>ReplyDesk</a>
+    <span class="spacer"></span>
+    <a class="btn link" href="/app#login">Log in</a>
+    <a class="btn" href="/app#signup">Start free</a>
+  </nav>
+
+  <header class="hero">
+    <div>
+      <h1>Reply to every review. <em>In your voice.</em> In seconds.</h1>
+      <p class="lede">Paste a Google or Yelp review and get a thoughtful, on-brand reply you can post right away. Five-star thank-yous, three-star follow-ups, and calm answers to the one-star rants.</p>
+      <div class="cta">
+        <a class="btn" href="/app#signup">Get 15 free replies a month</a>
+        <a class="btn ghost" href="#pricing">See pricing</a>
+      </div>
+      <div class="proof">
+        <div><b>~10 sec</b>per reply instead of 10 minutes of staring at a blank box</div>
+        <div><b>Every rating</b>handled with the right tone, including the angry ones</div>
+      </div>
+    </div>
+
+    <form class="card demo" id="demo" autocomplete="off">
+      <h2>Try it on a real review</h2>
+      <p class="muted small">No account needed. Paste one of your own reviews.</p>
+      <div class="fields">
+        <div class="two">
+          <div class="field"><label for="dBiz">Your business</label><input id="dBiz" placeholder="Rosa's Taqueria"></div>
+          <div class="field"><label for="dName">Reviewer name</label><input id="dName" placeholder="Jamie L."></div>
+        </div>
+        <div class="field"><label>Rating</label><div id="dStars"></div></div>
+        <div class="field">
+          <label for="dBody">Review</label>
+          <textarea id="dBody" required>Waited almost 40 minutes for our food on a Tuesday night and nobody told us why. The carnitas were honestly great once they came, but the wait killed it.</textarea>
+        </div>
+        <button class="btn" id="dGo" type="submit">Write my reply</button>
+        <p class="msg" id="dMsg" role="status"></p>
+      </div>
+      <div id="demoOut" hidden>
+        <div class="reply-box" id="dReply"></div>
+        <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+          <button class="btn ghost small" type="button" id="dCopy">Copy reply</button>
+          <a class="btn small" href="/app#signup">Save time on every review</a>
+        </div>
+      </div>
+    </form>
+  </header>
+</div>
+
+<section class="band">
+  <div class="wrap">
+    <h2>Customers read your replies before they ever walk in.</h2>
+    <div class="points">
+      <div><h3>Reply to all of them</h3><p class="muted">Businesses that answer reviews look cared-for, and customers notice. Most owners mean to and never get around to it.</p></div>
+      <div><h3>Stay calm on the bad ones</h3><p class="muted">One-star reviews get a sincere, non-defensive reply that moves the conversation offline. No arguing in public.</p></div>
+      <div><h3>Sound like you</h3><p class="muted">Set your tone, sign-off and things worth mentioning once. Every reply follows them, and you can edit before posting.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="pricing">
+  <div class="wrap">
+    <h2>Simple pricing. Cancel anytime.</h2>
+    <div class="pricing">
+      <div class="card plan">
+        <h3>Free</h3>
+        <div class="price">$0 <span>/ month</span></div>
+        <ul><li>15 AI replies a month</li><li>Your tone and sign-off</li><li>CSV import</li></ul>
+        <a class="btn ghost" href="/app#signup">Start free</a>
+      </div>
+      <div class="card plan pro">
+        <h3>Pro</h3>
+        <div class="price">$9 <span>/ month</span></div>
+        <ul><li>300 AI replies a month</li><li>Everything in Free</li><li>Cancel anytime</li></ul>
+        <a class="btn" href="/app#signup">Start free, upgrade anytime</a>
+      </div>
+    </div>
+
+    <div class="faq">
+      <details><summary>Does it post to Google for me?</summary><p>Not yet. You copy the reply and paste it into Google Business Profile or Yelp. It takes a few seconds, and you get a final look before anything goes public.</p></details>
+      <details><summary>Will replies all sound the same?</summary><p>No. Each reply mentions specifics from that review, and you can rewrite or edit any of them.</p></details>
+      <details><summary>Can I cancel?</summary><p>Yes, anytime from your account. You keep Pro until the end of the billing period.</p></details>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap">ReplyDesk · Built for owners who'd rather be running their business.</div></footer>
+
+<script src="/common.js"></script>
+<script>
+  const stars = RD.starPicker(document.getElementById("dStars"), 3);
+  const $ = (id) => document.getElementById(id);
+  $("demo").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    $("dGo").disabled = true;
+    $("dGo").textContent = "Writing…";
+    $("dMsg").className = "msg";
+    $("dMsg").textContent = "";
+    try {
+      const { reply } = await RD.api("/api/demo-reply", {
+        method: "POST",
+        body: { businessName: $("dBiz").value, reviewer: $("dName").value, rating: stars.get(), body: $("dBody").value },
+      });
+      $("dReply").textContent = reply;
+      $("demoOut").hidden = false;
+    } catch (err) {
+      $("dMsg").className = "msg err";
+      $("dMsg").textContent = err.message;
+    } finally {
+      $("dGo").disabled = false;
+      $("dGo").textContent = "Write my reply";
+    }
+  });
+  $("dCopy").onclick = () => RD.copy($("dReply").textContent, $("dMsg"));
+</script>
+</body>
+</html>

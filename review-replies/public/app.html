@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ReplyDesk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;600&display=swap">
+<link rel="stylesheet" href="/style.css">
+<style>
+  .auth { max-width: 400px; margin: 48px auto; }
+  .auth h1 { font-size: 30px; margin-bottom: 6px; }
+  .tabs { display: flex; gap: 4px; margin: 20px 0; border-bottom: 1px solid var(--line); }
+  .tabs button { background: none; border: 0; padding: 10px 12px; font: 600 15px var(--font-body); color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tabs button[aria-selected=true] { color: var(--ink); border-color: var(--brand); }
+
+  .topbar { display: flex; align-items: center; gap: 14px; padding-block: 14px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .meter { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); }
+  .meter .bar { width: 120px; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+  .meter .bar i { display: block; height: 100%; background: var(--brand); }
+  .meter.low .bar i { background: var(--danger); }
+  .plan-chip { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; padding: 3px 8px; border-radius: 999px; background: var(--brand-soft); color: var(--brand); }
+
+  .work { display: grid; grid-template-columns: 320px 1fr; gap: 28px; padding-block: 24px 64px; align-items: start; }
+  .side { display: grid; gap: 20px; position: sticky; top: 16px; }
+  .side h2 { font-size: 18px; margin-bottom: 12px; }
+  .main h1 { font-size: 26px; }
+  .filters { display: flex; gap: 6px; margin: 16px 0; flex-wrap: wrap; }
+  .filters button { border: 1px solid var(--line); background: var(--surface); color: var(--muted); border-radius: 999px; padding: 6px 12px; font: 600 14px var(--font-body); cursor: pointer; }
+  .filters button[aria-pressed=true] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .list { display: grid; gap: 14px; }
+  .review { display: grid; gap: 12px; }
+  .review.urgent { border-left: 4px solid var(--danger); }
+  .review .head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .review .who { font-weight: 600; }
+  .review .status { margin-left: auto; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+  .review .status.posted { color: var(--brand); }
+  .review .flag { font-size: 12px; font-weight: 600; color: var(--danger); background: var(--danger-soft); padding: 2px 8px; border-radius: 999px; }
+  .review .body { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .review textarea { min-height: 120px; background: var(--brand-soft); border-color: transparent; }
+  .review .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .empty { text-align: center; padding: 48px 20px; color: var(--muted); }
+  .empty h2 { color: var(--ink); font-size: 20px; margin-bottom: 6px; }
+  .banner { padding: 12px 14px; border-radius: 8px; background: var(--brand-soft); font-size: 14px; }
+  .banner.warn { background: var(--danger-soft); }
+  details.import summary { cursor: pointer; font-weight: 600; font-size: 14px; color: var(--muted); }
+
+  @media (max-width: 900px) {
+    .work { grid-template-columns: 1fr; }
+    .side { position: static; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Logged out -->
+  <section class="auth" id="authView" hidden>
+    <a class="logo" href="/"><i>★</i>ReplyDesk</a>
+    <div class="tabs" role="tablist">
+      <button role="tab" id="tabSignup" aria-selected="true">Create account</button>
+      <button role="tab" id="tabLogin" aria-selected="false">Log in</button>
+    </div>
+    <form class="fields" id="authForm">
+      <div class="field"><label for="email">Email</label><input id="email" type="email" autocomplete="email" required></div>
+      <div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="new-password" minlength="8" required></div>
+      <button class="btn" id="authGo" type="submit">Create free account</button>
+      <p class="msg" id="authMsg" role="status"></p>
+      <p class="muted small" id="authNote">Free for 15 replies a month. No card needed.</p>
+    </form>
+  </section>
+
+  <!-- Logged in -->
+  <div id="appView" hidden>
+    <div class="topbar">
+      <a class="logo" href="/"><i>★</i>ReplyDesk</a>
+      <span class="plan-chip" id="planChip">Free</span>
+      <span style="flex:1"></span>
+      <div class="meter" id="meter"><span id="meterText"></span><span class="bar"><i id="meterBar"></i></span></div>
+      <button class="btn small" id="upgrade" hidden>Upgrade to Pro · $9/mo</button>
+      <button class="btn ghost small" id="manage" hidden>Manage billing</button>
+      <button class="btn link small" id="logout">Log out</button>
+    </div>
+
+    <div class="work">
+      <aside class="side">
+        <form class="card" id="addForm" autocomplete="off">
+          <h2>Add a review</h2>
+          <div class="fields">
+            <div class="field"><label>Rating</label><div id="addStars"></div></div>
+            <div class="field"><label for="addName">Reviewer name</label><input id="addName" placeholder="Jamie L."></div>
+            <div class="field"><label for="addBody">Review text</label><textarea id="addBody" required placeholder="Paste the review from Google or Yelp"></textarea></div>
+            <button class="btn" type="submit">Add and write reply</button>
+            <p class="msg" id="addMsg" role="status"></p>
+            <details class="import">
+              <summary>Import many from CSV</summary>
+              <div class="fields" style="margin-top:10px">
+                <p class="muted small">Columns: <code>rating, reviewer, review</code> with a header row. Replies aren't written until you click each one, so importing is free.</p>
+                <input type="file" id="csvFile" accept=".csv,text/csv">
+                <p class="msg" id="csvMsg" role="status"></p>
+              </div>
+            </details>
+          </div>
+        </form>
+
+        <form class="card" id="bizForm" autocomplete="off">
+          <h2>Your voice</h2>
+          <div class="fields">
+            <div class="field"><label for="bName">Business name</label><input id="bName" placeholder="Rosa's Taqueria"></div>
+            <div class="field"><label for="bKind">What kind of business</label><input id="bKind" placeholder="Family-run Mexican restaurant"></div>
+            <div class="field">
+              <label for="bTone">Tone</label>
+              <select id="bTone">
+                <option value="warm">Warm and personal</option>
+                <option value="professional">Polished and professional</option>
+                <option value="playful">Upbeat and playful</option>
+                <option value="concise">Short and to the point</option>
+              </select>
+            </div>
+            <div class="field"><label for="bSign">Sign-off</label><input id="bSign" placeholder="— Rosa & the team"></div>
+            <div class="field"><label for="bNotes">Worth mentioning when it fits</label><textarea id="bNotes" placeholder="Taco Tuesday specials. Catering for events. Email rosa@example.com for issues."></textarea></div>
+            <button class="btn ghost" type="submit">Save voice</button>
+            <p class="msg" id="bizMsg" role="status"></p>
+          </div>
+        </form>
+      </aside>
+
+      <main class="main">
+        <div id="notices"></div>
+        <h1>Reviews</h1>
+        <div class="filters" id="filters">
+          <button data-f="todo" aria-pressed="true">Needs reply</button>
+          <button data-f="drafted" aria-pressed="false">Ready to post</button>
+          <button data-f="posted" aria-pressed="false">Posted</button>
+          <button data-f="all" aria-pressed="false">All</button>
+        </div>
+        <div class="list" id="list"></div>
+      </main>
+    </div>
+  </div>
+</div>
+
+<script src="/common.js"></script>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  let state = { me: null, reviews: [], filter: "todo" };
+  let mode = location.hash === "#login" ? "login" : "signup";
+
+  // ----- auth -----
+  function setMode(m) {
+    mode = m;
+    $("tabSignup").setAttribute("aria-selected", String(m === "signup"));
+    $("tabLogin").setAttribute("aria-selected", String(m === "login"));
+    $("authGo").textContent = m === "signup" ? "Create free account" : "Log in";
+    $("password").autocomplete = m === "signup" ? "new-password" : "current-password";
+    $("authNote").hidden = m !== "signup";
+    $("authMsg").textContent = "";
+  }
+  $("tabSignup").onclick = () => setMode("signup");
+  $("tabLogin").onclick = () => setMode("login");
+  $("authForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    $("authGo").disabled = true;
+    try {
+      state.me = await RD.api(mode === "signup" ? "/api/signup" : "/api/login", {
+        method: "POST", body: { email: $("email").value, password: $("password").value },
+      });
+      history.replaceState(null, "", "/app");
+      await enterApp();
+    } catch (err) {
+      $("authMsg").className = "msg err";
+      $("authMsg").textContent = err.message;
+    } finally {
+      $("authGo").disabled = false;
+    }
+  });
+  $("logout").onclick = async () => {
+    await RD.api("/api/logout", { method: "POST", body: {} }).catch(() => {});
+    location.href = "/";
+  };
+
+  // ----- account bar -----
+  function renderMe() {
+    const { quota, business, billingEnabled, hasSubscription } = state.me;
+    $("planChip").textContent = quota.plan === "pro" ? "Pro" : "Free";
+    $("meterText").textContent = `${quota.used} of ${quota.limit} replies this month`;
+    $("meterBar").style.width = Math.min(100, (quota.used / quota.limit) * 100) + "%";
+    $("meter").classList.toggle("low", quota.left <= 3);
+    $("upgrade").hidden = quota.plan === "pro";
+    $("upgrade").disabled = !billingEnabled;
+    $("upgrade").title = billingEnabled ? "" : "Payments aren't set up on this server yet.";
+    $("manage").hidden = !hasSubscription;
+    $("bName").value = business.name;
+    $("bKind").value = business.kind;
+    $("bTone").value = business.tone;
+    $("bSign").value = business.signoff;
+    $("bNotes").value = business.notes;
+
+    const notes = [];
+    if (new URLSearchParams(location.search).has("upgraded")) notes.push(["", "Thanks for upgrading! Pro unlocks as soon as your payment confirms. Refresh in a moment if it still says Free."]);
+    if (state.me.demo) notes.push(["warn", "Demo mode: this server has no AI key, so replies use a simple template."]);
+    if (!business.name) notes.push(["", "Tip: add your business name and tone under “Your voice” so replies sound like you."]);
+    $("notices").replaceChildren(...notes.map(([cls, text]) => {
+      const d = document.createElement("p");
+      d.className = "banner " + cls;
+      d.style.marginBottom = "12px";
+      d.textContent = text;
+      return d;
+    }));
+  }
+
+  async function goBilling(path) {
+    try {
+      const { url } = await RD.api(path, { method: "POST", body: {} });
+      location.href = url;
+    } catch (err) {
+      alertBanner(err.message);
+    }
+  }
+  $("upgrade").onclick = () => goBilling("/api/billing/checkout");
+  $("manage").onclick = () => goBilling("/api/billing/portal");
+
+  function alertBanner(text) {
+    const d = document.createElement("p");
+    d.className = "banner warn";
+    d.style.marginBottom = "12px";
+    d.textContent = text;
+    $("notices").prepend(d);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  // ----- business voice -----
+  $("bizForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try {
+      state.me = await RD.api("/api/business", {
+        method: "PUT",
+        body: { name: $("bName").value, kind: $("bKind").value, tone: $("bTone").value, signoff: $("bSign").value, notes: $("bNotes").value },
+      });
+      renderMe();
+      $("bizMsg").className = "msg ok";
+      $("bizMsg").textContent = "Saved. New replies will use this voice.";
+    } catch (err) {
+      $("bizMsg").className = "msg err";
+      $("bizMsg").textContent = err.message;
+    }
+  });
+
+  // ----- reviews -----
+  const addStars = RD.starPicker($("addStars"), 5);
+  $("addForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    $("addMsg").className = "msg";
+    try {
+      const res = await RD.api("/api/reviews", {
+        method: "POST", body: { rating: addStars.get(), reviewer: $("addName").value, body: $("addBody").value },
+      });
+      state.reviews = res.reviews;
+      $("addName").value = "";
+      $("addBody").value = "";
+      setFilter("todo");
+      const newest = state.reviews[0];
+      if (newest) writeReply(newest.id);
+    } catch (err) {
+      $("addMsg").className = "msg err";
+      $("addMsg").textContent = err.message;
+    }
+  });
+
+  $("csvFile").addEventListener("change", async () => {
+    const file = $("csvFile").files[0];
+    if (!file) return;
+    $("csvMsg").className = "msg";
+    try {
+      const res = await RD.api("/api/reviews", { method: "POST", body: { csv: await file.text() } });
+      state.reviews = res.reviews;
+      $("csvMsg").className = "msg ok";
+      $("csvMsg").textContent = `Imported ${res.added} review${res.added === 1 ? "" : "s"}` +
+        (res.skipped.length ? `. Skipped ${res.skipped.length} (row ${res.skipped[0].row}: ${res.skipped[0].error})` : ".");
+      setFilter("todo");
+    } catch (err) {
+      $("csvMsg").className = "msg err";
+      $("csvMsg").textContent = err.message;
+    } finally {
+      $("csvFile").value = "";
+    }
+  });
+
+  function setFilter(f) {
+    state.filter = f;
+    for (const b of $("filters").children) b.setAttribute("aria-pressed", String(b.dataset.f === f));
+    renderList();
+  }
+  for (const b of $("filters").children) b.onclick = () => setFilter(b.dataset.f);
+
+  const busy = new Set();
+
+  function renderList() {
+    const f = state.filter;
+    const shown = state.reviews.filter((r) =>
+      f === "all" ? true : f === "todo" ? r.status === "new" : r.status === f);
+    const list = $("list");
+    if (!shown.length) {
+      const empty = document.createElement("div");
+      empty.className = "card empty";
+      const h = document.createElement("h2");
+      const p = document.createElement("p");
+      if (!state.reviews.length) {
+        h.textContent = "No reviews yet";
+        p.textContent = "Paste a review from Google or Yelp on the left and you'll have a reply in about ten seconds.";
+      } else {
+        h.textContent = "All caught up";
+        p.textContent = f === "todo" ? "Every review has a reply. Nice." : "Nothing here yet.";
+      }
+      empty.append(h, p);
+      list.replaceChildren(empty);
+      return;
+    }
+    list.replaceChildren(...shown.map(reviewCard));
+  }
+
+  function reviewCard(r) {
+    const card = document.createElement("article");
+    card.className = "card review" + (r.rating <= 2 && r.status !== "posted" ? " urgent" : "");
+
+    const head = document.createElement("div");
+    head.className = "head";
+    const stars = document.createElement("span");
+    stars.className = "stars";
+    stars.textContent = RD.stars(r.rating);
+    stars.setAttribute("aria-label", `${r.rating} of 5 stars`);
+    const who = document.createElement("span");
+    who.className = "who";
+    who.textContent = r.reviewer || "Anonymous";
+    head.append(stars, who);
+    if (r.rating <= 2 && r.status !== "posted") {
+      const flag = document.createElement("span");
+      flag.className = "flag";
+      flag.textContent = "Reply soon";
+      head.append(flag);
+    }
+    const status = document.createElement("span");
+    status.className = "status " + r.status;
+    status.textContent = { new: "Needs reply", drafted: "Ready to post", posted: "Posted" }[r.status];
+    head.append(status);
+
+    const body = document.createElement("p");
+    body.className = "body";
+    body.textContent = r.body;
+    card.append(head, body);
+
+    const actions = document.createElement("div");
+    actions.className = "actions";
+    const msg = document.createElement("span");
+    msg.className = "msg small";
+    msg.setAttribute("role", "status");
+
+    const btn = (label, cls, fn) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "btn small " + cls;
+      b.textContent = label;
+      b.onclick = fn;
+      return b;
+    };
+
+    if (r.reply) {
+      const ta = document.createElement("textarea");
+      ta.value = r.reply;
+      ta.setAttribute("aria-label", "Reply");
+      let t;
+      ta.oninput = () => {
+        clearTimeout(t);
+        t = setTimeout(() => patch(r.id, { reply: ta.value }, false), 600);
+      };
+      card.append(ta);
+      actions.append(
+        btn("Copy reply", "", () => RD.copy(ta.value, msg)),
+        r.status === "posted"
+          ? btn("Mark not posted", "ghost", () => patch(r.id, { status: "drafted" }, true))
+          : btn("Mark posted", "ghost", () => patch(r.id, { status: "posted" }, true)),
+        btn(busy.has(r.id) ? "Rewriting…" : "Rewrite", "link", () => writeReply(r.id)),
+      );
+    } else {
+      const go = btn(busy.has(r.id) ? "Writing…" : "Write reply", "", () => writeReply(r.id));
+      go.disabled = busy.has(r.id);
+      actions.append(go);
+    }
+    actions.append(btn("Delete", "danger", async () => {
+      await RD.api(`/api/reviews/${r.id}`, { method: "DELETE" });
+      state.reviews = state.reviews.filter((x) => x.id !== r.id);
+      renderList();
+    }), msg);
+    card.append(actions);
+    return card;
+  }
+
+  async function writeReply(id) {
+    if (busy.has(id)) return;
+    busy.add(id);
+    renderList();
+    try {
+      const res = await RD.api(`/api/reviews/${id}/reply`, { method: "POST", body: {} });
+      replaceReview(res.review);
+      state.me.quota = res.quota;
+      renderMe();
+      if (state.filter === "todo") state.filter = "drafted";
+      setFilter(state.filter);
+    } catch (err) {
+      alertBanner(err.message);
+      if (err.data?.quota) { state.me.quota = err.data.quota; renderMe(); }
+    } finally {
+      busy.delete(id);
+      renderList();
+    }
+  }
+
+  async function patch(id, fields, rerender) {
+    try {
+      const res = await RD.api(`/api/reviews/${id}`, { method: "PATCH", body: fields });
+      replaceReview(res.review);
+      if (rerender) renderList();
+    } catch (err) {
+      alertBanner(err.message);
+    }
+  }
+
+  function replaceReview(r) {
+    const i = state.reviews.findIndex((x) => x.id === r.id);
+    const slim = { id: r.id, reviewer: r.reviewer, rating: r.rating, body: r.body, reply: r.reply, status: r.status, created_at: r.created_at };
+    if (i >= 0) state.reviews[i] = slim; else state.reviews.unshift(slim);
+  }
+
+  // ----- boot -----
+  async function enterApp() {
+    $("authView").hidden = true;
+    $("appView").hidden = false;
+    renderMe();
+    state.reviews = (await RD.api("/api/reviews")).reviews;
+    renderList();
+  }
+
+  RD.api("/api/me").then((me) => { state.me = me; enterApp(); }).catch(() => {
+    setMode(mode);
+    $("authView").hidden = false;
+  });
+})();
+</script>
+</body>
+</html>
