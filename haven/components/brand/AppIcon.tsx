@@ -1,31 +1,55 @@
+import { createElement, type ReactElement } from "react";
+import { ICON_GRADIENTS, iconBackground, iconForeground, type Shape } from "@/lib/brand/icon";
+
+// Plain element arrays, not components: the PNG renderer (Satori) only
+// accepts intrinsic elements inside <svg>, and the DOM is happy either way.
+
+/** Gradient defs as React elements. */
+export function iconDefs(): ReactElement[] {
+  return ICON_GRADIENTS.map((g) => {
+    const stops = g.stops.map(([o, c, a]) => <stop key={o} offset={o} stopColor={c} stopOpacity={a} />);
+    return g.kind === "linear" ? (
+      <linearGradient key={g.id} id={g.id} x1="0" y1="0" x2="0" y2="1">
+        {stops}
+      </linearGradient>
+    ) : (
+      <radialGradient key={g.id} id={g.id} cx={g.cx} cy={g.cy} r={g.r}>
+        {stops}
+      </radialGradient>
+    );
+  });
+}
+
+/** Shapes as React SVG elements. */
+function elements(shapes: Shape[], prefix: string): ReactElement[] {
+  return shapes.map((sh, i) => {
+    // Hyphenated SVG attributes become camelCase in React.
+    const attrs: Record<string, string | number> = {};
+    for (const [k, v] of Object.entries(sh.attrs)) {
+      attrs[k.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase())] = v;
+    }
+    return createElement(sh.tag, { key: `${prefix}${i}`, ...attrs });
+  });
+}
+
+/** The whole icon's shapes as React SVG elements. */
+export function iconElements(): ReactElement[] {
+  return [...elements(iconBackground(), "b"), ...elements(iconForeground(), "f")];
+}
+
 /**
- * The Haven app icon drawn with plain boxes so it renders in ImageResponse
- * (home-screen PNGs, Apple touch icon). Same design as app/icon.svg.
+ * The Haven app icon for the PNG renderer (home-screen icons, Apple touch
+ * icon). `maskable` keeps the city inside Android's safe zone: the sky stays
+ * full-bleed and the city shrinks toward the middle.
  */
-export function AppIcon({ size, rounded = false }: { size: number; rounded?: boolean }) {
-  const s = size / 64;
+export function AppIcon({ size, maskable = false }: { size: number; maskable?: boolean }) {
+  const pad = maskable ? 0.12 : 0;
   return (
-    <div
-      style={{
-        width: size,
-        height: size,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "linear-gradient(180deg, #13213f 0%, #07080a 100%)",
-        borderRadius: rounded ? 15 * s : 0,
-      }}
-    >
+    <div style={{ width: size, height: size, display: "flex", background: "#0d1a3a" }}>
       <svg width={size} height={size} viewBox="0 0 64 64">
-        <defs>
-          <linearGradient id="sh" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#5aa0ff" />
-            <stop offset="1" stopColor="#2f6bff" />
-          </linearGradient>
-        </defs>
-        <path d="M32 11 16 17.5v11.8c0 11.1 6.9 19.1 16 22.2 9.1-3.1 16-11.1 16-22.2V17.5L32 11Z" fill="url(#sh)" />
-        <circle cx="32" cy="30" r="9.5" fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="2.2" />
-        <circle cx="32" cy="30" r="4.6" fill="#fff" />
+        <defs>{iconDefs()}</defs>
+        {elements(iconBackground(), "b")}
+        <g transform={maskable ? `translate(${64 * pad} ${64 * pad}) scale(${1 - 2 * pad})` : undefined}>{elements(iconForeground(), "f")}</g>
       </svg>
     </div>
   );
