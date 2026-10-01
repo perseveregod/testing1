@@ -79,7 +79,7 @@ export function NewEventSheet({
   }
 
   const field =
-    "w-full rounded-2xl bg-surface-2 px-3.5 py-3 text-[16px] outline-none ring-brand/60 placeholder:text-faint focus:ring-2";
+    "w-full rounded-card bg-surface-2 px-3.5 py-3 text-[16px] outline-none ring-brand/60 placeholder:text-faint focus:ring-2";
 
   return (
     <Sheet
@@ -100,7 +100,7 @@ export function NewEventSheet({
               role="radio"
               aria-checked={kind === k.id}
               onClick={() => setKind(k.id)}
-              className={`press inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13.5px] font-semibold ${
+              className={`press inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold ${
                 kind === k.id ? "bg-text text-bg" : "bg-surface-2 text-text"
               }`}
             >
@@ -123,21 +123,21 @@ export function NewEventSheet({
 
         <div className="grid grid-cols-[1.4fr_1fr_1fr] gap-2">
           <label className="block">
-            <span className="mb-1 block px-1 text-[12.5px] font-semibold text-muted">{es ? "Fecha" : "Date"}</span>
+            <span className="mb-1 block px-1 text-[12px] font-semibold text-muted">{es ? "Fecha" : "Date"}</span>
             <input type="date" value={date} min={defaultDate()} onChange={(e) => setDate(e.target.value)} className={`${field} tnum`} />
           </label>
           <label className="block">
-            <span className="mb-1 block px-1 text-[12.5px] font-semibold text-muted">{es ? "Empieza" : "Starts"}</span>
+            <span className="mb-1 block px-1 text-[12px] font-semibold text-muted">{es ? "Empieza" : "Starts"}</span>
             <input type="time" value={start} onChange={(e) => setStart(e.target.value)} className={`${field} tnum`} />
           </label>
           <label className="block">
-            <span className="mb-1 block px-1 text-[12.5px] font-semibold text-muted">{es ? "Termina" : "Ends"}</span>
+            <span className="mb-1 block px-1 text-[12px] font-semibold text-muted">{es ? "Termina" : "Ends"}</span>
             <input type="time" value={end} onChange={(e) => setEnd(e.target.value)} className={`${field} tnum`} />
           </label>
         </div>
 
         <div>
-          <span className="mb-1 block px-1 text-[12.5px] font-semibold text-muted">{es ? "Dónde" : "Where"}</span>
+          <span className="mb-1 block px-1 text-[12px] font-semibold text-muted">{es ? "Dónde" : "Where"}</span>
           <div className="flex gap-2">
             <label className="block min-w-0 flex-1">
               <span className="sr-only">{es ? "Nombre del lugar" : "Place name"}</span>
@@ -152,7 +152,7 @@ export function NewEventSheet({
             <button
               onClick={() => setSearchOpen(true)}
               aria-label={es ? "Buscar el lugar en el mapa" : "Search for the place on the map"}
-              className="press flex size-12 shrink-0 items-center justify-center rounded-2xl bg-surface-2 text-brand"
+              className="press flex size-12 shrink-0 items-center justify-center rounded-card bg-surface-2 text-brand"
             >
               <Search className="size-5" aria-hidden />
             </button>
@@ -163,11 +163,11 @@ export function NewEventSheet({
             recenterKey={recenter}
             color="#FF9F0A"
             onChange={setPoint}
-            className="mt-2 h-44 overflow-hidden rounded-2xl"
+            className="mt-2 h-44 overflow-hidden rounded-card"
             label={es ? "Mapa para ubicar el evento. Arrastre para mover el pin." : "Map to place the event. Drag to move the pin."}
             attribution={false}
           />
-          <p className="mt-1.5 flex items-start gap-1.5 text-[12.5px] leading-snug text-faint">
+          <p className="mt-1.5 flex items-start gap-1.5 text-[12px] leading-snug text-faint">
             <MapPin className="mt-0.5 size-3.5 shrink-0" aria-hidden />
             <span>{es ? "Se redondea a unos 100 m. Use un lugar público, no la casa de alguien." : "Rounded to about 100 m. Use a public place, not someone's home."}</span>
           </p>

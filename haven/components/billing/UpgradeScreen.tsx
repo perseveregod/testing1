@@ -66,13 +66,13 @@ export function UpgradeScreen() {
             <div className="absolute inset-0" style={{ background: "radial-gradient(70% 60% at 30% 10%, rgba(233,194,122,0.22), transparent 70%), radial-gradient(60% 50% at 85% 40%, rgba(61,139,255,0.14), transparent 70%)" }} />
             
           </div>
-          <p className="relative text-[13px] font-semibold uppercase tracking-[0.14em] text-gold">{es ? "De por vida" : "Lifetime"}</p>
+          <p className="relative text-[13px] font-semibold text-gold">{es ? "De por vida" : "Lifetime"}</p>
           <h2 className="relative mt-3 text-[40px] font-bold leading-[1.02] tracking-[-0.04em]">
             {es ? "Pague una vez." : "Pay once."}
             <br />
             {es ? "Nunca más." : "Never again."}
           </h2>
-          <p className="mx-auto mt-3 max-w-[300px] text-[15.5px] leading-relaxed text-muted">
+          <p className="mx-auto mt-3 max-w-[300px] text-[15px] leading-relaxed text-muted">
             {es ? "Lo esencial de Haven es gratis. De por vida desbloquea todo lo demás, para siempre, sin suscripción." : "The core of Haven is free. Lifetime unlocks everything else, permanently, with no subscription."}
           </p>
           <div className="relative mt-8">
@@ -103,14 +103,14 @@ export function UpgradeScreen() {
               </span>
             </p>
           )}
-          {pricing?.mode === "test" && <p className="mt-3 text-[12.5px] text-faint">{es ? "Modo de prueba · no se cobra nada real" : "Test mode · no real payment is taken"}</p>}
+          {pricing?.mode === "test" && <p className="mt-3 text-[12px] text-faint">{es ? "Modo de prueba · no se cobra nada real" : "Test mode · no real payment is taken"}</p>}
         </div>
 
         {canceled && !owned && <p className="mt-5 text-center text-[14px] text-muted">{es ? "Pago cancelado. No se le cobró." : "Checkout canceled. You weren't charged."}</p>}
 
         <div className="mt-8">
           {owned ? (
-            <div className="rounded-2xl bg-ok/10 px-4 py-4 text-center text-[15px] font-medium text-ok">{es ? "Ya tiene Haven de por vida. Gracias." : "You own Haven Lifetime. Thank you."}</div>
+            <div className="rounded-card bg-ok/10 px-4 py-4 text-center text-[15px] font-medium text-ok">{es ? "Ya tiene Haven de por vida. Gracias." : "You own Haven Lifetime. Thank you."}</div>
           ) : (
             <Button variant="gold" size="lg" block onClick={checkout} loading={busy} disabled={!pricing || !viewer}>
               {pricing ? (es ? `Desbloquear por ${pricing.formatted}` : `Unlock for ${pricing.formatted}`) : es ? "Desbloquear De por vida" : "Unlock Lifetime"}
@@ -124,9 +124,9 @@ export function UpgradeScreen() {
           )}
         </div>
 
-        <table className="mt-9 w-full border-collapse text-[14.5px]">
+        <table className="mt-9 w-full border-collapse text-[14px]">
           <thead>
-            <tr className="text-[12.5px] font-medium text-muted">
+            <tr className="text-[12px] font-medium text-muted">
               <th className="pb-3 text-left font-medium">{es ? "Qué incluye" : "What you get"}</th>
               <th className="w-[72px] pb-3 text-center font-medium">{es ? "Gratis" : "Free"}</th>
               <th className="w-[72px] pb-3 text-center font-medium text-gold">{es ? "De por vida" : "Lifetime"}</th>

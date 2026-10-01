@@ -64,7 +64,7 @@ export function AddInfoSheet({
         onChange={(e) => setText(e.target.value.slice(0, MAX_UPDATE))}
         rows={4}
         placeholder={t("inc.updatePlaceholder")}
-        className="w-full resize-none rounded-2xl bg-surface-2 p-4 text-[16px] leading-relaxed outline-none ring-brand/60 transition placeholder:text-faint focus:ring-2"
+        className="w-full resize-none rounded-card bg-surface-2 p-4 text-[16px] leading-relaxed outline-none ring-brand/60 transition placeholder:text-faint focus:ring-2"
       />
       <p className="mt-1.5 text-right text-[12px] text-faint tnum">
         {text.length}/{MAX_UPDATE}
@@ -115,13 +115,13 @@ export function FlagSheet({
       <p className="mb-3 text-[14px] text-muted">
         {es ? "Los reportes de la comunidad que varias personas marcan se ocultan mientras se revisan." : "Community reports that several people flag are hidden while they're reviewed."}
       </p>
-      <ul className="divide-y divide-line overflow-hidden rounded-2xl bg-surface-2 pb-0">
+      <ul className="divide-y divide-line overflow-hidden rounded-card bg-surface-2 pb-0">
         {FLAG_REASONS.map((r) => (
           <li key={r.id}>
             <button
               onClick={() => flag(r.id)}
               disabled={busy !== null}
-              className="flex min-h-[52px] w-full items-center px-4 py-3 text-left text-[15.5px] transition active:bg-surface-3 disabled:opacity-60"
+              className="flex min-h-[52px] w-full items-center px-4 py-3 text-left text-[15px] transition active:bg-surface-3 disabled:opacity-60"
             >
               <span className="flex-1">{es ? r.es : r.en}</span>
               {busy === r.id && <span className="text-[13px] text-muted">{t("inc.sending")}</span>}

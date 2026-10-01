@@ -414,6 +414,8 @@ const D = {
   "layers.satelliteKey": ["Needs a MapTiler key in Vercel", "Necesita una llave de MapTiler en Vercel"],
   "layers.cameras": ["License plate readers", "Lectores de placas"],
   "layers.camerasBody": ["Flock and other ALPR cameras mapped by volunteers on OpenStreetMap", "Cámaras Flock y otras ALPR mapeadas por voluntarios en OpenStreetMap"],
+  "layers.cameraAlerts": ["Alert me near plate readers", "Avisarme cerca de lectores de placas"],
+  "layers.cameraAlertsBody": ["While Haven is open: a buzz and a banner within about 800 ft of a camera", "Con Haven abierto: una vibración y un aviso a unos 250 m de una cámara"],
 
   // ---- time ------------------------------------------------------------------
   "time.justNow": ["just now", "ahora mismo"],

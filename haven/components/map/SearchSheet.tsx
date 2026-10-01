@@ -84,7 +84,7 @@ export function ResultRow({ title, detail, icon, onClick }: { title: string; det
       <button onClick={onClick} className="flex min-h-[54px] w-full items-center gap-3.5 py-2 text-left transition active:opacity-60">
         <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-surface-3 text-muted">{icon}</span>
         <span className="min-w-0">
-          <span className="block truncate text-[15.5px]">{title}</span>
+          <span className="block truncate text-[15px]">{title}</span>
           {detail && <span className="block truncate text-[13px] text-muted">{detail}</span>}
         </span>
       </button>

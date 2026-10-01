@@ -6,6 +6,8 @@ import { SWRConfig } from "swr";
 import { apiSend, fetcher } from "@/lib/client/api";
 import { useAlertPrefs, useNotifications } from "@/lib/client/hooks";
 import { LangSync } from "@/lib/client/lang";
+import { CameraAlertWatcher } from "@/components/cameras/CameraAlertWatcher";
+import { CameraAlertBanner } from "@/components/cameras/CameraAlertBanner";
 import { LocationProvider, useLocation } from "./LocationProvider";
 import { ToastProvider } from "./ToastProvider";
 import { SafeWalkWatcher } from "@/components/safety/SafeWalkWatcher";
@@ -22,6 +24,8 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
           <SafeWalkWatcher />
           <EmailLinkHandler />
           <LangSync />
+          <CameraAlertWatcher />
+          <CameraAlertBanner />
         </LocationProvider>
       </ToastProvider>
     </SWRConfig>

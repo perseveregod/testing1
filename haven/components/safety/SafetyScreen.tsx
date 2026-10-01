@@ -82,13 +82,6 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
               overdue ? "bg-live text-white" : "bg-surface"
             }`}
           >
-            {!overdue && (
-              <div
-                className="pointer-events-none absolute inset-0"
-                style={{ background: "radial-gradient(60% 90% at 92% 0%, rgba(61,139,255,0.22), rgba(61,139,255,0) 70%)" }}
-                aria-hidden
-              />
-            )}
             <div className="relative flex items-center gap-3.5">
               <span
                 className={`flex size-12 shrink-0 items-center justify-center rounded-control ${
@@ -101,7 +94,7 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
                 <p className="text-[18px] font-bold tracking-[-0.02em]">
                   {walk ? (overdue ? t("safety.walkMissed") : t("safety.walkOn")) : t("safety.walk")}
                 </p>
-                <p className={`mt-0.5 text-[13.5px] leading-snug ${overdue ? "text-white/90" : "text-muted"}`}>
+                <p className={`mt-0.5 text-[13px] leading-snug ${overdue ? "text-white/90" : "text-muted"}`}>
                   {walk
                     ? overdue
                       ? t("safety.walkMissedBody")
@@ -124,10 +117,10 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
           {/* 2. What is going on nearby */}
           <section className="mt-8" aria-labelledby="briefing">
             <div className="mb-2.5 flex items-baseline justify-between px-1">
-              <h2 id="briefing" className="text-[13px] font-semibold text-muted">
+              <h2 id="briefing" className="t-section">
                 {hood ? t("near.hoodNow", { hood }) : t("safety.nearby")}
               </h2>
-              <span className="text-[12.5px] text-faint tnum">{t("safety.window", { n: NEAR_RADIUS_MI })}</span>
+              <span className="text-[12px] text-faint tnum">{t("safety.window", { n: NEAR_RADIUS_MI })}</span>
             </div>
             {briefing.allDemo && <DemoNotice className="mb-2.5 mt-0" />}
             {isLoading ? (
@@ -140,8 +133,8 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
                   <ShieldCheck className="size-6" aria-hidden />
                 </span>
                 <div>
-                  <p className="text-[15.5px] font-semibold">{t("safety.quiet")}</p>
-                  <p className="mt-0.5 text-[13.5px] leading-snug text-muted">{t("safety.quietBody")}</p>
+                  <p className="text-[15px] font-semibold">{t("safety.quiet")}</p>
+                  <p className="mt-0.5 text-[13px] leading-snug text-muted">{t("safety.quietBody")}</p>
                 </div>
               </div>
             ) : (
@@ -152,7 +145,7 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
                 </p>
                 {briefing.byGroup.length > 0 && (
                   <p className="mt-1.5 text-[13px] text-muted tnum">
-                    {briefing.byGroup.map((g) => `${es ? g.labelEs : g.label} ${g.count}`).join(" · ")}
+                    {briefing.byGroup.map((g) => `${g.count} ${(es ? g.labelEs : g.label).toLowerCase()}`).join(", ")}
                   </p>
                 )}
                 {briefing.top.length > 0 && (
@@ -176,7 +169,7 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
           {/* Missing pets: only takes space when there is something to show. */}
           <section className="mt-8" aria-labelledby="pets">
             <div className="mb-2.5 flex items-baseline justify-between px-1">
-              <h2 id="pets" className="text-[13px] font-semibold text-muted">
+              <h2 id="pets" className="t-section">
                 {t("safety.pets")}
               </h2>
               <Link href="/report" transitionTypes={["nav-forward"]} className="text-[13px] font-medium text-brand">
@@ -202,17 +195,15 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
           {/* 3. Look something up */}
           <section className="mt-8" aria-labelledby="resources">
             <div className="mb-2.5 flex items-baseline justify-between px-1">
-              <h2 id="resources" className="text-[13px] font-semibold text-muted">
+              <h2 id="resources" className="t-section">
                 {t("safety.resources")}
               </h2>
-              <span className="text-[12.5px] text-faint">{RESOURCE_AREA}</span>
+              <span className="text-[12px] text-faint">{RESOURCE_AREA}</span>
             </div>
             <div className="overflow-hidden rounded-card bg-surface">
               {RESOURCES.map((g, gi) => (
                 <div key={g.id} className={gi > 0 ? "border-t-4 border-bg/60" : ""}>
-                  <p className="px-4 pb-1 pt-3 text-[11.5px] font-semibold uppercase tracking-[0.08em] text-faint">
-                    {g.title}
-                  </p>
+                  <p className="t-section px-4 pb-1 pt-3">{g.title}</p>
                   <ul className="divide-y divide-line">
                     {g.items.map((r) => {
                       const external = r.href.startsWith("http");
@@ -228,7 +219,7 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
                               <p className="mt-0.5 text-[13px] leading-snug text-muted">{r.detail}</p>
                             </div>
                             {r.label ? (
-                              <span className="shrink-0 text-[13.5px] font-semibold text-brand tnum">{r.label}</span>
+                              <span className="shrink-0 text-[13px] font-semibold text-brand tnum">{r.label}</span>
                             ) : (
                               <ExternalLink className="size-4 shrink-0 text-faint" aria-label={t("common.opensSite")} />
                             )}
@@ -240,7 +231,7 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
                 </div>
               ))}
             </div>
-            <p className="mt-2 px-1 text-[12.5px] leading-relaxed text-faint">{t("safety.resourcesNote")}</p>
+            <p className="mt-2 px-1 text-[12px] leading-relaxed text-faint">{t("safety.resourcesNote")}</p>
           </section>
         </div>
       </PullToRefresh>
@@ -249,8 +240,7 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
 }
 
 function BriefRow({ incident, distanceMi }: { incident: PublicIncident; distanceMi: number | null }) {
-  const { timeAgo, title, cat } = useT();
-  const { def, short } = cat(incident.category);
+  const { timeAgo, title } = useT();
   return (
     <li>
       <Link
@@ -261,14 +251,14 @@ function BriefRow({ incident, distanceMi }: { incident: PublicIncident; distance
       >
         <CategoryIcon category={incident.category} size="md" />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[15px] font-semibold">{title(incident)}</p>
-          <p className="mt-0.5 flex items-center gap-1.5 text-[12.5px] text-muted">
+          <p className="flex items-baseline gap-3">
+            <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">{title(incident)}</span>
+            <span className="shrink-0 text-[12px] text-faint tnum">{timeAgo(incident.createdAt)}</span>
+          </p>
+          <p className="mt-0.5 flex items-baseline gap-2 text-[12px] text-muted">
             {isLive(incident) && <LiveBadge />}
-            <span className="truncate">
-              <span style={{ color: def.color }}>{short}</span> · {incident.approximateAddress}
-              {distanceMi != null && <span className="tnum"> · {formatDistance(distanceMi)}</span>}
-              <span className="tnum"> · {timeAgo(incident.createdAt)}</span>
-            </span>
+            <span className="min-w-0 truncate">{incident.approximateAddress}</span>
+            {distanceMi != null && <span className="shrink-0 text-faint tnum">{formatDistance(distanceMi)}</span>}
           </p>
         </div>
         <ChevronRight className="size-4 shrink-0 text-faint" aria-hidden />

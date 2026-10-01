@@ -13,7 +13,7 @@ export function Chip({
   return (
     <button
       aria-pressed={active}
-      className={`press inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[14px] font-medium disabled:opacity-45 ${
+      className={`press inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[14px] font-medium disabled:opacity-45 ${
         active ? "bg-text text-bg" : "bg-surface-2 text-text/90 hover:bg-surface-3"
       } ${className}`}
       {...rest}
@@ -39,7 +39,7 @@ export function Segmented<T extends string | number>({
   disabled?: boolean;
 }) {
   return (
-    <div role="radiogroup" aria-label={label} className={`flex rounded-[12px] bg-surface-2 p-[3px] ${disabled ? "opacity-45" : ""}`}>
+    <div role="radiogroup" aria-label={label} className={`flex rounded-control bg-surface-2 p-[3px] ${disabled ? "opacity-45" : ""}`}>
       {options.map((o) => {
         const on = o.value === value;
         return (
@@ -49,7 +49,7 @@ export function Segmented<T extends string | number>({
             aria-checked={on}
             disabled={disabled || o.locked}
             onClick={() => onChange(o.value)}
-            className={`relative flex min-h-11 flex-1 items-center justify-center gap-1 rounded-[9px] text-[13px] font-semibold transition-all duration-200 ${
+            className={`relative flex min-h-11 flex-1 items-center justify-center gap-1 rounded-[10px] text-[13px] font-semibold transition-all duration-200 ${
               on ? "bg-surface-3 text-text shadow-[0_1px_3px_rgba(0,0,0,0.4)]" : "text-muted hover:text-text"
             } ${o.locked ? "cursor-not-allowed text-faint hover:text-faint" : ""}`}
           >
@@ -122,7 +122,7 @@ export function Group({
     <section id={id} className={`mt-7 scroll-mt-24 ${className}`}>
       {(title || action) && (
         <div className="mb-2 flex min-h-6 items-center justify-between px-4">
-          {title && <h2 className="text-[13px] font-medium text-muted">{title}</h2>}
+          {title && <h2 className="t-section">{title}</h2>}
           {action}
         </div>
       )}

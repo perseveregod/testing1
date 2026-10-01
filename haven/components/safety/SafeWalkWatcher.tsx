@@ -32,7 +32,7 @@ export function SafeWalkWatcher() {
   return (
     <Link
       href="/safety/walk"
-      className="fixed inset-x-3 z-[60] flex items-center gap-3 rounded-2xl bg-live px-4 py-3 text-white shadow-[0_10px_30px_-8px_rgba(255,45,85,0.8)]"
+      className="fixed inset-x-3 z-[60] flex items-center gap-3 rounded-card bg-live px-4 py-3 text-white shadow-[0_10px_30px_-8px_rgba(255,45,85,0.8)]"
       style={{ top: "calc(var(--safe-top) + 8px)" }}
     >
       <BellRing className="haven-blink size-5 shrink-0" aria-hidden />

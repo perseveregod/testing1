@@ -66,7 +66,7 @@ export function InsightsScreen() {
           />
         ) : (
           <>
-            <div className="haven-rise flex items-end justify-between">
+            <div className="flex items-end justify-between">
               <div>
                 <p className="text-[13px] text-muted">
                   {es ? `Últimos ${ins.days} días · a menos de ${ins.radiusMi} mi` : `Last ${ins.days} days · within ${ins.radiusMi} mi`}
@@ -93,7 +93,7 @@ export function InsightsScreen() {
                     <li key={c.category} className="flex items-center gap-3">
                       <CategoryIcon category={c.category} size="sm" />
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-baseline justify-between text-[14.5px]">
+                        <div className="flex items-baseline justify-between text-[14px]">
                           <span>{label}</span>
                           <span className="text-muted tnum">{c.count}</span>
                         </div>
@@ -134,11 +134,11 @@ function DayChart({ days, className = "", es = false }: { days: AreaInsights["by
   return (
     <figure className={className} aria-label={es ? "Incidentes por día" : "Incidents per day"}>
       <div className="flex h-24 items-end gap-[3px]">
-        {days.map((d, i) => (
+        {days.map((d) => (
           <div
             key={d.date}
-            className="haven-rise flex-1 rounded-t-[3px] bg-brand/80"
-            style={{ height: `${Math.max(3, (d.count / max) * 100)}%`, animationDelay: `${i * 20}ms`, opacity: d.count ? 1 : 0.25 }}
+            className="flex-1 rounded-t-[3px] bg-brand/80"
+            style={{ height: `${Math.max(3, (d.count / max) * 100)}%`, opacity: d.count ? 1 : 0.25 }}
             title={`${d.date}: ${d.count}`}
           />
         ))}

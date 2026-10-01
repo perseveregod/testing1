@@ -92,7 +92,7 @@ export function WelcomeFlow() {
 
         <div key={step} className="haven-rise flex flex-1 flex-col justify-center">
           <span
-            className="flex size-20 items-center justify-center rounded-[24px]"
+            className="flex size-20 items-center justify-center rounded-card"
             style={{ background: `color-mix(in srgb, ${s.color} 18%, transparent)`, color: s.color }}
           >
             <Icon className="size-10" strokeWidth={1.8} aria-hidden />
@@ -108,7 +108,7 @@ export function WelcomeFlow() {
             </>
           )}
           {locationStep && (
-            <p className="mt-6 rounded-[16px] bg-surface px-4 py-3 text-[14px] leading-snug text-muted">
+            <p className="mt-6 rounded-card bg-surface px-4 py-3 text-[14px] leading-snug text-muted">
               {t("welcome.note", { n: EMERGENCY_NUMBER })}
             </p>
           )}
@@ -132,14 +132,14 @@ export function WelcomeFlow() {
                   if (last) finish();
                   else setStep((n) => n + 1);
                 }}
-                className="press flex min-h-[54px] items-center justify-center gap-2 rounded-2xl bg-brand text-[16px] font-semibold text-white"
+                className="press flex min-h-[54px] items-center justify-center gap-2 rounded-card bg-brand text-[16px] font-semibold text-white"
               >
                 <Navigation className="size-5" aria-hidden /> {t("common.useMyLocation")}
               </button>
             )}
             <button
               onClick={() => (last ? finish() : setStep((n) => n + 1))}
-              className="press flex min-h-[54px] items-center justify-center rounded-2xl bg-surface-2 text-[16px] font-semibold"
+              className="press flex min-h-[54px] items-center justify-center rounded-card bg-surface-2 text-[16px] font-semibold"
             >
               {status === "denied" || status === "unavailable" ? (last ? t("common.getStarted") : t("common.continue")) : t("common.maybeLater")}
             </button>
@@ -152,11 +152,11 @@ export function WelcomeFlow() {
                 finish();
               }}
               disabled={push.busy}
-              className="press flex min-h-[54px] items-center justify-center gap-2 rounded-2xl bg-live text-[16px] font-semibold text-white disabled:opacity-70"
+              className="press flex min-h-[54px] items-center justify-center gap-2 rounded-card bg-live text-[16px] font-semibold text-white disabled:opacity-70"
             >
               <BellRing className="size-5" aria-hidden /> {t("welcome.turnOnAlerts")}
             </button>
-            <button onClick={finish} className="press flex min-h-[54px] items-center justify-center rounded-2xl bg-surface-2 text-[16px] font-semibold">
+            <button onClick={finish} className="press flex min-h-[54px] items-center justify-center rounded-card bg-surface-2 text-[16px] font-semibold">
               {t("common.notNow")}
             </button>
           </div>
@@ -164,11 +164,11 @@ export function WelcomeFlow() {
           <div className="grid gap-2.5">
             <button
               onClick={() => setInstallOpen(true)}
-              className="press flex min-h-[54px] items-center justify-center gap-2 rounded-2xl bg-text text-[16px] font-semibold text-bg"
+              className="press flex min-h-[54px] items-center justify-center gap-2 rounded-card bg-text text-[16px] font-semibold text-bg"
             >
               <Smartphone className="size-5" aria-hidden /> {t("common.showMeHow")}
             </button>
-            <button onClick={finish} className="press flex min-h-[54px] items-center justify-center rounded-2xl bg-surface-2 text-[16px] font-semibold">
+            <button onClick={finish} className="press flex min-h-[54px] items-center justify-center rounded-card bg-surface-2 text-[16px] font-semibold">
               {t("common.notNow")}
             </button>
             <InstallSheet
@@ -182,7 +182,7 @@ export function WelcomeFlow() {
         ) : (
           <button
             onClick={() => setStep((n) => n + 1)}
-            className="press flex min-h-[54px] items-center justify-center rounded-2xl bg-text text-[16px] font-semibold text-bg"
+            className="press flex min-h-[54px] items-center justify-center rounded-card bg-text text-[16px] font-semibold text-bg"
           >
             {t("common.continue")}
           </button>

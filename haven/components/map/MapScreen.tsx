@@ -457,7 +457,7 @@ export function MapScreen({ initial, active = true }: { initial?: InitialInciden
                 <span>{st.suggest}</span>
                 <button
                   onClick={() => setStormPrefs({ on: true })}
-                  className="press inline-flex min-h-9 items-center rounded-full bg-[#ffc233] px-3 text-[12.5px] font-bold text-[#1b1300]"
+                  className="press inline-flex min-h-9 items-center rounded-full bg-[#ffc233] px-3 text-[12px] font-bold text-[#1b1300]"
                 >
                   {st.turnOn}
                 </button>

@@ -73,7 +73,7 @@ export function StatusStepper({ status, color }: { status: IncidentStatus; color
           );
         })}
       </div>
-      <div className={`relative mt-2 h-4 font-semibold ${es ? "text-[11px]" : "text-[12px]"}`}>
+      <div className={`relative mt-2 h-4 text-[11px] font-semibold ${es ? "tracking-[-0.01em]" : ""}`}>
         {STEPS.map((label, i) => {
           const pct = (i / (STEPS.length - 1)) * 100;
           const shift = i === 0 ? "0%" : i === STEPS.length - 1 ? "-100%" : "-50%";

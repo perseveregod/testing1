@@ -5,9 +5,12 @@ import { useSyncExternalStore } from "react";
 // Optional map layers, remembered on this device.
 const KEY = "haven.layers.v1";
 export interface LayerPrefs {
+  /** Draw license plate readers on the map. */
   cameras: boolean;
+  /** Warn (banner, buzz, chime) when you're coming up on one. */
+  cameraAlerts: boolean;
 }
-const DEFAULTS: LayerPrefs = { cameras: false };
+const DEFAULTS: LayerPrefs = { cameras: false, cameraAlerts: false };
 let cached: LayerPrefs | null = null;
 const listeners = new Set<() => void>();
 

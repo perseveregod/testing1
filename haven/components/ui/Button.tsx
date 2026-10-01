@@ -19,7 +19,7 @@ const VARIANTS: Record<Variant, string> = {
 const SIZES: Record<Size, string> = {
   sm: "min-h-11 px-4 text-[14px] rounded-full gap-1.5",
   md: "min-h-12 px-5 text-[15px] rounded-control gap-2",
-  lg: "min-h-[54px] px-6 text-[16px] rounded-2xl gap-2",
+  lg: "min-h-[54px] px-6 text-[16px] rounded-card gap-2",
 };
 
 export function buttonClass(variant: Variant = "primary", size: Size = "md", extra = "") {
@@ -98,7 +98,7 @@ export function ActionButton({
 }: { icon: React.ReactNode; label: string; active?: boolean } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
-      className={`press flex min-h-[64px] flex-col items-center justify-center gap-1.5 rounded-2xl text-[12px] font-medium disabled:opacity-40 ${
+      className={`press flex min-h-[64px] flex-col items-center justify-center gap-1.5 rounded-card text-[12px] font-medium disabled:opacity-40 ${
         active ? "bg-brand/12 text-brand" : "bg-surface-2 text-text hover:bg-surface-3"
       } ${className}`}
       {...rest}

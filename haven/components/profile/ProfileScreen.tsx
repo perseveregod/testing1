@@ -51,7 +51,7 @@ export function ProfileScreen() {
             {viewer ? (
               <>
                 <p className="truncate text-[18px] font-semibold tracking-[-0.015em]">{viewer.email ?? t("profile.guest")}</p>
-                <p className="text-[13.5px] text-muted">{viewer.email ? t("profile.signedIn") : t("profile.private")}</p>
+                <p className="text-[13px] text-muted">{viewer.email ? t("profile.signedIn") : t("profile.private")}</p>
               </>
             ) : (
               <>
@@ -73,7 +73,7 @@ export function ProfileScreen() {
             <div className="mt-6 flex items-center gap-3 rounded-card bg-surface px-4 py-3.5">
               <Sparkles className="size-5 shrink-0 text-gold" aria-hidden />
               <div className="flex-1">
-                <p className="text-[15.5px] font-semibold tracking-[-0.01em]">{t("profile.lifetime")}</p>
+                <p className="text-[15px] font-semibold tracking-[-0.01em]">{t("profile.lifetime")}</p>
                 <p className="text-[13px] text-muted">{t("profile.lifetimeBody")}</p>
               </div>
             </div>
@@ -85,7 +85,7 @@ export function ProfileScreen() {
             >
               <Sparkles className="size-5 shrink-0 text-gold" aria-hidden />
               <div className="flex-1">
-                <p className="text-[15.5px] font-semibold tracking-[-0.01em]">{t("profile.getLifetime")}</p>
+                <p className="text-[15px] font-semibold tracking-[-0.01em]">{t("profile.getLifetime")}</p>
                 <p className="text-[13px] text-muted">{t("profile.getLifetimeBody")}</p>
               </div>
               <ChevronRight className="size-[18px] text-faint" aria-hidden />

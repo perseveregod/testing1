@@ -82,7 +82,7 @@ export function CommunityScreen() {
       />
       <PullToRefresh onRefresh={() => mutate()}>
         <div className="mx-auto max-w-lg px-4">
-          <p className="px-1 pb-3 text-[13.5px] leading-snug text-muted">
+          <p className="px-1 pb-3 text-[13px] leading-snug text-muted">
             {es
               ? "Días comunitarios, limpiezas, reuniones y mercados a menos de 25 millas. Publicados por vecinos, para vecinos."
               : "Community days, cleanups, meetings and markets within 25 miles. Posted by neighbors, for neighbors."}
@@ -174,13 +174,13 @@ function EventCard({ event, now }: { event: CommunityEvent; now: number }) {
             aria-hidden
           />
           <div className="min-w-0 flex-1">
-            <p className="text-[12.5px] font-semibold text-muted">
+            <p className="text-[12px] font-semibold text-muted">
               {es ? k.labelEs : k.label}
-              {event.isDemo && <span className="ml-1.5 rounded-md bg-surface-3 px-1.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wide text-faint">Demo</span>}
+              {event.isDemo && <span className="ml-1.5 rounded-md bg-surface-3 px-1.5 py-0.5 text-[11px] font-semibold text-faint">Demo</span>}
             </p>
             <p className="mt-0.5 text-[17px] font-bold leading-tight tracking-[-0.015em]">{event.title}</p>
-            <p className="mt-1 text-[13.5px] text-muted tnum">{formatEventTime(event.startsAt, event.endsAt, lang)}</p>
-            <p className="truncate text-[13.5px] text-muted">{event.placeName}</p>
+            <p className="mt-1 text-[13px] text-muted tnum">{formatEventTime(event.startsAt, event.endsAt, lang)}</p>
+            <p className="truncate text-[13px] text-muted">{event.placeName}</p>
             <div className="mt-2.5 flex items-center gap-3 text-[13px] font-semibold text-muted tnum">
               <span className={`inline-flex items-center gap-1 ${event.viewerGoing ? "text-brand" : ""}`}>
                 <Users className="size-4" aria-hidden /> {event.goingCount} {es ? "van" : "going"}
@@ -188,7 +188,7 @@ function EventCard({ event, now }: { event: CommunityEvent; now: number }) {
               <span className="inline-flex items-center gap-1">
                 <MessageCircle className="size-4" aria-hidden /> {event.commentCount}
               </span>
-              {live && <span className="ml-auto rounded-full bg-live/15 px-2 py-0.5 text-[11.5px] font-bold text-live">{es ? "Ahora" : "Now"}</span>}
+              {live && <span className="ml-auto rounded-full bg-live/15 px-2 py-0.5 text-[12px] font-bold text-live">{es ? "Ahora" : "Now"}</span>}
             </div>
           </div>
         </div>

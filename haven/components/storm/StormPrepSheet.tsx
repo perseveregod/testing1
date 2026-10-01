@@ -84,7 +84,7 @@ export function StormPrepSheet({ open, onClose }: { open: boolean; onClose: () =
 function Checklist({ es, checked }: { es: boolean; checked: string[] }) {
   return (
     <div className="pb-2">
-      <ul className="divide-y divide-line overflow-hidden rounded-[18px] bg-surface-2">
+      <ul className="divide-y divide-line overflow-hidden rounded-card bg-surface-2">
         {PREP_ITEMS.map((item) => {
           const on = checked.includes(item.id);
           const { text, why } = prepText(item, es ? "es" : "en");
@@ -106,14 +106,14 @@ function Checklist({ es, checked }: { es: boolean; checked: string[] }) {
                 </span>
                 <span className="min-w-0">
                   <span className={`block text-[15px] leading-snug ${on ? "text-muted line-through decoration-faint" : ""}`}>{text}</span>
-                  {why && !on && <span className="mt-0.5 block text-[12.5px] leading-snug text-faint">{why}</span>}
+                  {why && !on && <span className="mt-0.5 block text-[12px] leading-snug text-faint">{why}</span>}
                 </span>
               </button>
             </li>
           );
         })}
       </ul>
-      <p className="mt-3 px-1 text-[12.5px] leading-snug text-faint">
+      <p className="mt-3 px-1 text-[12px] leading-snug text-faint">
         {es ? "Fuentes: " : "Sources: "}
         {PREP_SOURCES.map((s, i) => (
           <span key={s.url}>
@@ -138,7 +138,7 @@ function Centers({ es }: { es: boolean }) {
 
   return (
     <div className="pb-2">
-      <div className="mb-3 flex items-start gap-3 rounded-[16px] bg-warn/12 px-3.5 py-3 text-[13.5px] leading-snug">
+      <div className="mb-3 flex items-start gap-3 rounded-card bg-warn/12 px-3.5 py-3 text-[13px] leading-snug">
         <Phone className="mt-0.5 size-4 shrink-0 text-warn" aria-hidden />
         <p>
           {es
@@ -149,7 +149,7 @@ function Centers({ es }: { es: boolean }) {
           </a>
         </p>
       </div>
-      <ul className="divide-y divide-line overflow-hidden rounded-[18px] bg-surface-2">
+      <ul className="divide-y divide-line overflow-hidden rounded-card bg-surface-2">
         {withDistance.map((c) => (
           <li key={c.id} className="flex items-center gap-3 px-4 py-3">
             <div className="min-w-0 flex-1">
@@ -171,7 +171,7 @@ function Centers({ es }: { es: boolean }) {
           </li>
         ))}
       </ul>
-      <p className="mt-3 px-1 text-[12.5px] leading-snug text-faint">
+      <p className="mt-3 px-1 text-[12px] leading-snug text-faint">
         {es ? "Fuente: " : "Source: "}
         <a href={COOLING_SOURCE.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 underline">
           {COOLING_SOURCE.name} <ExternalLink className="size-3" aria-hidden />

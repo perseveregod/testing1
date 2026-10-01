@@ -131,7 +131,7 @@ export function Sheet({
         aria-label={closeLabel}
         tabIndex={-1}
         onClick={onClose}
-        className={`absolute inset-0 bg-black/60 backdrop-blur-[2px] ${closing ? "haven-fade-out" : "haven-fade-in"}`}
+        className={`absolute inset-0 bg-black/60 ${closing ? "haven-fade-out" : "haven-fade-in"}`}
       />
       <div
         ref={panel}
@@ -139,7 +139,7 @@ export function Sheet({
         aria-modal
         aria-labelledby={title ? titleId : undefined}
         tabIndex={-1}
-        className={`relative w-full max-w-lg rounded-t-card glass-sheet outline-none ${
+        className={`relative w-full max-w-lg rounded-t-[var(--radius-sheet)] glass-sheet outline-none ${
           closing ? "haven-sheet-out" : "haven-sheet-in"
         } ${className}`}
         style={{
@@ -154,12 +154,12 @@ export function Sheet({
           className="cursor-grab touch-none select-none active:cursor-grabbing"
         >
           <div className="flex justify-center pb-1 pt-2.5" aria-hidden>
-            <div className="h-[5px] w-9 rounded-full bg-white/15" />
+            <div className="h-[5px] w-9 rounded-full bg-white/20" />
           </div>
           {title && (
             <h2
               id={titleId}
-              className="px-5 pb-3 pt-2 text-[19px] font-semibold tracking-[-0.015em]"
+              className="px-5 pb-3 pt-2 text-[18px] font-semibold tracking-[-0.015em]"
             >
               {title}
             </h2>

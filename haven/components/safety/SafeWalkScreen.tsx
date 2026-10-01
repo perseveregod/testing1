@@ -156,7 +156,7 @@ export function SafeWalkScreen() {
                 <span className="live-badge px-2.5 py-1 text-[12px]">
                   <BellRing className="size-3.5" aria-hidden /> {es ? "Faltó el aviso" : "Check-in missed"}
                 </span>
-                <h2 className="mt-4 text-[30px] font-extrabold leading-tight tracking-[-0.03em]">{es ? "¿Está bien?" : "Are you OK?"}</h2>
+                <h2 className="mt-4 text-[28px] font-extrabold leading-tight tracking-[-0.03em]">{es ? "¿Está bien?" : "Are you OK?"}</h2>
                 <p className="mt-2 max-w-xs text-[15px] leading-relaxed text-text/80">
                   {alerting
                     ? es
@@ -177,7 +177,7 @@ export function SafeWalkScreen() {
               </>
             ) : (
               <>
-                <p className="text-[13px] font-semibold uppercase tracking-[0.12em] text-muted">
+                <p className="text-[13px] font-semibold text-muted">
                   {walk.destination ? (es ? `Caminando a ${walk.destination}` : `Walking to ${walk.destination}`) : es ? "Camino en curso" : "Walk in progress"}
                 </p>
                 <p className="mt-3 text-[64px] font-extrabold leading-none tracking-[-0.04em] tnum" aria-live="off">
@@ -210,16 +210,16 @@ export function SafeWalkScreen() {
               {overdue ? (es ? "Avise a sus contactos" : "Alert your contacts") : es ? "Avise a alguien que va caminando" : "Let someone know you're walking"}
             </h3>
             {state.contacts.length === 0 ? (
-              <p className="rounded-2xl bg-surface px-4 py-3.5 text-[14px] leading-snug text-muted">
+              <p className="rounded-card bg-surface px-4 py-3.5 text-[14px] leading-snug text-muted">
                 {es ? "No hay contactos de confianza guardados. Use Compartir para enviar el mensaje a quien quiera." : "No trusted contacts saved. Use Share to send the message to anyone."}
               </p>
             ) : (
-              <ul className="divide-y divide-line overflow-hidden rounded-2xl bg-surface">
+              <ul className="divide-y divide-line overflow-hidden rounded-card bg-surface">
                 {state.contacts.map((c) => (
                   <li key={c.id}>
                     <a href={smsHref(c.phone, msg)} className="flex min-h-[54px] items-center gap-3 px-4 py-3 active:bg-surface-2">
                       <MessageSquare className={`size-[18px] shrink-0 ${overdue ? "text-live" : "text-brand"}`} aria-hidden />
-                      <span className="min-w-0 flex-1 truncate text-[15.5px] font-medium">{es ? `Mensaje a ${c.name}` : `Text ${c.name}`}</span>
+                      <span className="min-w-0 flex-1 truncate text-[15px] font-medium">{es ? `Mensaje a ${c.name}` : `Text ${c.name}`}</span>
                       <span className="text-[13px] text-faint tnum">{c.phone}</span>
                     </a>
                   </li>
@@ -242,7 +242,7 @@ export function SafeWalkScreen() {
             )}
           </section>
 
-          <p className="mt-8 text-center text-[12.5px] leading-relaxed text-faint">
+          <p className="mt-8 text-center text-[12px] leading-relaxed text-faint">
             {es
               ? `Mantenga Haven abierto con la pantalla encendida y el volumen alto. Los teléfonos pausan los sitios en segundo plano, el iPhone no deja que los sitios vibren, y Haven no puede contactar a nadie por sí solo. Si está en peligro, llame al ${EMERGENCY_NUMBER}.`
               : `Keep Haven open with the screen on and your volume up. Phones pause websites in the background, iPhones don't let websites vibrate, and Haven can't contact anyone on its own. If you're in danger, call ${EMERGENCY_NUMBER}.`}
@@ -318,10 +318,10 @@ export function SafeWalkScreen() {
             <p className="text-[12px] text-faint">{es ? "Se guardan solo en este dispositivo" : "Saved on this device only"}</p>
           </div>
           {state.contacts.length > 0 && (
-            <ul className="mb-2.5 divide-y divide-line overflow-hidden rounded-2xl bg-surface">
+            <ul className="mb-2.5 divide-y divide-line overflow-hidden rounded-card bg-surface">
               {state.contacts.map((c) => (
                 <li key={c.id} className="flex min-h-[52px] items-center gap-3 px-4 py-2.5">
-                  <span className="min-w-0 flex-1 truncate text-[15.5px] font-medium">{c.name}</span>
+                  <span className="min-w-0 flex-1 truncate text-[15px] font-medium">{c.name}</span>
                   <span className="text-[13px] text-faint tnum">{c.phone}</span>
                   <button
                     onClick={() => removeContact(c.id)}
@@ -367,7 +367,7 @@ export function SafeWalkScreen() {
         <Button size="lg" block onClick={start} className="mt-8 !bg-live !text-white">
           <ShieldCheck className="size-5" aria-hidden /> {es ? "Iniciar Camino seguro" : "Start Safe Walk"}
         </Button>
-        <p className="mt-3 text-center text-[12.5px] leading-relaxed text-faint">
+        <p className="mt-3 text-center text-[12px] leading-relaxed text-faint">
           {es
             ? `Camino seguro es gratis para todos. No reemplaza al ${EMERGENCY_NUMBER}: si está en peligro, llame de inmediato.`
             : `Safe Walk is free for everyone. It doesn't replace ${EMERGENCY_NUMBER}: if you're in danger, call right away.`}

@@ -14,7 +14,7 @@ export function InstallSheet({ open, onClose }: { open: boolean; onClose: () => 
   ];
   return (
     <Sheet open={open} onClose={onClose} title={t("install.title")}>
-      <p className="mb-4 text-[14.5px] leading-relaxed text-muted">{t("install.body")}</p>
+      <p className="mb-4 text-[14px] leading-relaxed text-muted">{t("install.body")}</p>
       <ol className="space-y-2 pb-2">
         {steps.map((s, i) => (
           <li key={s.title} className="flex items-start gap-3.5 rounded-card bg-surface-2 p-3.5">
@@ -26,7 +26,7 @@ export function InstallSheet({ open, onClose }: { open: boolean; onClose: () => 
                 <span className="sr-only">{t("common.step", { n: i + 1 })}: </span>
                 {s.title}
               </span>
-              <span className="block text-[13.5px] leading-snug text-muted">{s.body}</span>
+              <span className="block text-[13px] leading-snug text-muted">{s.body}</span>
             </span>
           </li>
         ))}

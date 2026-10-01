@@ -117,7 +117,7 @@ export function ReportFlow() {
               <div className="h-full rounded-full bg-text transition-[width] duration-500 ease-[var(--ease-out)]" style={{ width: `${(step / 4) * 100}%` }} />
             </div>
           </div>
-          <h1 className="mx-auto max-w-lg px-5 pb-3 pt-4 text-[26px] font-bold tracking-[-0.025em]">{t(STEP_TITLES[step as keyof typeof STEP_TITLES])}</h1>
+          <h1 className="mx-auto max-w-lg px-5 pb-3 pt-4 text-[24px] font-bold tracking-[-0.025em]">{t(STEP_TITLES[step as keyof typeof STEP_TITLES])}</h1>
         </header>
       )}
 
@@ -178,13 +178,12 @@ function StepCategory({ value, onPick }: { value: CategoryId | null; onPick: (c:
   return (
     <div className="haven-rise flex flex-1 flex-col">
       <div className="grid grid-cols-2 gap-2.5">
-        {EVERYDAY_CATEGORIES.map((c, i) => (
+        {EVERYDAY_CATEGORIES.map((c) => (
           <button
             key={c.id}
             onClick={() => onPick(c.id)}
             aria-pressed={value === c.id}
-            style={{ animationDelay: `${i * 25}ms` }}
-            className={`press haven-rise flex min-h-[72px] items-center gap-3 rounded-card px-3.5 py-3 text-left ${
+            className={`press flex min-h-[72px] items-center gap-3 rounded-card px-3.5 py-3 text-left ${
               value === c.id ? "bg-surface-3 ring-2 ring-text" : "bg-surface hover:bg-surface-2"
             }`}
           >
@@ -238,7 +237,7 @@ function StepLocation({
       />
       <div className="mt-4 flex items-center gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-[12.5px] text-muted">{t("report.approx")}</p>
+          <p className="text-[12px] text-muted">{t("report.approx")}</p>
           <p className="truncate text-[17px] font-semibold tracking-[-0.015em]">{isLoading && !data ? t("report.finding") : data?.label || t("report.nearPin")}</p>
         </div>
         <button
@@ -249,7 +248,7 @@ function StepLocation({
           <LocateFixed className="size-5" aria-hidden />
         </button>
       </div>
-      <p className="mt-2 text-[12.5px] leading-snug text-faint">{t("report.rounded")}</p>
+      <p className="mt-2 text-[12px] leading-snug text-faint">{t("report.rounded")}</p>
       <StickyFooter>
         <Button size="lg" block onClick={onNext}>
           {t("report.confirmLocation")}
@@ -279,7 +278,7 @@ function StepDetails({ category, value, onChange, onNext }: { category: Category
       <p className="mt-1.5 text-right text-[12px] text-faint tnum">
         {value.length}/{MAX_DESCRIPTION}
       </p>
-      <ul className="mt-3 space-y-2 text-[13.5px] leading-snug text-muted">
+      <ul className="mt-3 space-y-2 text-[13px] leading-snug text-muted">
         <li className="flex gap-2.5">
           <Check className="mt-0.5 size-4 shrink-0 text-ok" aria-hidden /> {t("report.tip1")}
         </li>
@@ -347,7 +346,7 @@ function StepReview({
       </div>
 
       {similar && (
-        <div className="mt-3 flex gap-3 rounded-2xl bg-warn/[0.08] px-4 py-3.5">
+        <div className="mt-3 flex gap-3 rounded-card bg-warn/[0.08] px-4 py-3.5">
           <Layers className="mt-0.5 size-[18px] shrink-0 text-warn" aria-hidden />
           <p className="text-[14px] leading-snug text-text/90">{t("report.similar")}</p>
         </div>
@@ -369,8 +368,8 @@ function ReviewRow({ label, onEdit, children }: { label: string; onEdit: () => v
   return (
     <div className="flex items-start gap-3 py-3.5">
       <div className="min-w-0 flex-1">
-        <p className="text-[12.5px] text-muted">{label}</p>
-        <div className="mt-0.5 text-[15.5px] tracking-[-0.01em]">{children}</div>
+        <p className="text-[12px] text-muted">{label}</p>
+        <div className="mt-0.5 text-[15px] tracking-[-0.01em]">{children}</div>
       </div>
       <button onClick={onEdit} className="-mr-2 min-h-11 rounded-full px-3 text-[14px] font-medium text-brand">
         {t("common.edit")}
@@ -386,7 +385,7 @@ function StepDone({ result }: { result: Result }) {
       <div className="haven-pop flex size-[72px] items-center justify-center rounded-full bg-ok/15" style={{ animationDelay: "120ms" }}>
         <Check className="size-9 text-ok" strokeWidth={2.5} aria-hidden />
       </div>
-      <h1 className="mt-6 text-[26px] font-bold tracking-[-0.025em]">{result.merged ? t("report.merged") : t("report.shared")}</h1>
+      <h1 className="mt-6 text-[24px] font-bold tracking-[-0.025em]">{result.merged ? t("report.merged") : t("report.shared")}</h1>
       <p className="mt-2 max-w-[300px] text-[15px] leading-relaxed text-muted">{result.merged ? t("report.mergedBody") : t("report.sharedBody")}</p>
       {result.redacted && <p className="mt-4 max-w-xs text-[13px] text-faint">{t("report.redacted")}</p>}
       <div className="mt-10 w-full space-y-2" style={{ paddingBottom: "calc(var(--safe-bottom) + 16px)" }}>

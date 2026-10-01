@@ -72,7 +72,7 @@ function RulesForm({ place, onClose, onSaved }: { place: SavedPlace; onClose: ()
             ? "Con De por vida, cada lugar tiene su propio radio y categorías. Casa amplia y tranquila; Trabajo cerrado y solo tráfico."
             : "With Lifetime, each place gets its own radius and categories. Keep Home wide and quiet, and Work tight and traffic-only."}
         </p>
-        <Link href="/upgrade" transitionTypes={["nav-forward"]} className="press mt-4 flex h-12 items-center justify-center rounded-2xl bg-gold text-[15px] font-semibold text-[#241a05]">
+        <Link href="/upgrade" transitionTypes={["nav-forward"]} className="press mt-4 flex h-12 items-center justify-center rounded-card bg-gold text-[15px] font-semibold text-[#241a05]">
           {es ? "Ver Haven de por vida" : "See Haven Lifetime"}
         </Link>
       </div>
@@ -105,7 +105,7 @@ function RulesForm({ place, onClose, onSaved }: { place: SavedPlace; onClose: ()
           </Chip>
         ))}
       </div>
-      <p className="mt-3 text-[12.5px] leading-snug text-faint">{es ? "“Normal” sigue los ajustes de alerta de su cuenta." : "“Default” follows your account-wide alert settings."}</p>
+      <p className="mt-3 text-[12px] leading-snug text-faint">{es ? "“Normal” sigue los ajustes de alerta de su cuenta." : "“Default” follows your account-wide alert settings."}</p>
       <Button block size="lg" className="mt-5" onClick={save} loading={busy}>
         {es ? "Guardar" : "Save"}
       </Button>

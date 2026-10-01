@@ -12,8 +12,12 @@ export type LocationStatus = "idle" | "prompt" | "locating" | "granted" | "denie
 interface LocationState {
   position: LatLng | null;
   accuracyM: number | null;
+  /** Degrees clockwise from north while moving; null when unknown or still. */
+  heading: number | null;
   status: LocationStatus;
   request: () => void;
+  /** Precise, frequent fixes (GPS) while something needs them, e.g. the camera watch. */
+  setPrecise: (on: boolean) => void;
 }
 
 const Ctx = createContext<LocationState | null>(null);
@@ -21,8 +25,10 @@ const Ctx = createContext<LocationState | null>(null);
 export function LocationProvider({ children }: { children: React.ReactNode }) {
   const [position, setPosition] = useState<LatLng | null>(null);
   const [accuracyM, setAccuracy] = useState<number | null>(null);
+  const [heading, setHeading] = useState<number | null>(null);
   const [status, setStatus] = useState<LocationStatus>("idle");
   const watchId = useRef<number | null>(null);
+  const precise = useRef(false);
 
   const start = useCallback(() => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -35,6 +41,9 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
       (pos) => {
         setPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         setAccuracy(pos.coords.accuracy);
+        const h = pos.coords.heading;
+        // Browsers report NaN or null when still; only a moving fix has a heading.
+        setHeading(h != null && Number.isFinite(h) && (pos.coords.speed ?? 0) > 1 ? h : null);
         setStatus("granted");
       },
       (err) => {
@@ -42,9 +51,25 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
         watchId.current = null;
         setStatus(err.code === err.PERMISSION_DENIED ? "denied" : "unavailable");
       },
-      { enableHighAccuracy: false, maximumAge: 60_000, timeout: 15_000 },
+      precise.current
+        ? { enableHighAccuracy: true, maximumAge: 2_000, timeout: 20_000 }
+        : { enableHighAccuracy: false, maximumAge: 60_000, timeout: 15_000 },
     );
   }, []);
+
+  const setPrecise = useCallback(
+    (on: boolean) => {
+      if (precise.current === on) return;
+      precise.current = on;
+      // Restart the watch with the new accuracy, only if one is running.
+      if (watchId.current != null) {
+        navigator.geolocation.clearWatch(watchId.current);
+        watchId.current = null;
+        start();
+      }
+    },
+    [start],
+  );
 
   // Start automatically only if permission was already granted; otherwise
   // wait for a tap so the browser prompt has context.
@@ -75,7 +100,10 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
-  const value = useMemo(() => ({ position, accuracyM, status, request: start }), [position, accuracyM, status, start]);
+  const value = useMemo(
+    () => ({ position, accuracyM, heading, status, request: start, setPrecise }),
+    [position, accuracyM, heading, status, start, setPrecise],
+  );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

@@ -154,13 +154,13 @@ function QuietHours({ prefs, allowed, onSave }: { prefs: AlertPreferences; allow
             ] as const
           ).map(([label, value, set, key]) => (
             <label key={key} className="block">
-              <span className="text-[12.5px] text-muted">{label}</span>
+              <span className="text-[12px] text-muted">{label}</span>
               <input
                 type="time"
                 value={value}
                 onChange={(e) => set(e.target.value)}
                 onBlur={(e) => e.target.value && onSave({ [key]: e.target.value })}
-                className="mt-1 h-11 w-full rounded-xl bg-surface-2 px-3 text-[16px] outline-none ring-brand/60 focus:ring-2 tnum"
+                className="mt-1 h-11 w-full rounded-control bg-surface-2 px-3 text-[16px] outline-none ring-brand/60 focus:ring-2 tnum"
               />
             </label>
           ))}
@@ -194,7 +194,7 @@ function BrowserNotifications() {
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-[15px] font-semibold tracking-[-0.01em]">{c.title}</p>
-        <p className="mt-0.5 text-[13.5px] leading-snug text-muted">{c.body}</p>
+        <p className="mt-0.5 text-[13px] leading-snug text-muted">{c.body}</p>
         {push.error && <p className="mt-1 text-[13px] text-danger">{push.error}</p>}
         <div className="mt-3 flex flex-wrap gap-2">
           {push.status === "off" && (

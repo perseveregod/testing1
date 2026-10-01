@@ -79,7 +79,7 @@ export function NearbyPeek({
       : t("near.withinCenter", { n: NEAR_RADIUS_MI });
 
   return (
-    <section aria-label={title} className="panel pointer-events-auto overflow-hidden rounded-[22px]">
+    <section aria-label={title} className="panel pointer-events-auto overflow-hidden rounded-card">
       <button
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
@@ -101,7 +101,7 @@ export function NearbyPeek({
               <span className="flex items-center gap-2 text-[16px] font-semibold leading-tight tracking-[-0.01em] tnum">
                 {title}
                 {allDemo && (
-                  <span className="rounded-[4px] bg-text/[0.08] px-1.5 py-px text-[10px] font-bold uppercase tracking-[0.06em] text-muted">
+                  <span className="rounded-[4px] bg-text/[0.08] px-1.5 py-px text-[10px] font-semibold text-muted">
                     {t("common.demo")}
                   </span>
                 )}
@@ -148,12 +148,12 @@ export function NearbyPeek({
                 <li key={i.id}>
                   <button
                     onClick={() => onPick(i.id)}
-                    className="flex min-h-[52px] w-full items-center gap-3 rounded-2xl px-2 py-1.5 text-left active:bg-text/[0.06]"
+                    className="flex min-h-[52px] w-full items-center gap-3 rounded-card px-2 py-1.5 text-left active:bg-text/[0.06]"
                   >
                     <CategoryIcon category={i.category} size="sm" animated={live} />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[14.5px] font-semibold tracking-[-0.01em]">{titleOf(i)}</span>
-                      <span className="block truncate text-[12.5px] text-muted tnum">
+                      <span className="block truncate text-[14px] font-semibold tracking-[-0.01em]">{titleOf(i)}</span>
+                      <span className="block truncate text-[12px] text-muted tnum">
                         {live && <span className="mr-1.5 font-bold uppercase text-live">{t("common.live")}</span>}
                         {a ? <span className="font-semibold text-brand">{t("near.from", { d: formatDistance(a.distanceMi), place: a.label })} · </span> : d != null && `${formatDistance(d)} · `}
                         {now > 0 ? timeAgo(i.createdAt, now) : ""}
@@ -169,7 +169,7 @@ export function NearbyPeek({
             <Link
               href="/feed"
               transitionTypes={["tab"]}
-              className="flex min-h-11 items-center justify-center border-t border-line text-[13.5px] font-semibold text-brand"
+              className="flex min-h-11 items-center justify-center border-t border-line text-[13px] font-semibold text-brand"
             >
               {t("near.seeAll")}
             </Link>

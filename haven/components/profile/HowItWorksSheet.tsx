@@ -59,7 +59,7 @@ export function HowItWorksSheet({ open, onClose }: { open: boolean; onClose: () 
       <dl className="divide-y divide-line pb-2">
         {QA.map((item) => (
           <div key={item.q[0]} className="py-3.5">
-            <dt className="text-[15.5px] font-semibold tracking-[-0.01em]">{item.q[i]}</dt>
+            <dt className="text-[15px] font-semibold tracking-[-0.01em]">{item.q[i]}</dt>
             <dd className="mt-1 text-[14px] leading-relaxed text-muted">{item.a[i]}</dd>
           </div>
         ))}

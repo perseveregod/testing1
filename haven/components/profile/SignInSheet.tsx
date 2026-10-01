@@ -103,7 +103,7 @@ export function SignInSheet({
             </p>
           )}
           {devCode && (
-            <p className="mb-3 rounded-xl bg-warn/10 px-3 py-2 text-[13px]">
+            <p className="mb-3 rounded-control bg-warn/10 px-3 py-2 text-[13px]">
               {es ? "Modo demo: aún no hay servicio de correo, así que su código aparece aquí: " : "Demo mode: no email service is connected yet, so your code is shown here: "}
               <span className="font-mono font-bold">{devCode}</span>
             </p>
@@ -119,7 +119,7 @@ export function SignInSheet({
             onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
             aria-label={es ? "Código de 6 dígitos" : "6-digit code"}
             placeholder="••••••"
-            className="h-14 w-full rounded-2xl bg-surface-2 text-center font-mono text-[24px] tracking-[0.5em] outline-none ring-brand/60 transition focus:ring-2"
+            className="h-14 w-full rounded-card bg-surface-2 text-center font-mono text-[24px] tracking-[0.5em] outline-none ring-brand/60 transition focus:ring-2"
           />
           <Button type="submit" block size="lg" className="mt-3" loading={busy} disabled={code.length !== 6}>
             {es ? "Verificar" : "Verify"}

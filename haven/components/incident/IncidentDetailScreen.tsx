@@ -131,23 +131,23 @@ export function IncidentDetailScreen({ id }: { id: string }) {
         }
       />
       <div className="relative mx-auto max-w-lg px-5" style={{ paddingTop: "calc(46dvh - 200px)" }}>
-        <div className="haven-rise">
+        <div>
           <div className="mb-4">
             <CategoryIcon category={incident.category} size="xl" muted={ended} animated glow />
           </div>
-          <p className="flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.1em]" style={{ color: ended ? "var(--muted)" : def.color }}>
+          <p className="flex items-center gap-2 text-[13px] font-semibold" style={{ color: ended ? "var(--muted)" : def.color }}>
             {isLive(incident) && <LiveBadge size="md" />}
             {catLabel}
             {incident.isDemo && <DemoTag />}
           </p>
-          <h2 className="mt-2 text-[34px] font-bold leading-[1.05] tracking-[-0.035em]">{heading}</h2>
+          <h2 className="mt-2 text-[32px] font-bold leading-[1.05] tracking-[-0.035em]">{heading}</h2>
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
             <StatusPill status={incident.status} />
             <SeverityLabel severity={incident.severity} />
             <span className="text-[13px] text-muted">{hood ? `${hood} · ${incident.approximateAddress}` : incident.approximateAddress}</span>
           </div>
           {affects && (
-            <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-brand/15 px-3 py-1.5 text-[13.5px] font-semibold text-brand tnum">
+            <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-brand/15 px-3 py-1.5 text-[13px] font-semibold text-brand tnum">
               <MapPin className="size-4" aria-hidden />
               {t("near.from", { d: formatDistance(affects.distanceMi), place: affects.label })}
             </p>
@@ -162,23 +162,23 @@ export function IncidentDetailScreen({ id }: { id: string }) {
         </div>
 
         {incident.status !== "under_review" && !incident.storm && (
-          <div className="haven-rise mt-6 rounded-card bg-surface px-4 pb-3 pt-4" style={{ animationDelay: "40ms" }}>
+          <div className="mt-6 rounded-card bg-surface px-4 pb-3 pt-4">
             <StatusStepper status={incident.status} color={def.color} />
           </div>
         )}
 
         {incident.photo && (
           // eslint-disable-next-line @next/next/no-img-element -- stored data URL
-          <img src={incident.photo} alt={t("inc.photoAlt")} className="haven-rise mt-6 max-h-80 w-full rounded-[20px] object-cover" />
+          <img src={incident.photo} alt={t("inc.photoAlt")} className="mt-6 max-h-80 w-full rounded-card object-cover" />
         )}
 
         {incident.description && (
-          <p className="haven-rise mt-6 whitespace-pre-line break-words text-[17px] leading-[1.55] text-text/90" style={{ animationDelay: "80ms" }}>
+          <p className="mt-6 whitespace-pre-line break-words text-[17px] leading-[1.55] text-text/90">
             {incident.description}
           </p>
         )}
 
-        <dl className="haven-rise mt-6 divide-y divide-line border-t border-line" style={{ animationDelay: "140ms" }}>
+        <dl className="mt-6 divide-y divide-line border-t border-line">
           <Fact label={t("inc.location")} value={incident.approximateAddress || t("inc.approx")} />
           <Fact label={t("inc.distance")} value={incident.distanceMi != null ? t("inc.fromYou", { d: formatDistance(incident.distanceMi) }) : t("inc.locationOff")} />
           <Fact label={t("inc.reported")} value={dateTime(incident.createdAt)} />
@@ -206,7 +206,7 @@ export function IncidentDetailScreen({ id }: { id: string }) {
           />
         </dl>
 
-        <div className="haven-rise mt-6 grid grid-cols-4 gap-2" style={{ animationDelay: "200ms" }}>
+        <div className="mt-6 grid grid-cols-4 gap-2">
           <ActionButton
             icon={<Check className="size-[22px]" strokeWidth={2.2} />}
             label={incident.viewer.isReporter ? t("inc.yours") : incident.viewer.confirmed ? t("inc.youSawIt") : t("inc.iSeeIt")}
@@ -240,7 +240,7 @@ export function IncidentDetailScreen({ id }: { id: string }) {
           <EmergencyNote compact />
         </div>
 
-        <p className="mt-6 text-center text-[11.5px] text-faint">
+        <p className="mt-6 text-center text-[12px] text-faint">
           {es ? "Mapa © " : "Map © "}
           <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" className="underline-offset-2 hover:underline">
             {es ? "colaboradores de OpenStreetMap" : "OpenStreetMap contributors"}
@@ -252,7 +252,7 @@ export function IncidentDetailScreen({ id }: { id: string }) {
           <button
             onClick={() => setFlagOpen(true)}
             disabled={incident.viewer.flagged}
-            className="mx-auto mt-2 flex min-h-11 items-center gap-2 rounded-full px-3 text-[13.5px] text-faint hover:text-muted disabled:opacity-60"
+            className="mx-auto mt-2 flex min-h-11 items-center gap-2 rounded-full px-3 text-[13px] text-faint hover:text-muted disabled:opacity-60"
           >
             <Flag className="size-3.5" aria-hidden />
             {incident.viewer.flagged ? t("inc.reportedProblem") : t("inc.reportProblem")}
@@ -270,7 +270,7 @@ function Fact({ label, value, wrap }: { label: string; value: React.ReactNode; w
   return (
     <div className="flex gap-4 py-3">
       <dt className="w-24 shrink-0 text-[14px] text-muted">{label}</dt>
-      <dd className={`min-w-0 flex-1 text-[14.5px] leading-snug tnum ${wrap ? "text-muted" : "truncate"}`}>{value}</dd>
+      <dd className={`min-w-0 flex-1 text-[14px] leading-snug tnum ${wrap ? "text-muted" : "truncate"}`}>{value}</dd>
     </div>
   );
 }

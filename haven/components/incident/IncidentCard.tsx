@@ -42,7 +42,7 @@ export function DispatchRow({ incident, distanceMi }: { incident: PublicIncident
           {distanceMi != null && <span className="text-faint tnum"> · {formatDistance(distanceMi)}</span>}
         </p>
       </div>
-      <span className="shrink-0 self-start pt-0.5 text-[12.5px] text-faint tnum">{timeAgo(incident.createdAt)}</span>
+      <span className="shrink-0 self-start pt-0.5 text-[12px] text-faint tnum">{timeAgo(incident.createdAt)}</span>
     </Link>
   );
 }
@@ -82,8 +82,7 @@ export function foldDuplicates(items: PublicIncident[]): PublicIncident[] {
 
 /** One incident as a list row: glyph, title, place, and a two-line preview. */
 export function IncidentRow({ incident, distanceMi }: { incident: PublicIncident; distanceMi: number | null }) {
-  const { t, timeAgo, title, cat } = useT();
-  const { def, short } = cat(incident.category);
+  const { t, timeAgo, title } = useT();
   const hood = neighborhoodLabel({ lat: incident.latitude, lng: incident.longitude }, incident.approximateAddress);
   const affects = useAffects()(incident);
   const ended = incident.status === "resolved";
@@ -94,59 +93,50 @@ export function IncidentRow({ incident, distanceMi }: { incident: PublicIncident
       href={`/incidents/${incident.id}`}
       prefetch={false}
       transitionTypes={["nav-forward"]}
-      className="group relative -mx-4 flex gap-3.5 px-4 py-4 transition-colors active:bg-white/[0.03]"
+      className="cv-row group relative -mx-4 flex gap-3 px-4 py-3.5 transition-colors active:bg-white/[0.03]"
     >
-      {/* Category-colored rail marks incidents that are still going on. */}
-      {!ended && (
-        <span
-          className="absolute bottom-4 left-0 top-4 w-[3px] rounded-r-full"
-          style={{ background: def.color, opacity: live ? 1 : 0.45 }}
-          aria-hidden
-        />
-      )}
       <div className="relative pt-0.5">
         <CategoryIcon category={incident.category} muted={ended} />
-        {active && incident.severity !== "low" && (
-          <span className="absolute -right-0.5 top-0 size-2.5 rounded-full bg-danger ring-[2.5px] ring-bg" aria-label={t("inc.active")} />
+        {active && live && (
+          <span className="absolute -right-0.5 top-0 size-2.5 rounded-full bg-live ring-[2.5px] ring-bg" aria-label={t("inc.active")} />
         )}
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-3">
-          <h3 className={`min-w-0 flex-1 truncate text-[16.5px] font-bold tracking-[-0.02em] ${ended ? "text-muted" : ""}`}>
+          <h3 className={`min-w-0 flex-1 truncate text-[16px] font-semibold tracking-[-0.015em] ${ended ? "text-muted" : ""}`}>
             {title(incident)}
           </h3>
           <span className="shrink-0 text-[13px] text-faint tnum">{timeAgo(incident.createdAt)}</span>
         </div>
-        {/* WHERE and WHAT KIND, then live / ended state, on one predictable line. */}
-        <p className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[13.5px] text-muted">
+        {/* Where, then how far: two facts, not a string of them. */}
+        <p className="mt-0.5 flex min-w-0 items-baseline gap-2 text-[13px] text-muted">
           {live && <LiveBadge />}
-          {ended && <span className="shrink-0 text-faint">{t("inc.ended")} ·</span>}
-          <span className="truncate">
-            <span style={{ color: ended ? undefined : def.color }}>{short}</span>
-            <span className="text-faint"> · </span>
-            {hood && <>{hood}<span className="text-faint"> · </span></>}
+          <span className="min-w-0 truncate">
+            {ended && <span className="text-faint">{t("inc.ended")} · </span>}
+            {hood ? `${hood}, ` : ""}
             {incident.approximateAddress || t("inc.approx")}
           </span>
           {affects ? (
-            <span className="shrink-0 font-semibold text-brand tnum">· {t("near.from", { d: formatDistance(affects.distanceMi), place: affects.label })}</span>
+            <span className="shrink-0 font-medium text-brand tnum">{t("near.from", { d: formatDistance(affects.distanceMi), place: affects.label })}</span>
           ) : (
-            distanceMi != null && <span className="shrink-0 text-faint tnum">· {formatDistance(distanceMi)}</span>
+            distanceMi != null && <span className="shrink-0 text-faint tnum">{formatDistance(distanceMi)}</span>
           )}
         </p>
         {incident.description && (
-          <p className={`mt-1.5 line-clamp-2 text-[14.5px] leading-[1.45] ${ended ? "text-faint" : "text-text/75"}`}>
+          <p className={`mt-1 line-clamp-2 text-[14px] leading-[1.45] ${ended ? "text-faint" : "text-text/70"}`}>
             {incident.description}
           </p>
         )}
-        <div className="mt-2 flex items-center gap-2.5 text-[12.5px] text-faint">
-          {/* Demo rows are covered by the one banner above the list. */}
-          {!incident.isDemo && <OriginBadge incident={incident} />}
-          {incident.confirmationCount > 0 && (
-            <span className="tnum">
-              {incident.confirmationCount === 1 ? t("inc.saw1") : t("inc.saw", { n: incident.confirmationCount })}
-            </span>
-          )}
-        </div>
+        {(!incident.isDemo || incident.confirmationCount > 0) && (
+          <div className="mt-1.5 flex items-center gap-2.5 text-[12px] text-faint">
+            {!incident.isDemo && <OriginBadge incident={incident} />}
+            {incident.confirmationCount > 0 && (
+              <span className="tnum">
+                {incident.confirmationCount === 1 ? t("inc.saw1") : t("inc.saw", { n: incident.confirmationCount })}
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </Link>
   );
@@ -173,29 +163,24 @@ export function TopIncidentCard({ incident, distanceMi }: { incident: PublicInci
       transitionTypes={["nav-forward"]}
       className="press relative mt-2 block overflow-hidden rounded-card bg-surface p-4 shadow-[inset_0_0_0_1px_var(--line)]"
     >
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{ background: `radial-gradient(55% 80% at 95% 0%, color-mix(in srgb, ${def.color} 22%, transparent), transparent 70%)` }}
-        aria-hidden
-      />
-      <div className="relative flex items-center gap-2 text-[11.5px] font-bold uppercase tracking-[0.1em] text-muted">
+      <div className="flex items-center gap-2 text-[13px] font-semibold text-muted">
         <LiveBadge size="md" />
         <span>{t("feed.happeningNow")}</span>
+        <span className="ml-auto font-normal text-faint tnum">{timeAgo(incident.createdAt)}</span>
       </div>
-      <div className="relative mt-3 flex gap-3.5">
+      <div className="mt-3 flex gap-3.5">
         <CategoryIcon category={incident.category} size="lg" animated />
         <div className="min-w-0 flex-1">
-          <h3 className="text-[21px] font-extrabold leading-[1.15] tracking-[-0.03em]">{title(incident)}</h3>
-          <p className="mt-1 truncate text-[13.5px] text-muted">
+          <h3 className="text-[20px] font-bold leading-[1.15] tracking-[-0.025em]">{title(incident)}</h3>
+          <p className="mt-1 truncate text-[13px] text-muted">
             <span style={{ color: def.color }}>{short}</span>
-            <span className="text-faint"> · </span>
+            {" · "}
             {incident.approximateAddress || t("inc.approx")}
             {distanceMi != null && <span className="text-faint tnum"> · {formatDistance(distanceMi)}</span>}
-            <span className="text-faint tnum"> · {timeAgo(incident.createdAt)}</span>
           </p>
         </div>
       </div>
-      {incident.description && <p className="relative mt-3 line-clamp-2 text-[14.5px] leading-[1.45] text-text/80">{incident.description}</p>}
+      {incident.description && <p className="mt-3 line-clamp-2 text-[14px] leading-[1.45] text-text/80">{incident.description}</p>}
     </Link>
   );
 }

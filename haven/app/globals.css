@@ -1,28 +1,29 @@
 @import "tailwindcss";
 
 /* Haven design tokens.
-   Neutral near-black surfaces separated by light and hairlines rather than
-   heavy borders. Color is reserved for meaning: incident categories,
-   status, and a single accent for interactive state. */
+   The chrome is an instrument panel over a night map: deep blue-black
+   surfaces (the same family as the map's water and sky), separated by light
+   and hairlines rather than borders. Color means something: incident
+   categories, live state, one accent for what you can tap. */
 :root {
-  --bg: #07080a;
-  /* Solid, calm surfaces. Glass is reserved for floating chrome. */
-  --surface: #14161c;
-  --surface-2: #1d2027;
-  --surface-3: #272b34;
-  --line: rgba(255, 255, 255, 0.075);
+  --bg: #0b0e14;
+  /* Solid, calm surfaces. Blur is reserved for the two bars. */
+  --surface: #141923;
+  --surface-2: #1c2330;
+  --surface-3: #26303f;
+  --line: rgba(255, 255, 255, 0.07);
   --line-strong: rgba(255, 255, 255, 0.12);
-  --text: #f3f4f6;
-  --muted: #9b9fa8;
-  /* #8b909b passes WCAG AA (≥4.5:1) on the darkest surface. */
-  --faint: #8b909b;
-  --brand: #3d8bff;
+  --text: #f4f6f9;
+  --muted: #9aa6b8;
+  /* Passes WCAG AA (≥4.5:1) on the darkest surface. */
+  --faint: #8792a4;
+  --brand: #4a90ff;
   --brand-ink: #ffffff;
   /* Signal red for anything happening right now: LIVE badges, the report button. */
-  --live: #ff2d55;
+  --live: #ff3355;
   --danger: #ff5f57;
-  --warn: #f5b84b;
-  --ok: #4cd18a;
+  --warn: #ffb224;
+  --ok: #35d07f;
   --gold: #e9c27a;
 
   --glass: rgba(22, 23, 27, 0.72);
@@ -36,10 +37,11 @@
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --nav-h: 60px;
-  /* Radii: cards and sheets, controls (inputs, buttons), and small chips. */
-  --radius-card: 20px;
-  --radius-control: 14px;
+  /* One radius scale: chips 10, controls 12, cards 16, sheets 24, pills round. */
+  --radius-card: 16px;
+  --radius-control: 12px;
   --radius-chip: 10px;
+  --radius-sheet: 24px;
   /* Space between the floating tab bar and the bottom of the screen. */
   --nav-gap: 10px;
   color-scheme: dark;
@@ -65,6 +67,7 @@
   --radius-card: var(--radius-card);
   --radius-control: var(--radius-control);
   --radius-chip: var(--radius-chip);
+  --radius-sheet: var(--radius-sheet);
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
   --ease-out-soft: var(--ease-out);
@@ -79,6 +82,15 @@ body {
   color: var(--text);
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
+}
+/* Taps respond at once: no double-tap-to-zoom wait on anything pressable. */
+button,
+a,
+[role="button"],
+input,
+textarea,
+select {
+  touch-action: manipulation;
 }
 
 body {
@@ -130,23 +142,15 @@ body {
   --halo: rgba(0, 0, 0, 0.7);
 }
 [data-tone="light"] .glass {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0)),
-    rgba(255, 255, 255, 0.72);
-  border-color: rgba(0, 0, 0, 0.06);
-  box-shadow:
-    var(--glass-rim),
-    0 12px 32px -12px rgba(0, 0, 0, 0.35),
-    0 2px 6px -2px rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.78);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 28px -12px rgba(0, 0, 0, 0.35);
 }
 [data-tone="light"] .glass-sheet {
-  background:
-    radial-gradient(120% 60% at 20% 0%, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0) 50%),
-    rgba(255, 255, 255, 0.94);
+  background: #ffffff;
   box-shadow:
-    inset 0 1px 0.5px rgba(255, 255, 255, 1),
-    inset 0 0 0 0.5px rgba(0, 0, 0, 0.08),
-    0 -14px 40px rgba(0, 0, 0, 0.18);
+    inset 0 0.5px 0 rgba(0, 0, 0, 0.08),
+    0 -12px 40px rgba(0, 0, 0, 0.18);
 }
 [data-tone="light"] .map-skeleton {
   background-color: #e9e6df;
@@ -159,20 +163,26 @@ body {
 @utility tnum {
   font-variant-numeric: tabular-nums;
 }
-/* Liquid Glass: a tinted, blurred, light-boosted backdrop with a specular
-   sheen from the top-left and bright rims, like Apple's iOS 26 material. */
+/* Section headings inside a page: sentence case, quiet, never tracked caps. */
+@utility t-section {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: -0.005em;
+}
+/* Long lists: rows off screen cost nothing to lay out or paint. */
+@utility cv-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 112px;
+}
+/* Floating chrome that the map or page shows through: the tab bar, a toast.
+   One blurred layer, one hairline. No sheen. */
 @utility glass {
-  /* Dark enough to read over a light map; the map still shows through. */
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.01)),
-    rgba(14, 16, 22, 0.74);
-  backdrop-filter: blur(16px) saturate(150%);
-  -webkit-backdrop-filter: blur(16px) saturate(150%);
-  border: 0.5px solid rgba(255, 255, 255, 0.16);
-  box-shadow:
-    var(--glass-rim),
-    0 12px 32px -10px rgba(0, 0, 0, 0.55),
-    0 2px 6px -2px rgba(0, 0, 0, 0.3);
+  background: rgba(14, 18, 26, 0.78);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 28px -12px rgba(0, 0, 0, 0.6);
 }
 /* Floating panel over the map: the surface color, slightly see-through. */
 @utility panel {
@@ -185,30 +195,24 @@ body {
 }
 /* Edge-to-edge bars (headers) once content scrolls under them. */
 @utility glass-bar {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.01)),
-    rgba(10, 12, 18, 0.55);
-  backdrop-filter: blur(16px) saturate(160%);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
-  box-shadow: inset 0 -0.5px 0 rgba(255, 255, 255, 0.12);
+  background: rgba(11, 14, 20, 0.72);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  box-shadow: inset 0 -0.5px 0 rgba(255, 255, 255, 0.1);
 }
-/* Bottom sheets: more opaque so long text stays easy to read. */
+/* Bottom sheets: a solid surface with a hairline top edge. No blur: a sheet
+   covers the page, so there is nothing worth seeing through it. */
 @utility glass-sheet {
-  background:
-    radial-gradient(120% 60% at 20% 0%, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 50%),
-    rgba(18, 21, 29, 0.92);
-  backdrop-filter: blur(18px) saturate(160%);
-  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  background: var(--surface);
   box-shadow:
-    inset 0 1px 0.5px rgba(255, 255, 255, 0.35),
-    inset 0 0 0 0.5px rgba(255, 255, 255, 0.1),
-    0 -14px 40px rgba(0, 0, 0, 0.5);
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.14),
+    0 -12px 40px rgba(0, 0, 0, 0.45);
 }
 @utility press {
   transition:
-    transform 160ms var(--ease-out),
-    background-color 160ms ease,
-    opacity 160ms ease;
+    transform 120ms var(--ease-out),
+    background-color 120ms ease,
+    opacity 120ms ease;
   &:active {
     transform: scale(0.97);
   }
@@ -315,12 +319,10 @@ body {
 
 @keyframes haven-sheet-in {
   from {
-    transform: translateY(100%) scale(0.98);
-    opacity: 0.6;
+    transform: translateY(100%);
   }
   to {
-    transform: translateY(0) scale(1);
-    opacity: 1;
+    transform: translateY(0);
   }
 }
 @keyframes haven-sheet-out {
@@ -329,10 +331,10 @@ body {
   }
 }
 .haven-sheet-in {
-  animation: haven-sheet-in 460ms cubic-bezier(0.32, 0.72, 0, 1) both;
+  animation: haven-sheet-in 340ms cubic-bezier(0.32, 0.72, 0, 1) both;
 }
 .haven-sheet-out {
-  animation: haven-sheet-out 220ms cubic-bezier(0.4, 0, 1, 1) both;
+  animation: haven-sheet-out 200ms cubic-bezier(0.4, 0, 1, 1) both;
 }
 
 @keyframes haven-fade-in {
@@ -346,10 +348,10 @@ body {
   }
 }
 .haven-fade-in {
-  animation: haven-fade-in 220ms ease-out both;
+  animation: haven-fade-in 180ms ease-out both;
 }
 .haven-fade-out {
-  animation: haven-fade-out 200ms ease-in both;
+  animation: haven-fade-out 160ms ease-in both;
 }
 
 @keyframes haven-rise {
@@ -410,7 +412,7 @@ body {
   }
 }
 .page-push {
-  animation: page-push 240ms var(--ease-out) both;
+  animation: page-push 220ms var(--ease-out) both;
 }
 @media (prefers-reduced-motion: reduce) {
   .page-push {
@@ -767,7 +769,7 @@ body {
   background: var(--live);
   color: #fff;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 @keyframes haven-blink {

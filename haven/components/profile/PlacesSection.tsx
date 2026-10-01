@@ -212,7 +212,7 @@ function AddPlaceSheet({ open, onClose, usedKinds, onAdded }: { open: boolean; o
 
       <div className="mt-4">
         {picked ? (
-          <div className="flex items-center gap-3 rounded-2xl bg-brand/[0.08] px-4 py-3">
+          <div className="flex items-center gap-3 rounded-card bg-brand/[0.08] px-4 py-3">
             <MapPin className="size-[18px] shrink-0 text-brand" aria-hidden />
             <p className="min-w-0 flex-1 truncate text-[15px]">{picked.address || (es ? "Ubicación actual" : "Current location")}</p>
             <button onClick={() => setPicked(null)} className="min-h-11 px-2 text-[14px] font-medium text-brand">
@@ -249,7 +249,7 @@ function AddPlaceSheet({ open, onClose, usedKinds, onAdded }: { open: boolean; o
           </>
         )}
       </div>
-      <p className="mt-3 pb-1 text-[12.5px] leading-snug text-faint">{es ? "Sus lugares guardados son privados y solo se usan para las alertas." : "Saved places are private to you and only used to match alerts."}</p>
+      <p className="mt-3 pb-1 text-[12px] leading-snug text-faint">{es ? "Sus lugares guardados son privados y solo se usan para las alertas." : "Saved places are private to you and only used to match alerts."}</p>
     </Sheet>
   );
 }

@@ -107,7 +107,7 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
       <PullToRefresh onRefresh={refresh}>
         <div className="relative mx-auto max-w-lg px-4">
           {position && hood && (
-            <p className="mb-1 mt-1 flex min-h-8 items-center gap-2 text-[13.5px] text-muted">
+            <p className="mb-1 mt-1 flex min-h-8 items-center gap-2 text-[13px] text-muted">
               <Navigation className="size-4 shrink-0 text-brand" aria-hidden />
               {t("near.hoodWithin", { hood, n: 5 })}
             </p>
@@ -119,7 +119,7 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
               className="press mb-1 mt-1 flex min-h-11 w-full items-center gap-2 text-left disabled:opacity-100"
             >
               <Navigation className="size-4 shrink-0 text-brand" aria-hidden />
-              <span className="truncate text-[13.5px] text-muted">
+              <span className="truncate text-[13px] text-muted">
                 {t("feed.showingCentral")}
                 {status === "denied" || status === "unavailable" ? (
                   <span className="text-faint">{t("feed.locationOff")}</span>
@@ -140,13 +140,14 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
           {!isLoading && !error && allDemo && <DemoNotice />}
 
           {!isLoading && !error && sorted.length > 0 && (
-            <p className="px-0 pb-1 pt-2 text-[13px] text-faint tnum">
-              {activeLabel(activeCount, undefined, es)}
-              {t("feed.last24")}
+            <p className="flex items-baseline justify-between gap-3 px-0 pb-1 pt-2 text-[13px] text-faint tnum">
+              <span>
+                {activeLabel(activeCount, undefined, es)}
+                {t("feed.last24")}
+              </span>
               {fresh.checkedAt != null && now > 0 && (
-                <span className={fresh.stale ? "text-warn" : ""}>
-                  {" · "}
-                  {t(fresh.stale ? "fresh.stale" : "fresh.checked", { t: timeAgo(new Date(fresh.checkedAt).toISOString(), now) })}
+                <span className={`shrink-0 ${fresh.stale ? "text-warn" : ""}`}>
+                  {t(fresh.stale ? "fresh.shortStale" : "fresh.short", { t: timeAgo(new Date(fresh.checkedAt).toISOString(), now) })}
                 </span>
               )}
             </p>
@@ -192,9 +193,7 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
                     style={{ "--i": Math.min(idx, 10) } as React.CSSProperties}
                   >
                     {showHeader && (
-                      <h2 className="-mx-4 bg-transparent px-4 pb-1 pt-5 text-[12.5px] font-semibold uppercase tracking-[0.08em] text-faint">
-                        {t(section)}
-                      </h2>
+                      <h2 className="t-section -mx-4 bg-transparent px-4 pb-1 pt-5">{t(section)}</h2>
                     )}
                     <IncidentRow incident={i} distanceMi={distanceFrom(position, i)} />
                   </div>
@@ -205,7 +204,7 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
           {!isLoading && !error && rest.length > limit && (
             <button
               onClick={() => setLimit((n) => n + 50)}
-              className="press mt-2 flex min-h-12 w-full items-center justify-center rounded-2xl bg-surface text-[14.5px] font-semibold text-brand"
+              className="press mt-2 flex min-h-12 w-full items-center justify-center rounded-card bg-surface text-[14px] font-semibold text-brand"
             >
               {t("common.showMore", { n: Math.min(50, rest.length - limit) })}
             </button>

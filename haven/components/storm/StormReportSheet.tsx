@@ -102,7 +102,7 @@ export function StormReportSheet({
       <div className="space-y-4 pb-1">
         {(["power", "flooding", "place"] as StormKind[]).map((k) => (
           <section key={k}>
-            <p className="mb-2 flex items-center gap-2 text-[13.5px] font-bold text-text/90">
+            <p className="mb-2 flex items-center gap-2 text-[13px] font-bold text-text/90">
               <span className="flex size-7 items-center justify-center rounded-full bg-surface-2">
                 <CategoryGlyph category={k} animated={false} className="size-4" />
               </span>
@@ -120,7 +120,7 @@ export function StormReportSheet({
                       setPlaceType(p);
                       if (kind !== "place") setState(null);
                     }}
-                    className={`press inline-flex min-h-11 shrink-0 items-center rounded-full px-3.5 text-[13.5px] font-semibold ${
+                    className={`press inline-flex min-h-11 shrink-0 items-center rounded-full px-3.5 text-[13px] font-semibold ${
                       placeType === p && kind === "place" ? "bg-text text-bg" : "bg-surface-2 text-text"
                     }`}
                   >
@@ -143,7 +143,7 @@ export function StormReportSheet({
                       setKind(k);
                       setState(s);
                     }}
-                    className="press relative flex min-h-[76px] flex-col items-start justify-between overflow-hidden rounded-[18px] p-3 text-left transition-[background-color,box-shadow] duration-150"
+                    className="press relative flex min-h-[76px] flex-col items-start justify-between overflow-hidden rounded-card p-3 text-left transition-[background-color,box-shadow] duration-150"
                     style={{
                       background: on ? style.color : "var(--surface-2)",
                       color: on ? (s === "closed" || s === "flooded" ? "#fff" : "#0b0c0f") : "var(--text)",
@@ -168,14 +168,14 @@ export function StormReportSheet({
           </section>
         ))}
 
-        <section className="rounded-2xl bg-surface-2 p-3">
-          <p className="text-[12.5px] font-semibold text-muted">{t.reportAt}</p>
+        <section className="rounded-card bg-surface-2 p-3">
+          <p className="text-[12px] font-semibold text-muted">{t.reportAt}</p>
           <div className="mt-2 flex gap-2">
             <button
               onClick={() => setUseMe(true)}
               disabled={!myPosition}
               aria-pressed={useMe && Boolean(myPosition)}
-              className={`press inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full text-[13.5px] font-semibold disabled:opacity-40 ${
+              className={`press inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full text-[13px] font-semibold disabled:opacity-40 ${
                 useMe && myPosition ? "bg-text text-bg" : "bg-surface-3"
               }`}
             >
@@ -184,14 +184,14 @@ export function StormReportSheet({
             <button
               onClick={() => setUseMe(false)}
               aria-pressed={!useMe || !myPosition}
-              className={`press inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full text-[13.5px] font-semibold ${
+              className={`press inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full text-[13px] font-semibold ${
                 !useMe || !myPosition ? "bg-text text-bg" : "bg-surface-3"
               }`}
             >
               <MapPin className="size-4" aria-hidden /> {t.useMap}
             </button>
           </div>
-          <p className="mt-2 text-[12.5px] leading-snug text-faint">{t.reportWhere}</p>
+          <p className="mt-2 text-[12px] leading-snug text-faint">{t.reportWhere}</p>
         </section>
 
         <label className="block">
@@ -201,7 +201,7 @@ export function StormReportSheet({
             onChange={(e) => setNote(e.target.value.slice(0, MAX_DESCRIPTION))}
             rows={2}
             placeholder={t.note}
-            className="w-full resize-none rounded-2xl bg-surface-2 p-3.5 text-[16px] outline-none ring-brand/60 placeholder:text-faint focus:ring-2"
+            className="w-full resize-none rounded-card bg-surface-2 p-3.5 text-[16px] outline-none ring-brand/60 placeholder:text-faint focus:ring-2"
           />
         </label>
 
@@ -209,7 +209,7 @@ export function StormReportSheet({
           {photo ? (
             <div className="relative">
               {/* eslint-disable-next-line @next/next/no-img-element -- local data URL preview */}
-              <img src={photo} alt="" className="size-20 rounded-xl object-cover" />
+              <img src={photo} alt="" className="size-20 rounded-control object-cover" />
               <button
                 onClick={() => setPhoto(null)}
                 aria-label={t.removePhoto}
@@ -226,7 +226,7 @@ export function StormReportSheet({
               <Camera className="size-4" aria-hidden /> {t.photo}
             </button>
           )}
-          <p className="text-[12.5px] text-faint">{t.photoHint}</p>
+          <p className="text-[12px] text-faint">{t.photoHint}</p>
           <input
             ref={fileRef}
             type="file"

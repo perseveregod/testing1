@@ -98,18 +98,13 @@ function PreviewCard({
     <div
       role="dialog"
       aria-label={t("inc.detailsOf", { t: catLabel })}
-      className={`glass pointer-events-auto relative mx-auto flex w-full max-w-lg flex-col overflow-hidden rounded-card ${closing ? "haven-sheet-out" : "haven-sheet-in"}`}
+      className={`panel pointer-events-auto relative mx-auto flex w-full max-w-lg flex-col overflow-hidden rounded-card ${closing ? "haven-sheet-out" : "haven-sheet-in"}`}
       style={{
         transform: dy ? `translateY(${dy}px)` : undefined,
         transition: dy ? "none" : "transform 260ms var(--ease-out), max-height 320ms var(--ease-out)",
         maxHeight: expanded ? "78dvh" : "min(56dvh, 440px)",
       }}
     >
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-32 rounded-t-card opacity-30"
-        style={{ background: `radial-gradient(80% 100% at 50% 0%, ${def.color} 0%, transparent 70%)` }}
-        aria-hidden
-      />
       <div {...handlers} className="relative touch-none select-none px-4 pt-2.5">
         <button
           type="button"
@@ -143,7 +138,7 @@ function PreviewCard({
       </div>
 
       <div className={`relative px-4 pb-4 ${expanded ? "overflow-y-auto overscroll-contain" : ""}`}>
-        <p className="mt-2.5 text-[13.5px] text-muted">
+        <p className="mt-2.5 text-[13px] text-muted">
           {incident.approximateAddress || t("inc.approx")}
           {distanceMi != null && <span className="text-text tnum"> · {t("inc.away", { d: formatDistance(distanceMi) })}</span>}
           <span className="tnum"> · {timeAgo(incident.createdAt)}</span>
@@ -195,7 +190,7 @@ function PreviewCard({
         )}
         {expanded && detail?.incident.photo && (
           // eslint-disable-next-line @next/next/no-img-element -- stored data URL
-          <img src={detail.incident.photo} alt={t("inc.photoAlt")} className="mt-4 max-h-64 w-full rounded-[16px] object-cover" />
+          <img src={detail.incident.photo} alt={t("inc.photoAlt")} className="mt-4 max-h-64 w-full rounded-card object-cover" />
         )}
         {expanded && (
           <div className="mt-5 border-t border-line pt-4">

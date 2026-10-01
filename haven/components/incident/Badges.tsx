@@ -54,7 +54,7 @@ export function DemoTag({ size = "sm" }: { size?: "sm" | "md" }) {
   const { t } = useT();
   return (
     <span
-      className={`rounded-[5px] bg-white/[0.09] font-semibold uppercase tracking-[0.06em] text-text/75 ${size === "md" ? "px-2 py-[3px] text-[11px]" : "px-1.5 py-[1px] text-[10.5px]"}`}
+      className={`rounded-[5px] bg-white/[0.09] font-semibold text-text/75 ${size === "md" ? "px-2 py-[3px] text-[11px]" : "px-1.5 py-[1px] text-[11px]"}`}
       title={t("demo.title")}
     >
       {t("common.demo")}
@@ -90,7 +90,7 @@ export function isLive(i: Pick<PublicIncident, "status" | "severity" | "createdA
 export function LiveBadge({ size = "sm" }: { size?: "sm" | "md" }) {
   const { t } = useT();
   return (
-    <span className={`live-badge ${size === "md" ? "px-2 py-[3px] text-[11px]" : "px-1.5 py-[1px] text-[9.5px]"}`}>
+    <span className={`live-badge ${size === "md" ? "px-2 py-[3px] text-[11px]" : "px-1.5 py-[1px] text-[10px]"}`}>
       <span className="haven-blink size-[5px] rounded-full bg-white" aria-hidden />
       {t("common.live")}
     </span>
@@ -99,21 +99,13 @@ export function LiveBadge({ size = "sm" }: { size?: "sm" | "md" }) {
 
 /** Where a report came from, as a compact badge: Official source, Community report or Demo. */
 export function OriginBadge({ incident, size = "sm" }: { incident: Pick<PublicIncident, "isDemo" | "source" | "unverified">; size?: "sm" | "md" }) {
-  const cls = size === "md" ? "px-2 py-[3px] text-[11px]" : "px-1.5 py-[1px] text-[10.5px]";
+  const cls = size === "md" ? "text-[12px]" : "text-[11px]";
   const { t } = useT();
   if (incident.isDemo) return <DemoTag />;
   if (incident.source.kind === "user") {
-    return (
-      <span className={`rounded-[5px] bg-warn/15 font-semibold uppercase tracking-[0.06em] text-warn ${cls}`}>
-        {t(incident.unverified ? "inc.community" : "inc.communityConfirmed")}
-      </span>
-    );
+    return <span className={`font-medium text-warn ${cls}`}>{t(incident.unverified ? "inc.community" : "inc.communityConfirmed")}</span>;
   }
-  return (
-    <span className={`rounded-[5px] bg-brand/15 font-semibold uppercase tracking-[0.06em] text-brand ${cls}`}>
-      {t("inc.official")}
-    </span>
-  );
+  return <span className={`font-medium text-brand ${cls}`}>{t("inc.official")}</span>;
 }
 
 /** Age-based fading: full strength for 2h, then eases down to 55% by 24h. */

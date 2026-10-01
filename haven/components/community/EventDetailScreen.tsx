@@ -129,11 +129,11 @@ export function EventDetailScreen({ id }: { id: string }) {
         ) : (
           <>
             <div className="haven-rise rounded-card bg-surface p-4 shadow-[inset_0_0_0_1px_var(--line)]">
-              <div className="flex items-center gap-2 text-[12.5px] font-semibold text-muted">
+              <div className="flex items-center gap-2 text-[12px] font-semibold text-muted">
                 <span className="size-2.5 rounded-full" style={{ background: k.color }} aria-hidden />
                 {es ? k.labelEs : k.label}
-                {now > 0 && isHappeningNow(event, now) && <span className="rounded-full bg-live/15 px-2 py-0.5 text-[11.5px] font-bold text-live">{es ? "Pasando ahora" : "Happening now"}</span>}
-                {event.isDemo && <span className="rounded-md bg-surface-3 px-1.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wide text-faint">Demo</span>}
+                {now > 0 && isHappeningNow(event, now) && <span className="rounded-full bg-live/15 px-2 py-0.5 text-[12px] font-bold text-live">{es ? "Pasando ahora" : "Happening now"}</span>}
+                {event.isDemo && <span className="rounded-md bg-surface-3 px-1.5 py-0.5 text-[11px] font-semibold text-faint">Demo</span>}
               </div>
               <h1 className="mt-1.5 text-[24px] font-bold leading-tight tracking-[-0.02em]">{event.title}</h1>
               <p className="mt-2 text-[15px] text-text/90 tnum">{formatEventTime(event.startsAt, event.endsAt, lang)}</p>
@@ -192,7 +192,7 @@ export function EventDetailScreen({ id }: { id: string }) {
                 <ul className="space-y-2">
                   {event.comments.map((c) => (
                     <li key={c.id} className={`rounded-card bg-surface p-3.5 ${c.mine ? "shadow-[inset_0_0_0_1px_var(--line)]" : ""}`}>
-                      <div className="flex items-baseline gap-2 text-[12.5px]">
+                      <div className="flex items-baseline gap-2 text-[12px]">
                         <span className="font-semibold text-text/85">{c.mine ? (es ? "Usted" : "You") : es ? c.author.replace(/^Neighbor/, "Vecino") : c.author}</span>
                         <span className="text-faint tnum">{now > 0 ? timeAgo(c.createdAt, now) : ""}</span>
                         <button
@@ -226,7 +226,7 @@ export function EventDetailScreen({ id }: { id: string }) {
                     onFocus={() => {
                       if (!viewer?.email) setSignIn(true);
                     }}
-                    className="w-full resize-none rounded-2xl bg-surface-2 px-3.5 py-3 text-[16px] outline-none ring-brand/60 placeholder:text-faint focus:ring-2"
+                    className="w-full resize-none rounded-card bg-surface-2 px-3.5 py-3 text-[16px] outline-none ring-brand/60 placeholder:text-faint focus:ring-2"
                   />
                 </label>
                 <Button type="submit" loading={sending} disabled={!body.trim()} aria-label={es ? "Enviar" : "Send"} className="size-12 !px-0">
