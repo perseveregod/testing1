@@ -70,7 +70,7 @@ export function PageHeader({
                 });
               }}
               aria-label="Back"
-              className={`press z-10 inline-flex items-center justify-center rounded-full text-text ${transparent && !scrolled ? "glass size-10" : "size-11 hover:bg-surface-2"}`}
+              className={`press z-10 inline-flex items-center justify-center rounded-full text-text ${transparent && !scrolled ? "glass size-11" : "size-11 hover:bg-surface-2"}`}
             >
               <ChevronLeft
                 className="size-[24px]"
@@ -82,7 +82,8 @@ export function PageHeader({
             <span className="size-11" />
           )}
           <h1
-            aria-hidden={large ? !scrolled : undefined}
+            aria-hidden={large ? true : undefined}
+            role={large ? "presentation" : undefined}
             className={`pointer-events-none absolute inset-x-16 truncate text-center text-[17px] font-semibold tracking-[-0.015em] transition-all duration-300 ${
               scrolled ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0"
             }`}

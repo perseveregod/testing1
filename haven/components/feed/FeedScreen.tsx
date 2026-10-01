@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { MapPinned, Navigation, ShieldCheck } from "lucide-react";
 import { categoriesInGroup, type FilterGroup } from "@/lib/categories";
 import { DEFAULT_CENTER } from "@/lib/client/defaults";
-import { distanceFrom, useIncidents, useViewer } from "@/lib/client/hooks";
+import { distanceFrom, useIncidents, useViewer, type InitialIncidents } from "@/lib/client/hooks";
 import { errorMessage } from "@/lib/client/api";
 import { useLocation } from "@/components/providers/LocationProvider";
 import {
@@ -34,7 +34,7 @@ const FILTERS: { id: FeedFilter; label: string }[] = [
 
 const FEED_RADIUS_MI = 10;
 
-export function FeedScreen() {
+export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
   const { position, status, request } = useLocation();
   const { viewer } = useViewer();
   const [filter, setFilter] = useState<FeedFilter>("nearby");
@@ -47,7 +47,7 @@ export function FeedScreen() {
     sort: filter === "nearby" && position ? "distance" : "newest",
     categories: isGroup ? categoriesInGroup(filter) : undefined,
     limit: 100,
-  });
+  }, initial);
 
   const sorted = useMemo(() => {
     // Ended incidents sink below active ones in "Nearby".

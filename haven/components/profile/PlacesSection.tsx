@@ -58,7 +58,7 @@ export function PlacesSection() {
         title={`Saved places · ${places.length}/${max}`}
         action={
           !atLimit && (
-            <button onClick={() => setAdding(true)} className="press inline-flex h-7 items-center gap-1 rounded-full px-2 text-[14px] font-medium text-brand">
+            <button onClick={() => setAdding(true)} className="press inline-flex min-h-11 items-center gap-1 rounded-full px-2 text-[14px] font-medium text-brand">
               <Plus className="size-4" aria-hidden /> Add
             </button>
           )

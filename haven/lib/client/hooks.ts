@@ -80,13 +80,26 @@ export function incidentsUrl(p: IncidentParams): string | null {
   return `/api/incidents?${q}`;
 }
 
-export function useIncidents(p: IncidentParams) {
+export interface IncidentsResponse {
+  items: PublicIncident[];
+  sinceHours: number;
+  historyLimited: boolean;
+}
+
+export interface InitialIncidents {
+  /** The SWR key the client will ask for first; matches `incidentsUrl`. */
+  key: string;
+  data: IncidentsResponse;
+}
+
+/** `initial` is server-fetched data for a specific key; used as that key's fallback so the first paint has incidents. */
+export function useIncidents(p: IncidentParams, initial?: InitialIncidents | null) {
   const url = incidentsUrl(p);
-  const { data, error, isLoading, isValidating, mutate } = useSWR<{
-    items: PublicIncident[];
-    sinceHours: number;
-    historyLimited: boolean;
-  }>(url, fetcher, { refreshInterval: 60_000, keepPreviousData: true });
+  const { data, error, isLoading, isValidating, mutate } = useSWR<IncidentsResponse>(url, fetcher, {
+    refreshInterval: 60_000,
+    keepPreviousData: true,
+    fallbackData: initial && initial.key === url ? initial.data : undefined,
+  });
   return { data, items: data?.items ?? [], error, isLoading: isLoading && !data, isValidating, mutate };
 }
 

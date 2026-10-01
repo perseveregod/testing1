@@ -79,3 +79,28 @@ export function LiveBadge({ size = "sm" }: { size?: "sm" | "md" }) {
     </span>
   );
 }
+
+/** Where a report came from, as a compact badge: Official source, Community report or Demo. */
+export function OriginBadge({ incident, size = "sm" }: { incident: Pick<PublicIncident, "isDemo" | "source" | "unverified">; size?: "sm" | "md" }) {
+  const cls = size === "md" ? "px-2 py-[3px] text-[11px]" : "px-1.5 py-[1px] text-[10.5px]";
+  if (incident.isDemo) return <DemoTag />;
+  if (incident.source.kind === "user") {
+    return (
+      <span className={`rounded-[5px] bg-warn/15 font-semibold uppercase tracking-[0.06em] text-warn ${cls}`}>
+        Community{incident.unverified ? "" : " · confirmed"}
+      </span>
+    );
+  }
+  return (
+    <span className={`rounded-[5px] bg-brand/15 font-semibold uppercase tracking-[0.06em] text-brand ${cls}`}>
+      Official
+    </span>
+  );
+}
+
+/** Age-based fading: full strength for 2h, then eases down to 55% by 24h. */
+export function recencyFactor(createdAt: string, now = Date.now()): number {
+  const hours = (now - new Date(createdAt).getTime()) / 3_600_000;
+  if (hours <= 2) return 1;
+  return Math.max(0.55, 1 - ((hours - 2) / 22) * 0.45);
+}

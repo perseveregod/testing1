@@ -31,17 +31,27 @@ export function usePresence(open: boolean, exitMs = 220) {
 }
 
 /** Pointer-drag-to-dismiss for a sheet panel. Returns handlers and the live offset. */
-export function useDragDismiss(onDismiss: () => void) {
+export function useDragDismiss(onDismiss: () => void, onDragUp?: () => void) {
   const start = useRef<number | null>(null);
   const [dy, setDy] = useState(0);
   const onPointerDown = useCallback((e: React.PointerEvent) => {
     start.current = e.clientY;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   }, []);
-  const onPointerMove = useCallback((e: React.PointerEvent) => {
-    if (start.current == null) return;
-    setDy(Math.max(0, e.clientY - start.current));
-  }, []);
+  const onPointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (start.current == null) return;
+      const d = e.clientY - start.current;
+      if (d < -60 && onDragUp) {
+        start.current = null;
+        setDy(0);
+        onDragUp();
+        return;
+      }
+      setDy(Math.max(0, d));
+    },
+    [onDragUp],
+  );
   const onPointerUp = useCallback(() => {
     if (start.current == null) return;
     start.current = null;

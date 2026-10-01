@@ -13,7 +13,7 @@ export function Chip({
   return (
     <button
       aria-pressed={active}
-      className={`press inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[14px] font-medium disabled:opacity-45 ${
+      className={`press inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[14px] font-medium disabled:opacity-45 ${
         active ? "bg-text text-bg" : "bg-surface-2 text-text/90 hover:bg-surface-3"
       } ${className}`}
       {...rest}
@@ -49,7 +49,7 @@ export function Segmented<T extends string | number>({
             aria-checked={on}
             disabled={disabled || o.locked}
             onClick={() => onChange(o.value)}
-            className={`relative flex min-h-9 flex-1 items-center justify-center gap-1 rounded-[9px] text-[13px] font-semibold transition-all duration-200 ${
+            className={`relative flex min-h-11 flex-1 items-center justify-center gap-1 rounded-[9px] text-[13px] font-semibold transition-all duration-200 ${
               on ? "bg-surface-3 text-text shadow-[0_1px_3px_rgba(0,0,0,0.4)]" : "text-muted hover:text-text"
             } ${o.locked ? "cursor-not-allowed text-faint hover:text-faint" : ""}`}
           >

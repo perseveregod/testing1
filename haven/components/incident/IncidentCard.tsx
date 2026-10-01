@@ -3,7 +3,7 @@ import { getCategory } from "@/lib/categories";
 import { formatDistance } from "@/lib/geo";
 import { timeAgo } from "@/lib/time";
 import type { PublicIncident } from "@/lib/types";
-import { DemoTag, isLive, LiveBadge } from "./Badges";
+import { DemoTag, isLive, LiveBadge, OriginBadge } from "./Badges";
 import { CategoryIcon } from "./CategoryIcon";
 
 /** One incident as a list row: glyph, title, place, and a two-line preview. */
@@ -53,16 +53,17 @@ export function IncidentRow({ incident, distanceMi }: { incident: PublicIncident
             {incident.description}
           </p>
         )}
-        {(incident.isDemo || ended || incident.confirmationCount > 0 || incident.unverified) && (
-          <div className="mt-2 flex items-center gap-2.5 text-[12.5px] text-faint">
-            {incident.isDemo && <DemoTag />}
+        <div className="mt-2 flex items-center gap-2.5 text-[12.5px] text-faint">
+          <OriginBadge incident={incident} />
+          {(ended || incident.confirmationCount > 0) && (
+            <>
             {ended && <span>Ended</span>}
             {incident.confirmationCount > 0 && <span className="tnum">
                 {incident.confirmationCount} {incident.confirmationCount === 1 ? "person" : "people"} saw this
               </span>}
-            {incident.unverified && !incident.isDemo && <span>Unverified</span>}
-          </div>
-        )}
+            </>
+          )}
+        </div>
       </div>
     </Link>
   );

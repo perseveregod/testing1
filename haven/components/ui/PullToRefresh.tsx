@@ -17,6 +17,8 @@ export function PullToRefresh({ onRefresh, children }: { onRefresh: () => Promis
   const busyRef = useRef(false);
 
   useEffect(() => {
+    // Mouse-only devices never pull; keep the listeners off entirely.
+    if (!window.matchMedia("(pointer: coarse)").matches) return;
     const onStart = (e: TouchEvent) => {
       if (window.scrollY <= 0 && !busyRef.current) startY.current = e.touches[0].clientY;
     };

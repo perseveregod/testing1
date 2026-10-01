@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { DEFAULT_CENTER } from "@/lib/client/defaults";
-import { distanceFrom, useIncidents, useViewer } from "@/lib/client/hooks";
+import { distanceFrom, useIncidents, useViewer, type InitialIncidents } from "@/lib/client/hooks";
 import type { LatLng } from "@/lib/geo";
 import { useLocation } from "@/components/providers/LocationProvider";
 import { IncidentPreview } from "@/components/incident/IncidentPreview";
@@ -85,7 +85,7 @@ function queryArea(
   };
 }
 
-export function MapScreen() {
+export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
   const mapRef = useRef<MapHandle>(null);
   const { position, status, request } = useLocation();
   const { viewer } = useViewer();
@@ -114,11 +114,16 @@ export function MapScreen() {
   const flewToUser = useRef(false);
 
   const area = useMemo(() => queryArea(viewport), [viewport]);
-  const { items, isLoading, isValidating, error, mutate } = useIncidents({
-    center: area?.center ?? null,
-    radiusMi: area?.radiusMi ?? 5,
-    ...filterParams(filters, viewer),
-  });
+  const { items, isLoading, isValidating, error, mutate } = useIncidents(
+    {
+      // Before the map reports a viewport, ask for the default area so the
+      // server-rendered incidents apply from the first paint.
+      center: area?.center ?? DEFAULT_CENTER,
+      radiusMi: area?.radiusMi ?? 5,
+      ...filterParams(filters, viewer),
+    },
+    initial,
+  );
 
   // Jump to the person's location the first time we learn it.
   useEffect(() => {
@@ -198,7 +203,7 @@ export function MapScreen() {
           </IconButton>
         </div>
         <div className="no-scrollbar pointer-events-auto mx-auto mt-2.5 flex max-w-lg items-center gap-2 overflow-x-auto px-4 pb-1">
-          <div className="inline-flex h-8 shrink-0 items-center gap-2 bg-surface/95 rounded-full pl-1 pr-3 text-[12.5px] font-semibold text-text/90 tnum">
+          <div className="inline-flex h-11 shrink-0 items-center gap-2 bg-surface/95 rounded-full pl-1 pr-3 text-[12.5px] font-semibold text-text/90 tnum">
             {isLoading || (isValidating && !items.length) ? (
               <span className="flex items-center gap-2 pl-2 text-muted">
                 <Spinner className="size-3" /> Loading
@@ -218,7 +223,7 @@ export function MapScreen() {
                   />
                 )}
                 <span>
-                  {activeCount} active
+                  {activeCount} active · last 24h
                   {demoCount > 0 && (
                     <span className="font-medium text-faint"> · demo</span>
                   )}
@@ -241,7 +246,7 @@ export function MapScreen() {
                     groups: q.id === null ? [] : [q.id],
                   }))
                 }
-                className={`press inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold ${
+                className={`press inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold ${
                   on
                     ? "bg-text text-bg"
                     : "bg-surface/95 text-text/90"

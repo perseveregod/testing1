@@ -59,3 +59,15 @@ describe("source adapters", () => {
     expect(polygonCenter({ type: "Polygon", coordinates: [[[0, 0], [2, 0], [2, 2], [0, 2]]] })).toEqual({ lat: 1, lng: 1 });
   });
 });
+
+describe("recency and privacy", () => {
+  it("fades incidents after 2h and floors at 55%", async () => {
+    const { recencyFactor } = await import("@/components/incident/Badges");
+    const now = Date.now();
+    const at = (h: number) => new Date(now - h * 3_600_000).toISOString();
+    expect(recencyFactor(at(1), now)).toBe(1);
+    expect(recencyFactor(at(13), now)).toBeLessThan(1);
+    expect(recencyFactor(at(13), now)).toBeGreaterThan(0.55);
+    expect(recencyFactor(at(48), now)).toBe(0.55);
+  });
+});

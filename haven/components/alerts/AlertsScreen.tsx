@@ -38,7 +38,7 @@ export function AlertsScreen() {
         large
         action={
           tab === "inbox" && unread > 0 ? (
-            <button onClick={markAll} className="press mr-2 min-h-9 rounded-full px-3 text-[14px] font-medium text-brand">
+            <button onClick={markAll} className="press mr-2 min-h-11 rounded-full px-3 text-[14px] font-medium text-brand">
               Mark all read
             </button>
           ) : null

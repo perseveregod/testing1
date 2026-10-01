@@ -118,7 +118,7 @@ export function IncidentDetailScreen({ id }: { id: string }) {
         back
         transparent
         action={
-          <button onClick={share} aria-label="Share" className="press glass inline-flex size-10 items-center justify-center rounded-full">
+          <button onClick={share} aria-label="Share" className="press glass inline-flex size-11 items-center justify-center rounded-full">
             <Share2 className="size-[18px]" aria-hidden />
           </button>
         }

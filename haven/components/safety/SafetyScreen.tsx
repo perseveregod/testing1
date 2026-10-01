@@ -9,10 +9,11 @@ import {
   Newspaper,
   PawPrint,
   Phone,
+  ShieldCheck,
 } from "lucide-react";
 import { getCategory, FILTER_GROUPS } from "@/lib/categories";
 import { DEFAULT_CENTER } from "@/lib/client/defaults";
-import { distanceFrom, useIncidents } from "@/lib/client/hooks";
+import { distanceFrom, useIncidents, type InitialIncidents } from "@/lib/client/hooks";
 import { formatRemaining, useClock, useSafeWalk } from "@/lib/client/safewalk";
 import { RESOURCE_AREA, RESOURCES } from "@/lib/resources";
 import { formatDistance } from "@/lib/geo";
@@ -28,15 +29,13 @@ import { PullToRefresh } from "@/components/ui/PullToRefresh";
 
 const SEV = { low: 0, moderate: 1, high: 2, critical: 3 } as const;
 
-export function SafetyScreen() {
+export function SafetyScreen({ initial }: { initial?: InitialIncidents | null }) {
   const { position } = useLocation();
   const center = position ?? DEFAULT_CENTER;
-  const { items, isLoading, mutate } = useIncidents({
-    center,
-    radiusMi: 10,
-    sort: "newest",
-    limit: 100,
-  });
+  const { items, isLoading, mutate } = useIncidents(
+    { center, radiusMi: 10, sort: "newest", limit: 100 },
+    initial,
+  );
   const refresh = useCallback(() => mutate(), [mutate]);
   const walk = useSafeWalk()?.walk ?? null;
   const now = useClock(walk != null);
@@ -114,6 +113,18 @@ export function SafetyScreen() {
             </SectionTitle>
             {isLoading ? (
               <RowSkeleton />
+            ) : briefing.total === 0 ? (
+              <div className="flex items-center gap-3.5 rounded-[20px] bg-surface p-4">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-ok/15 text-ok">
+                  <ShieldCheck className="size-6" aria-hidden />
+                </span>
+                <div>
+                  <p className="text-[15.5px] font-semibold">All quiet within 10 miles</p>
+                  <p className="mt-0.5 text-[13.5px] leading-snug text-muted">
+                    Nothing reported in the last 24 hours. We&apos;ll keep watching official feeds and neighbor reports.
+                  </p>
+                </div>
+              </div>
             ) : (
               <div className="rounded-[20px] bg-surface p-4">
                 <p className="text-[15px] leading-relaxed">
@@ -173,9 +184,15 @@ export function SafetyScreen() {
                 </ul>
               ) : (
                 !isLoading && (
-                  <p className="px-3 py-3 text-[14px] text-muted">
-                    No missing pets posted nearby.
-                  </p>
+                  <div className="flex items-center gap-3 px-3 py-3">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-muted">
+                      <PawPrint className="size-5" aria-hidden />
+                    </span>
+                    <div>
+                      <p className="text-[14.5px] font-semibold">No missing pets nearby</p>
+                      <p className="text-[13px] leading-snug text-muted">Lost or found one? Post it and neighbors within 10 miles will see it.</p>
+                    </div>
+                  </div>
                 )
               )}
               <Link

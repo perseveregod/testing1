@@ -57,7 +57,7 @@ interface Props {
 }
 
 type Visible =
-  | { key: string; kind: "point"; el: HTMLElement; id: string; category: PublicIncident["category"]; severity: number; ended: boolean }
+  | { key: string; kind: "point"; el: HTMLElement; id: string; category: PublicIncident["category"]; severity: number; ended: boolean; age: number }
   | { key: string; kind: "cluster"; el: HTMLElement; clusterId: number; count: number; maxSev: number; lng: number; lat: number };
 
 const SOURCE = "incidents";
@@ -151,7 +151,7 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
         key,
         p.cluster
           ? { key, kind: "cluster", el, clusterId: Number(p.cluster_id), count: Number(p.point_count), maxSev: Number(p.maxSev ?? 0), lng, lat }
-          : { key, kind: "point", el, id: String(p.id), category: p.category as PublicIncident["category"], severity: Number(p.sevRank), ended: Boolean(p.ended) },
+          : { key, kind: "point", el, id: String(p.id), category: p.category as PublicIncident["category"], severity: Number(p.sevRank), ended: Boolean(p.ended), age: Number(p.age ?? 0) },
       );
     }
     for (const [key, marker] of markers.current) {
@@ -181,7 +181,8 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
         pitch: PITCH_3D,
         bearing: BEARING_3D,
         maxPitch: 72,
-        attributionControl: { compact: true },
+        // Always visible (not collapsed) so the OpenStreetMap / OpenFreeMap credit is shown per license.
+        attributionControl: { compact: false },
         fadeDuration: 0,
       });
       map.current = m;
@@ -353,6 +354,11 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
       <div className="absolute inset-0 isolate">
         <div ref={container} className="h-full w-full" role="region" aria-label="Incident map" />
       </div>
+      {!ready && !failed && (
+        <div className="map-skeleton pointer-events-none absolute inset-0" aria-hidden>
+          <div className="haven-shimmer absolute inset-0 opacity-60" />
+        </div>
+      )}
       {failed && (
         <div className="absolute inset-0 flex items-center justify-center bg-bg px-8 text-center text-muted">
           The map couldn&apos;t load. The Feed tab still shows nearby incidents.
@@ -367,6 +373,7 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
               category={v.category}
               severity={v.severity}
               ended={v.ended}
+              age={v.age}
               selected={v.id === selectedId}
               onClick={() => onSelect(v.id)}
             />
@@ -395,6 +402,8 @@ function toGeoJson(incidents: PublicIncident[]): GeoJSON.FeatureCollection {
         color: getCategory(i.category).color,
         sevRank: SEVERITY_RANK[i.severity],
         ended: i.status === "resolved",
+        // Hours old, for recency fading on the marker.
+        age: (Date.now() - new Date(i.createdAt).getTime()) / 3_600_000,
       },
     })),
   };
@@ -404,18 +413,26 @@ function PointMarker({
   category,
   severity,
   ended,
+  age,
   selected,
   onClick,
 }: {
   category: PublicIncident["category"];
   severity: number;
   ended: boolean;
+  /** Hours since it was reported. */
+  age: number;
   selected: boolean;
   onClick: () => void;
 }) {
   const def = getCategory(category);
   const color = ended ? "#6b7280" : def.color;
-  const size = selected ? 44 : severity >= 2 ? 36 : 32;
+  // Recency: full size for 2h, then shrinks and fades toward 24h.
+  const fade = ended ? 0.6 : age <= 2 ? 1 : Math.max(0.55, 1 - ((age - 2) / 22) * 0.45);
+  const base = severity >= 3 ? 40 : severity >= 2 ? 36 : severity >= 1 ? 32 : 28;
+  const size = selected ? 44 : Math.round(base * (0.85 + 0.15 * fade));
+  // Severity also changes shape: critical is a rounded square, high gets a "!" badge.
+  const radius = severity >= 3 && !ended ? "28%" : "9999px";
   return (
     <button
       type="button"
@@ -423,17 +440,18 @@ function PointMarker({
         e.stopPropagation();
         onClick();
       }}
-      aria-label={`${def.label}${ended ? " (ended)" : ""}`}
+      aria-label={`${def.label}, ${["low", "moderate", "high", "critical"][severity] ?? "unknown"} severity${ended ? ", ended" : ""}`}
       aria-pressed={selected}
       className="haven-marker haven-pop relative flex items-center justify-center"
-      style={{ width: size, height: size + 6, opacity: ended ? 0.75 : 1 }}
+      style={{ width: size, height: size + 6, opacity: selected ? 1 : fade }}
     >
       {/* Pin head: solid category color with a white glyph, like a maps app. */}
       <span
-        className="absolute left-1/2 top-0 flex -translate-x-1/2 items-center justify-center rounded-full"
+        className="absolute left-1/2 top-0 flex -translate-x-1/2 items-center justify-center"
         style={{
           width: size,
           height: size,
+          borderRadius: radius,
           background: color,
           color: "#fff",
           border: `${selected ? 3 : 2}px solid #fff`,
@@ -445,6 +463,14 @@ function PointMarker({
       >
         <CategoryGlyph category={category} animated={false} style={{ width: size * 0.55, height: size * 0.55 }} />
       </span>
+      {severity >= 2 && !ended && (
+        <span
+          className="absolute -right-0.5 -top-1 flex size-4 items-center justify-center rounded-full bg-white text-[11px] font-black leading-none text-[#0b0c0f]"
+          aria-hidden
+        >
+          !
+        </span>
+      )}
       {/* Pin point */}
       <span
         className="absolute left-1/2 -translate-x-1/2"

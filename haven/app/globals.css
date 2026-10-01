@@ -14,7 +14,8 @@
   --line-strong: rgba(255, 255, 255, 0.12);
   --text: #f3f4f6;
   --muted: #9b9fa8;
-  --faint: #686d77;
+  /* #8b909b passes WCAG AA (≥4.5:1) on the darkest surface. */
+  --faint: #8b909b;
   --brand: #3d8bff;
   --brand-ink: #ffffff;
   /* Signal red for anything happening right now: LIVE badges, the report button. */
@@ -681,3 +682,40 @@ body {
     radial-gradient(70% 45% at 100% 20%, rgba(122, 77, 255, 0.14), transparent 60%),
     var(--bg);
 }
+
+/* Map placeholder: a faint street grid while tiles load. */
+.map-skeleton {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 64px 64px;
+  transition: opacity 400ms ease;
+}
+
+/* Tile attribution: small, readable, above the floating tab bar. */
+.maplibregl-ctrl-bottom-right {
+  bottom: calc(var(--nav-h) + var(--nav-gap) + var(--safe-bottom) + 2px);
+}
+.maplibregl-ctrl-attrib {
+  background: rgba(8, 10, 15, 0.7) !important;
+  color: #c3c9d4 !important;
+  font-size: 10px !important;
+  border-radius: 6px 0 0 0;
+  padding: 2px 6px !important;
+}
+.maplibregl-ctrl-attrib a {
+  color: #dfe4ec !important;
+}
+
+/* Every marker gets a 44×44 hit area even when the pin itself is smaller. */
+.haven-marker::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+}
+/* The map's quick chips sit in a 44px-tall row so the whole band is tappable. */
