@@ -15,6 +15,9 @@ import {
   BEACONS,
   BEARING_3D,
   beaconGeoJson,
+  ACTIVITY,
+  activityGeoJson,
+  addActivityLayer,
   enhanceStyle,
   PITCH_3D,
   resolveMode,
@@ -65,6 +68,8 @@ type Visible =
   | { key: string; kind: "point"; el: HTMLElement; id: string; category: PublicIncident["category"]; severity: number; ended: boolean; age: number; stormState: StormState | null; confirms: number; stormFadeValue: number }
   | { key: string; kind: "cluster"; el: HTMLElement; clusterId: number; count: number; maxSev: number; lng: number; lat: number };
 
+const RING = "haven-ring";
+const RING_METERS = 1609.344;
 const SOURCE = "incidents";
 
 export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
@@ -76,6 +81,7 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
   const lib = useRef<typeof import("maplibre-gl") | null>(null);
   const markers = useRef(new Map<string, Marker>());
   const userMarker = useRef<Marker | null>(null);
+  const ringLabel = useRef<Marker | null>(null);
   const [visible, setVisible] = useState<Visible[]>([]);
   const [ready, setReady] = useState(false);
   const [painted, setPainted] = useState(false);
@@ -259,6 +265,8 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
           // Invisible layer so the source's tiles load and can be queried.
           m.addLayer({ id: "incidents-hit", type: "circle", source: SOURCE, paint: { "circle-opacity": 0, "circle-radius": 1 } });
         }
+        addActivityLayer(m, "incidents-glow");
+        (m.getSource(ACTIVITY) as GeoJSONSource | undefined)?.setData(activityGeoJson(latest.current));
         // A style swap drops sources; restore the current incidents.
         (m.getSource(SOURCE) as GeoJSONSource).setData(toGeoJson(latest.current));
         (m.getSource(BEACONS) as GeoJSONSource | undefined)?.setData(beaconGeoJson(latest.current));
@@ -304,6 +312,7 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
     if (!ready || !src) return;
     src.setData(toGeoJson(incidents));
     (map.current?.getSource(BEACONS) as GeoJSONSource | undefined)?.setData(beaconGeoJson(incidents));
+    (map.current?.getSource(ACTIVITY) as GeoJSONSource | undefined)?.setData(activityGeoJson(incidents));
   }, [incidents, ready]);
 
   // Switch between day, night and satellite. Re-checks auto mode every few minutes.
@@ -330,7 +339,26 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
     if (!userPosition) {
       userMarker.current?.remove();
       userMarker.current = null;
+      ringLabel.current?.remove();
+      ringLabel.current = null;
       return;
+    }
+    // A soft 1-mile ring so "near you" has a visible meaning.
+    const ring = circlePolygon(userPosition, RING_METERS);
+    const ringSrc = m.getSource(RING) as GeoJSONSource | undefined;
+    if (ringSrc) ringSrc.setData(ring);
+    else {
+      m.addSource(RING, { type: "geojson", data: ring });
+      m.addLayer({ id: `${RING}-fill`, type: "fill", source: RING, paint: { "fill-color": "#ffffff", "fill-opacity": 0.05 } });
+      m.addLayer({ id: `${RING}-line`, type: "line", source: RING, paint: { "line-color": "#ffffff", "line-opacity": 0.28, "line-width": 1.2 } });
+    }
+    if (!ringLabel.current) {
+      const el = document.createElement("div");
+      el.textContent = "1 mi";
+      el.style.cssText = "pointer-events:none;color:rgba(255,255,255,.8);font:600 11px/1 system-ui;letter-spacing:.02em;text-shadow:0 1px 2px rgba(0,0,0,.8);transform:translateY(-8px)";
+      ringLabel.current = new ml.Marker({ element: el }).setLngLat([userPosition.lng, ring.properties.topLat]).addTo(m);
+    } else {
+      ringLabel.current.setLngLat([userPosition.lng, ring.properties.topLat]);
     }
     if (!userMarker.current) {
       const el = document.createElement("div");
@@ -438,6 +466,18 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
 /** Night tuning, kept under its old name for the small maps. */
 export const tuneStyle = tuneNightStyle;
 
+/** A circle on the ground as a polygon; `topLat` is where its label goes. */
+function circlePolygon(c: LatLng, meters: number): GeoJSON.Feature<GeoJSON.Polygon, { topLat: number }> {
+  const dLat = (meters / 6_371_000) * (180 / Math.PI);
+  const dLng = dLat / Math.max(0.01, Math.cos((c.lat * Math.PI) / 180));
+  const ring: [number, number][] = [];
+  for (let i = 0; i <= 64; i++) {
+    const a = (i / 64) * 2 * Math.PI;
+    ring.push([c.lng + dLng * Math.cos(a), c.lat + dLat * Math.sin(a)]);
+  }
+  return { type: "Feature", properties: { topLat: c.lat + dLat }, geometry: { type: "Polygon", coordinates: [ring] } };
+}
+
 function toGeoJson(incidents: PublicIncident[]): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
@@ -497,10 +537,10 @@ function PointMarker({
   const color = ended ? "#6b7280" : def.color;
   // Recency: full strength for 2h, then fades gently (never below 75%) toward 24h.
   const fade = age <= 2 ? 1 : Math.max(0.75, 1 - ((age - 2) / 22) * 0.25);
-  const size = selected ? 48 : [34, 36, 40, 44][Math.max(0, Math.min(3, severity))];
-  // Severity also changes shape: critical is a rounded square.
-  const radius = severity >= 3 ? "30%" : "9999px";
-  const fresh = age < 1 && severity >= 1;
+  const size = selected ? 50 : [38, 40, 42, 46][Math.max(0, Math.min(3, severity))];
+  const live = age < 1 && severity >= 1;
+  const mins = Math.round(age * 60);
+  const when = mins < 60 ? `${Math.max(1, mins)}m` : age < 24 ? `${Math.round(age)}h` : `${Math.round(age / 24)}d`;
   return (
     <button
       type="button"
@@ -508,47 +548,37 @@ function PointMarker({
       aria-label={label}
       aria-pressed={selected}
       className="haven-marker haven-pop relative flex items-center justify-center"
-      style={{ width: size, height: size + 7, opacity: selected ? 1 : fade }}
+      style={{ width: size + 8, height: size + 8, opacity: selected ? 1 : fade }}
     >
-      {fresh && !selected && (
+      {live && !selected && (
         <span
-          className="haven-pulse absolute left-1/2 top-0 -translate-x-1/2 rounded-full"
-          style={{ width: size, height: size, background: `color-mix(in srgb, ${color} 55%, transparent)` }}
+          className="haven-pulse absolute inset-0 rounded-full"
+          style={{ background: "rgba(255,45,85,.45)" }}
           aria-hidden
         />
       )}
-      {/* Pin head: solid category color with a white glyph and a dark outer ring for contrast. */}
+      {/* Dark disc with a thin ring in the category color; red ring while live. */}
       <span
-        className="absolute left-1/2 top-0 flex -translate-x-1/2 items-center justify-center"
+        className="absolute inset-1 flex items-center justify-center rounded-full"
         style={{
-          width: size,
-          height: size,
-          borderRadius: radius,
-          background: color,
-          color: "#fff",
-          border: "2.5px solid #fff",
+          background: "#15181f",
+          color,
           boxShadow: selected
-            ? `0 0 0 6px color-mix(in srgb, ${color} 35%, transparent), 0 8px 20px rgba(0,0,0,.55)`
-            : "0 0 0 1px rgba(0,0,0,.35), 0 4px 12px rgba(0,0,0,.5)",
-          transition: "width 160ms, height 160ms, box-shadow 160ms",
+            ? `0 0 0 3px ${color}, 0 0 0 8px color-mix(in srgb, ${color} 30%, transparent), 0 8px 20px rgba(0,0,0,.6)`
+            : `0 0 0 2px ${live ? "#ff2d55" : `color-mix(in srgb, ${color} 70%, transparent)`}, 0 4px 12px rgba(0,0,0,.55)`,
+          transition: "box-shadow 160ms",
         }}
       >
-        <CategoryGlyph category={category} animated={false} style={{ width: size * 0.56, height: size * 0.56 }} />
+        <CategoryGlyph category={category} animated={false} style={{ width: size * 0.5, height: size * 0.5 }} />
       </span>
-      {severity >= 2 && (
-        <span
-          className="absolute -right-1 -top-1 flex size-[18px] items-center justify-center rounded-full bg-white text-[12px] font-black leading-none text-[#0b0c0f] shadow-[0_1px_3px_rgba(0,0,0,.5)]"
-          aria-hidden
-        >
-          !
-        </span>
-      )}
-      {/* Pin point */}
+      {/* When it was reported, as a small tag on the rim. */}
       <span
-        className="absolute left-1/2 -translate-x-1/2"
-        style={{ bottom: 0, width: 0, height: 0, borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderTop: "8px solid #fff" }}
+        className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 rounded-full px-1.5 text-[10px] font-bold leading-[15px] text-white tnum"
+        style={{ background: live ? "#ff2d55" : "#2a2e38", boxShadow: "0 0 0 1.5px #0b0c0f" }}
         aria-hidden
-      />
+      >
+        {when}
+      </span>
     </button>
   );
 }
@@ -632,8 +662,8 @@ function StormPin({
 }
 
 function ClusterMarker({ count, maxSev, onClick }: { count: number; maxSev: number; onClick: () => void }) {
-  const ring = ["#9aa3b2", "#f5b84b", "#ff8a5c", "#ff5f57"][Math.max(0, Math.min(3, maxSev))];
-  const size = count >= 50 ? 48 : count >= 10 ? 42 : 36;
+  const ring = ["#6b7280", "#f5b84b", "#ff8a5c", "#ff2d55"][Math.max(0, Math.min(3, maxSev))];
+  const size = count >= 50 ? 48 : count >= 10 ? 42 : 38;
   return (
     <button
       type="button"
@@ -642,8 +672,8 @@ function ClusterMarker({ count, maxSev, onClick }: { count: number; maxSev: numb
         onClick();
       }}
       aria-label={`${count} incidents here. Zoom in.`}
-      className="haven-marker haven-pop flex items-center justify-center rounded-full bg-white text-[14px] font-bold text-[#0b0c0f] tnum"
-      style={{ width: size, height: size, boxShadow: `0 0 0 3px ${ring}, 0 4px 12px rgba(0,0,0,.45)` }}
+      className="haven-marker haven-pop flex items-center justify-center rounded-full bg-[#15181f] text-[14px] font-bold text-white tnum"
+      style={{ width: size, height: size, boxShadow: `0 0 0 2px ${ring}, 0 4px 12px rgba(0,0,0,.5)` }}
     >
       {count}
     </button>

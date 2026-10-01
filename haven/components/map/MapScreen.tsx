@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  ChevronDown,
   Layers,
   LocateFixed,
   Navigation2,
@@ -135,7 +136,6 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [chipsOpen, setChipsOpen] = useState(false);
   const [filters, setFilters] = useState<MapFilters>(DEFAULT_FILTERS);
   const [searchLabel, setSearchLabel] = useState<string | null>(() => peekMapFocus()?.label ?? null);
   const [promptDismissed] = useState(promptWasDismissed);
@@ -284,15 +284,15 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
         className="pointer-events-none absolute inset-x-0 top-0 z-20 px-3"
         style={{ paddingTop: "calc(var(--safe-top) + 8px)" }}
       >
-        <div className="glass pointer-events-auto mx-auto max-w-lg rounded-[26px] p-1.5">
-        <div className="flex h-11 items-center gap-1">
+        <div className="pointer-events-auto mx-auto max-w-lg rounded-[22px] bg-[#0f1116]/92 p-2 shadow-[0_8px_30px_-10px_rgba(0,0,0,.8),inset_0_0_0_0.5px_rgba(255,255,255,.08)] backdrop-blur-xl">
+        <div className="flex h-11 items-center gap-1 rounded-[14px] bg-white/[0.07] pr-1">
           <button
             onClick={() => setSearchOpen(true)}
-            className="press flex h-11 min-w-0 flex-1 items-center gap-2.5 rounded-full pl-3.5 pr-2 text-left"
+            className="press flex h-11 min-w-0 flex-1 items-center gap-2.5 rounded-[14px] pl-3.5 pr-2 text-left"
           >
             <Search className="size-[18px] shrink-0 text-muted" aria-hidden />
             <span className={`truncate text-[15.5px] ${searchLabel ? "text-text" : "text-muted"}`}>
-              {searchLabel ?? "Search a place"}
+              {searchLabel ?? "Search location…"}
             </span>
           </button>
           <button
@@ -309,31 +309,25 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
           >
             <StormIcon className="size-[22px]" active={storm.on} bolt={storm.on ? "#FFD34D" : "#FFC233"} />
           </button>
-          {!storm.on && (
-            <button
-              type="button"
-              aria-label={`Filters${filterCount ? ` (${filterCount} active)` : ""}`}
-              aria-expanded={chipsOpen || filterCount > 0}
-              onClick={() => setChipsOpen((o) => !o)}
-              className={`press relative flex size-10 shrink-0 items-center justify-center rounded-full ${
-                chipsOpen || filterCount > 0 ? "bg-text text-bg" : "text-text"
-              }`}
-            >
-              <SlidersHorizontal className="size-[18px]" aria-hidden />
-              {filterCount > 0 && (
-                <span className="haven-pop absolute -right-0.5 -top-0.5 flex size-[18px] items-center justify-center rounded-full bg-live text-[10px] font-bold text-white tnum ring-2 ring-bg">
-                  {filterCount}
-                </span>
-              )}
-            </button>
-          )}
         </div>
-        {(storm.on || chipsOpen || filterCount > 0) && (
         <div
-          className="no-scrollbar haven-rise flex items-center gap-1.5 overflow-x-auto px-0.5 pb-1 pt-2"
+          className="no-scrollbar flex items-center gap-1.5 overflow-x-auto pt-2"
           role="toolbar"
           aria-label="Quick filters"
         >
+          {!storm.on && (
+            <button
+              onClick={() => setFilterOpen(true)}
+              aria-label={`All filters${filterCount ? ` (${filterCount} active)` : ""}`}
+              className={`press inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold ${
+                filterCount > 0 ? "bg-text text-bg" : "bg-white/[0.07] text-text"
+              }`}
+            >
+              <SlidersHorizontal className="size-3.5" aria-hidden />
+              {filterCount > 0 ? `Filters · ${filterCount}` : "Incidents"}
+              <ChevronDown className="size-3.5 opacity-70" aria-hidden />
+            </button>
+          )}
           {storm.on &&
             ([null, "power", "flooding", "place"] as (StormKind | null)[]).map((k) => {
               const on = stormFilter === k;
@@ -368,7 +362,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
                   }))
                 }
                 className={`press inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold ${
-                  on ? "bg-text text-bg" : "bg-white/[0.07] text-text"
+                  on ? "bg-white text-[#0b0c0f]" : "bg-white/[0.07] text-text"
                 }`}
               >
                 {q.color && (
@@ -382,16 +376,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
               </button>
             );
           })}
-          {!storm.on && (
-            <button
-              onClick={() => setFilterOpen(true)}
-              className="press inline-flex h-9 shrink-0 items-center gap-1 rounded-full px-3 text-[13px] font-semibold text-muted"
-            >
-              More…
-            </button>
-          )}
         </div>
-        )}
         </div>
 
         {/* Status: what the map is showing, and whether it is real. */}

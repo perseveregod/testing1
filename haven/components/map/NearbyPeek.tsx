@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ChevronRight, ChevronUp } from "lucide-react";
-import { activeLabel, distanceFrom } from "@/lib/client/hooks";
+import { distanceFrom, NEAR_RADIUS_MI } from "@/lib/client/hooks";
 import { formatDistance, type LatLng } from "@/lib/geo";
 import { timeAgo } from "@/lib/time";
 import type { PublicIncident } from "@/lib/types";
@@ -47,50 +47,57 @@ export function NearbyPeek({
     : [...active].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const rows = open ? sorted.slice(0, 5) : [];
 
+  const n = String(activeCount).padStart(2, "0");
   return (
-    <section aria-label="Right now near you" className={`pointer-events-auto overflow-hidden rounded-[22px] ${open ? "glass-sheet" : "glass"}`}>
+    <section aria-label="Right now near you" className={`pointer-events-auto ${open ? "glass-sheet overflow-hidden rounded-[22px]" : ""}`}>
       <button
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         disabled={loading || Boolean(error) || active.length === 0}
-        className="relative flex min-h-[56px] w-full items-center gap-2 px-4 pb-2 pt-3.5 text-left"
+        className={`flex w-full items-end gap-3 text-left ${open ? "px-4 pb-2 pt-4" : "px-1 pb-1"}`}
       >
-        <span className="absolute left-1/2 top-1.5 h-1 w-9 -translate-x-1/2 rounded-full bg-white/25" aria-hidden />
         {loading ? (
-          <>
-            <Spinner className="size-3.5" />
-            <span className="text-[13.5px] text-muted">Loading incidents</span>
-          </>
+          <span className="flex items-center gap-2 pb-2 text-[13.5px] text-muted">
+            <Spinner className="size-3.5" /> Loading incidents
+          </span>
         ) : error ? (
-          <span className="text-[13.5px] text-danger" onClick={onRetry} role="button">
+          <span className="pb-2 text-[13.5px] text-danger" onClick={onRetry} role="button">
             Couldn&apos;t load · Retry
           </span>
         ) : (
           <>
-            <span className={`size-2 rounded-full ${activeCount > 0 ? "bg-live" : "bg-ok"}`} aria-hidden />
-            <span className="shrink-0 whitespace-nowrap text-[15px] font-bold tracking-[-0.01em] tnum">{activeLabel(activeCount)}</span>
-            {onLocate && !position ? (
-              <span
-                role="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onLocate();
-                }}
-                className="min-w-0 truncate text-[13px] font-semibold text-brand"
-              >
-                Locate me
+            <span
+              className={`text-[52px] font-extrabold leading-[0.9] tracking-[-0.04em] tnum ${activeCount > 0 ? "text-live" : "text-text"}`}
+              style={{ textShadow: "0 2px 12px rgba(0,0,0,.6)" }}
+            >
+              {n}
+            </span>
+            <span className="min-w-0 pb-0.5">
+              <span className="flex items-center gap-1.5 text-[14px] font-semibold leading-tight text-text" style={{ textShadow: "0 1px 6px rgba(0,0,0,.7)" }}>
+                Nearby active incidents
+                {active.length > 0 && (
+                  <ChevronUp className={`size-4 shrink-0 text-faint transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
+                )}
               </span>
-            ) : (
-              <span className="min-w-0 truncate text-[13px] text-muted">{position ? "near you" : "central Houston"}</span>
-            )}
-            {allDemo && (
-              <span className="shrink-0 rounded-[4px] bg-white/[0.1] px-1.5 py-px text-[10px] font-semibold uppercase tracking-[0.06em] text-text/70">
-                Demo
+              <span className="flex items-center gap-1.5 text-[12.5px] leading-tight text-muted" style={{ textShadow: "0 1px 6px rgba(0,0,0,.7)" }}>
+                {`Within ${NEAR_RADIUS_MI} mi`}
+                {onLocate && !position ? (
+                  <span
+                    role="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onLocate();
+                    }}
+                    className="font-semibold text-brand"
+                  >
+                    · Locate me
+                  </span>
+                ) : (
+                  <span>· {position ? "of you" : "of central Houston"}</span>
+                )}
+                {allDemo && <span className="rounded-[3px] bg-white/[0.12] px-1 text-[9.5px] font-bold uppercase tracking-wide text-text/70">Demo</span>}
               </span>
-            )}
-            {active.length > 0 && (
-              <ChevronUp className={`ml-auto size-4 shrink-0 text-faint transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
-            )}
+            </span>
           </>
         )}
       </button>

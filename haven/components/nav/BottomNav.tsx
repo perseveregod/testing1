@@ -38,13 +38,9 @@ export function BottomNav() {
                     href={t.href}
                     aria-label="Report an incident"
                     transitionTypes={["nav-forward"]}
-                    className="press flex h-11 w-[52px] items-center justify-center rounded-full bg-live text-white shadow-[inset_0_1px_0.5px_rgba(255,255,255,0.5),0_6px_22px_-6px_rgba(255,45,85,0.8)]"
+                    className="press -mt-7 flex size-[64px] items-center justify-center rounded-full bg-live text-white ring-[6px] ring-bg/80 shadow-[inset_0_1px_0.5px_rgba(255,255,255,0.45),0_0_0_1px_rgba(255,45,85,0.5),0_10px_30px_-4px_rgba(255,45,85,0.75)]"
                   >
-                    <Icon
-                      className="size-[22px]"
-                      strokeWidth={2.4}
-                      aria-hidden
-                    />
+                    <Icon className="size-[28px]" strokeWidth={2.6} aria-hidden />
                   </Link>
                 </li>
               );
@@ -55,15 +51,16 @@ export function BottomNav() {
                   href={t.href}
                   transitionTypes={["tab"]}
                   aria-current={active ? "page" : undefined}
-                  className={`mx-0.5 my-1 flex h-[calc(100%-8px)] flex-col items-center justify-center gap-[2px] rounded-full text-[10.5px] font-semibold tracking-[0.01em] transition-[color,background-color] duration-300 ${
+                  className={`mx-0.5 my-1 flex h-[calc(100%-8px)] flex-col items-center justify-center rounded-full transition-[color,background-color] duration-300 ${
                     active
                       ? "bg-white/[0.13] text-text shadow-[inset_0_1px_0.5px_rgba(255,255,255,0.3),inset_0_0_0_0.5px_rgba(255,255,255,0.08)]"
                       : "text-muted hover:text-text"
                   }`}
                 >
+                  <span className="sr-only">{t.label}</span>
                   <span className="relative">
                     <Icon
-                      className={`size-[21px] transition-transform duration-300 ease-[var(--ease-spring)] ${active ? "scale-105" : ""}`}
+                      className={`size-[24px] transition-transform duration-300 ease-[var(--ease-spring)] ${active ? "scale-105" : ""}`}
                       strokeWidth={active ? 2.2 : 1.8}
                       aria-hidden
                     />
@@ -74,7 +71,6 @@ export function BottomNav() {
                       </span>
                     )}
                   </span>
-                  {t.label}
                 </Link>
               </li>
             );
