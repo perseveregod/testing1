@@ -171,10 +171,15 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
   const layerPrefs = useLayerPrefs();
   const [pickedCamera, setPickedCamera] = useState<PickedCamera | null>(null);
   const camCenter = position ?? DEFAULT_CENTER;
-  const { data: camData } = useSWR<{ cameras: { id: string; lat: number; lng: number; operator: string | null; manufacturer: string | null; direction: number | null; note: string | null }[] }>(
+  const { data: camData } = useSWR<{ cameras: { id: string; lat: number; lng: number; operator: string | null; manufacturer: string | null; direction: number | null; note: string | null }[]; loading?: boolean }>(
     layerPrefs.cameras ? `/api/cameras?lat=${camCenter.lat.toFixed(2)}&lng=${camCenter.lng.toFixed(2)}&radiusMi=30` : null,
     fetcher,
-    { revalidateOnFocus: false, dedupingInterval: 600_000 },
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 600_000,
+      // The server fetches in the background on a cold start; ask again until it has data.
+      refreshInterval: (d) => (d?.loading ? 12_000 : 0),
+    },
   );
   const cameraGeo = useMemo<GeoJSON.FeatureCollection | null>(() => {
     if (!layerPrefs.cameras || !camData) return null;

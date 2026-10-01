@@ -25,7 +25,7 @@ export const OVERPASS_URLS = (process.env.OVERPASS_URL || "https://overpass-api.
   .filter(Boolean);
 
 // Greater Houston, generously.
-export const HOUSTON_BBOX = { south: 29.35, west: -96.0, north: 30.25, east: -94.8 };
+export const HOUSTON_BBOX = { south: 29.45, west: -95.85, north: 30.15, east: -94.95 };
 
 const QUERY = `[out:json][timeout:20];
 (
@@ -65,6 +65,15 @@ export function parseOverpass(body: { elements?: OverpassElement[] }): AlprCamer
 let cache: { at: number; items: AlprCamera[] } | null = null;
 let inflight: Promise<AlprCamera[]> | null = null;
 const DAY = 24 * 3_600_000;
+
+/** What this instance has right now, without waiting on the network. */
+export function alprCamerasCached(): { items: AlprCamera[]; updatedAt: string | null; fresh: boolean } {
+  return {
+    items: cache?.items ?? [],
+    updatedAt: cache ? new Date(cache.at).toISOString() : null,
+    fresh: Boolean(cache && Date.now() - cache.at < DAY),
+  };
+}
 
 /** Houston-area ALPR cameras, cached for a day; stale data beats no data. */
 export async function alprCameras(): Promise<{ items: AlprCamera[]; updatedAt: string | null }> {
