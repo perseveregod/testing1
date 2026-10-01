@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
+    "@libsql/client": "^0.18.0",
     "stripe": "^23.0.0"
   }
 }

@@ -60,16 +60,24 @@ test("writeReply handles refusal and empty output", async () => {
   assert.strictEqual(await replies.writeReply(fake({ stop_reason: "end_turn", content: [{ type: "text", text: " Thanks! " }] }), {}, review), "Thanks!");
 });
 
-test("store keeps users' data separate and counts usage per month", () => {
+test("store keeps users' data separate and counts usage per month", async () => {
   const s = makeStore(open(":memory:"));
-  const a = s.createUser("a@x.co", "h");
-  const b = s.createUser("b@x.co", "h");
-  const r = s.addReview(a, { reviewer: "", rating: 5, body: "hi" });
-  assert.strictEqual(s.review(b, r), undefined);
-  assert.strictEqual(s.updateReview(b, r, { status: "posted" }), false);
-  s.addUsage(a, "2026-10"); s.addUsage(a, "2026-10"); s.addUsage(a, "2026-11");
-  assert.strictEqual(s.usage(a, "2026-10"), 2);
-  assert.strictEqual(s.usage(b, "2026-10"), 0);
+  const a = await s.createUser("a@x.co", "h");
+  const b = await s.createUser("b@x.co", "h");
+  const r = await s.addReview(a, { reviewer: "", rating: 5, body: "hi" });
+  assert.strictEqual(await s.review(b, r), undefined);
+  assert.strictEqual(await s.updateReview(b, r, { status: "posted" }), false);
+  await s.addUsage(a, "2026-10"); await s.addUsage(a, "2026-10"); await s.addUsage(a, "2026-11");
+  assert.strictEqual(await s.usage(a, "2026-10"), 2);
+  assert.strictEqual(await s.usage(b, "2026-10"), 0);
+  assert.deepStrictEqual(await s.business(a), { name: "", kind: "", tone: "warm", signoff: "", notes: "" });
+  await s.createSession("tok", a, 60000);
+  assert.strictEqual((await s.sessionUser("tok")).email, "a@x.co");
+  await s.deleteUser(a);
+  assert.strictEqual(await s.userById(a), undefined);
+  assert.strictEqual(await s.sessionUser("tok"), undefined);
+  assert.deepStrictEqual(await s.reviews(a), []);
+  assert.strictEqual((await s.userById(b)).email, "b@x.co");
 });
 
 test("writeReply retries without the fallback beta if it's rejected", async () => {

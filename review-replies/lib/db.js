@@ -1,6 +1,9 @@
-// SQLite storage (Node's built-in node:sqlite, no extra install).
+// Storage on libSQL (SQLite-compatible).
+// - With TURSO_DATABASE_URL set, data lives in a hosted Turso database, so it
+//   survives restarts and redeploys even on hosts with no persistent disk.
+// - Otherwise it's a local SQLite file (DB_FILE), as before; tests use this.
 
-const { DatabaseSync } = require("node:sqlite");
+const { createClient } = require("@libsql/client");
 const fs = require("fs");
 const path = require("path");
 
@@ -45,86 +48,107 @@ CREATE TABLE IF NOT EXISTS usage (
 );
 `;
 
-function open(file) {
-  if (file !== ":memory:") fs.mkdirSync(path.dirname(file), { recursive: true });
-  const db = new DatabaseSync(file);
-  db.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;");
-  db.exec(SCHEMA);
+async function init(client) {
+  await client.executeMultiple(SCHEMA);
   // Migration: record when each user accepted which version of the terms.
-  const cols = db.prepare("PRAGMA table_info(users)").all().map((c) => c.name);
-  if (!cols.includes("terms_accepted_at")) db.exec("ALTER TABLE users ADD COLUMN terms_accepted_at INTEGER");
-  if (!cols.includes("terms_version")) db.exec("ALTER TABLE users ADD COLUMN terms_version TEXT");
-  return db;
+  const cols = (await client.execute("PRAGMA table_info(users)")).rows.map((c) => c.name);
+  if (!cols.includes("terms_accepted_at")) await client.execute("ALTER TABLE users ADD COLUMN terms_accepted_at INTEGER");
+  if (!cols.includes("terms_version")) await client.execute("ALTER TABLE users ADD COLUMN terms_version TEXT");
+}
+
+// Returns a client right away; schema setup runs in the background and every
+// store call waits for it.
+function open(file) {
+  let client;
+  if (file !== ":memory:" && process.env.TURSO_DATABASE_URL) {
+    client = createClient({ url: process.env.TURSO_DATABASE_URL, authToken: process.env.TURSO_AUTH_TOKEN });
+  } else {
+    if (file !== ":memory:") fs.mkdirSync(path.dirname(file), { recursive: true });
+    client = createClient({ url: file === ":memory:" ? ":memory:" : "file:" + file });
+  }
+  client.ready = init(client);
+  client.ready.catch(() => {}); // surfaced on the first query instead
+  return client;
 }
 
 const monthKey = (now = new Date()) => now.toISOString().slice(0, 7);
+const plain = (rs, row) => Object.fromEntries(rs.columns.map((c, i) => [c, row[i]]));
 
 function makeStore(db) {
-  const q = (sql) => db.prepare(sql);
+  const run = async (sql, ...args) => { await db.ready; return db.execute({ sql, args }); };
+  const get = async (sql, ...args) => { const rs = await run(sql, ...args); return rs.rows.length ? plain(rs, rs.rows[0]) : undefined; };
+  const all = async (sql, ...args) => { const rs = await run(sql, ...args); return rs.rows.map((r) => plain(rs, r)); };
+  const batch = async (stmts) => { await db.ready; return db.batch(stmts.map(([sql, ...args]) => ({ sql, args })), "write"); };
+
   return {
-    createUser(email, passwordHash, termsVersion = null) {
+    async createUser(email, passwordHash, termsVersion = null) {
       const now = Date.now();
-      const r = q("INSERT INTO users (email, password_hash, created_at, terms_accepted_at, terms_version) VALUES (?, ?, ?, ?, ?)")
-        .run(email, passwordHash, now, termsVersion ? now : null, termsVersion);
-      const id = Number(r.lastInsertRowid);
-      q("INSERT INTO businesses (user_id) VALUES (?)").run(id);
-      return id;
+      const [r] = await batch([
+        ["INSERT INTO users (email, password_hash, created_at, terms_accepted_at, terms_version) VALUES (?, ?, ?, ?, ?)",
+          email, passwordHash, now, termsVersion ? now : null, termsVersion],
+        ["INSERT INTO businesses (user_id) VALUES (last_insert_rowid())"],
+      ]);
+      return Number(r.lastInsertRowid);
     },
-    userByEmail: (email) => q("SELECT * FROM users WHERE email = ?").get(email),
-    userById: (id) => q("SELECT * FROM users WHERE id = ?").get(id),
-    userByCustomer: (cid) => q("SELECT * FROM users WHERE stripe_customer_id = ?").get(cid),
-    setPlan: (id, plan) => q("UPDATE users SET plan = ? WHERE id = ?").run(plan, id),
-    setCustomer: (id, cid) => q("UPDATE users SET stripe_customer_id = ? WHERE id = ?").run(cid, id),
+    userByEmail: (email) => get("SELECT * FROM users WHERE email = ?", email),
+    userById: (id) => get("SELECT * FROM users WHERE id = ?", id),
+    userByCustomer: (cid) => get("SELECT * FROM users WHERE stripe_customer_id = ?", cid),
+    setPlan: (id, plan) => run("UPDATE users SET plan = ? WHERE id = ?", plan, id),
+    setCustomer: (id, cid) => run("UPDATE users SET stripe_customer_id = ? WHERE id = ?", cid, id),
 
-    createSession(token, userId, ttlMs) {
-      q("DELETE FROM sessions WHERE expires_at < ?").run(Date.now());
-      q("INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)").run(token, userId, Date.now() + ttlMs);
+    async createSession(token, userId, ttlMs) {
+      await batch([
+        ["DELETE FROM sessions WHERE expires_at < ?", Date.now()],
+        ["INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)", token, userId, Date.now() + ttlMs],
+      ]);
     },
-    sessionUser(token) {
-      return q(`SELECT users.* FROM sessions JOIN users ON users.id = sessions.user_id
-                WHERE sessions.token = ? AND sessions.expires_at > ?`).get(token, Date.now());
-    },
-    deleteSession: (token) => q("DELETE FROM sessions WHERE token = ?").run(token),
+    sessionUser: (token) => get(`SELECT users.* FROM sessions JOIN users ON users.id = sessions.user_id
+                WHERE sessions.token = ? AND sessions.expires_at > ?`, token, Date.now()),
+    deleteSession: (token) => run("DELETE FROM sessions WHERE token = ?", token),
 
-    // Permanently removes the user and, via ON DELETE CASCADE, everything they own.
-    deleteUser: (id) => q("DELETE FROM users WHERE id = ?").run(id),
-    exportData(userId) {
-      const u = q("SELECT email, plan, created_at, terms_accepted_at, terms_version FROM users WHERE id = ?").get(userId);
+    // Permanently removes the user and everything they own. Child rows are
+    // deleted explicitly because a hosted database may not enforce cascades.
+    async deleteUser(id) {
+      await batch([
+        ["DELETE FROM sessions WHERE user_id = ?", id],
+        ["DELETE FROM businesses WHERE user_id = ?", id],
+        ["DELETE FROM reviews WHERE user_id = ?", id],
+        ["DELETE FROM usage WHERE user_id = ?", id],
+        ["DELETE FROM users WHERE id = ?", id],
+      ]);
+    },
+    async exportData(userId) {
       return {
-        account: u,
-        business: q("SELECT name, kind, tone, signoff, notes FROM businesses WHERE user_id = ?").get(userId),
-        reviews: q("SELECT reviewer, rating, body, reply, status, created_at FROM reviews WHERE user_id = ? ORDER BY created_at").all(userId),
-        usage: q("SELECT month, count FROM usage WHERE user_id = ? ORDER BY month").all(userId),
+        account: await get("SELECT email, plan, created_at, terms_accepted_at, terms_version FROM users WHERE id = ?", userId),
+        business: await get("SELECT name, kind, tone, signoff, notes FROM businesses WHERE user_id = ?", userId),
+        reviews: await all("SELECT reviewer, rating, body, reply, status, created_at FROM reviews WHERE user_id = ? ORDER BY created_at", userId),
+        usage: await all("SELECT month, count FROM usage WHERE user_id = ? ORDER BY month", userId),
       };
     },
 
-    business: (userId) => q("SELECT name, kind, tone, signoff, notes FROM businesses WHERE user_id = ?").get(userId),
-    saveBusiness(userId, b) {
-      q("UPDATE businesses SET name = ?, kind = ?, tone = ?, signoff = ?, notes = ? WHERE user_id = ?")
-        .run(b.name, b.kind, b.tone, b.signoff, b.notes, userId);
-    },
+    business: (userId) => get("SELECT name, kind, tone, signoff, notes FROM businesses WHERE user_id = ?", userId),
+    saveBusiness: (userId, b) => run("UPDATE businesses SET name = ?, kind = ?, tone = ?, signoff = ?, notes = ? WHERE user_id = ?",
+      b.name, b.kind, b.tone, b.signoff, b.notes, userId),
 
-    addReview(userId, r) {
-      const res = q("INSERT INTO reviews (user_id, reviewer, rating, body, created_at) VALUES (?, ?, ?, ?, ?)")
-        .run(userId, r.reviewer, r.rating, r.body, Date.now());
+    async addReview(userId, r) {
+      const res = await run("INSERT INTO reviews (user_id, reviewer, rating, body, created_at) VALUES (?, ?, ?, ?, ?)",
+        userId, r.reviewer, r.rating, r.body, Date.now());
       return Number(res.lastInsertRowid);
     },
-    reviews: (userId) => q("SELECT id, reviewer, rating, body, reply, status, created_at FROM reviews WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT 500").all(userId),
-    review: (userId, id) => q("SELECT * FROM reviews WHERE user_id = ? AND id = ?").get(userId, id),
-    updateReview(userId, id, fields) {
-      const cur = q("SELECT reply, status FROM reviews WHERE user_id = ? AND id = ?").get(userId, id);
+    reviews: (userId) => all("SELECT id, reviewer, rating, body, reply, status, created_at FROM reviews WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT 500", userId),
+    review: (userId, id) => get("SELECT * FROM reviews WHERE user_id = ? AND id = ?", userId, id),
+    async updateReview(userId, id, fields) {
+      const cur = await get("SELECT reply, status FROM reviews WHERE user_id = ? AND id = ?", userId, id);
       if (!cur) return false;
-      q("UPDATE reviews SET reply = ?, status = ? WHERE user_id = ? AND id = ?")
-        .run(fields.reply ?? cur.reply, fields.status ?? cur.status, userId, id);
+      await run("UPDATE reviews SET reply = ?, status = ? WHERE user_id = ? AND id = ?",
+        fields.reply ?? cur.reply, fields.status ?? cur.status, userId, id);
       return true;
     },
-    deleteReview: (userId, id) => q("DELETE FROM reviews WHERE user_id = ? AND id = ?").run(userId, id),
+    deleteReview: (userId, id) => run("DELETE FROM reviews WHERE user_id = ? AND id = ?", userId, id),
 
-    usage: (userId, month = monthKey()) => q("SELECT count FROM usage WHERE user_id = ? AND month = ?").get(userId, month)?.count ?? 0,
-    addUsage(userId, month = monthKey()) {
-      q(`INSERT INTO usage (user_id, month, count) VALUES (?, ?, 1)
-         ON CONFLICT(user_id, month) DO UPDATE SET count = count + 1`).run(userId, month);
-    },
+    usage: async (userId, month = monthKey()) => (await get("SELECT count FROM usage WHERE user_id = ? AND month = ?", userId, month))?.count ?? 0,
+    addUsage: (userId, month = monthKey()) => run(`INSERT INTO usage (user_id, month, count) VALUES (?, ?, 1)
+         ON CONFLICT(user_id, month) DO UPDATE SET count = count + 1`, userId, month),
   };
 }
 

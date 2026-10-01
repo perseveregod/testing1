@@ -29,7 +29,9 @@ With no keys set, it runs in demo mode: replies come from a simple template and 
 | `STRIPE_WEBHOOK_SECRET` | Payments | From the webhook endpoint you add in Stripe (`whsec_...`). |
 | `PUBLIC_URL` | Production | Your site's address, e.g. `https://replydesk.com`. Used for Stripe redirects. Cookies are marked Secure when it starts with `https://`. |
 | `TRUST_PROXY` | Production | Set to `1` behind Render, Railway or Fly so rate limits see real visitor IPs. |
-| `DB_FILE` | Optional | SQLite file path. Defaults to `data/replydesk.db`. Put it on a persistent disk. |
+| `DB_FILE` | Optional | SQLite file path. Defaults to `data/replydesk.db`. Put it on a persistent disk. Ignored when `TURSO_DATABASE_URL` is set. |
+| `TURSO_DATABASE_URL` | Recommended on free hosting | Hosted Turso database (`libsql://…`). Data survives restarts and redeploys with no disk. |
+| `TURSO_AUTH_TOKEN` | With Turso | Database token from Turso. Keep it secret. |
 | `PORT` | Optional | Defaults to 3000. |
 | `COMPANY_NAME` | **Launch** | Your legal business name (e.g. `Rosa Media LLC`), shown on the Terms, Privacy and Refund pages and in the footer. |
 | `CONTACT_EMAIL` | **Launch** | A real inbox you check. Customers use it for refunds, cancellations and privacy requests. |

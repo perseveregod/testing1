@@ -117,22 +117,22 @@ async function json(req) {
   }
 }
 
-function currentUser(req) {
+async function currentUser(req) {
   const token = auth.readCookie(req);
-  return token ? store.sessionUser(token) : null;
+  return token ? await store.sessionUser(token) : null;
 }
 
-function startSession(res, userId) {
+async function startSession(res, userId) {
   const token = auth.newToken();
-  store.createSession(token, userId, auth.SESSION_TTL_MS);
+  await store.createSession(token, userId, auth.SESSION_TTL_MS);
   return { "Set-Cookie": auth.sessionCookie(token, { secure: SECURE_COOKIES }) };
 }
 
-function me(user) {
+async function me(user) {
   return {
     email: user.email,
-    business: store.business(user.id),
-    quota: replies.quota(user.plan, store.usage(user.id)),
+    business: await store.business(user.id),
+    quota: replies.quota(user.plan, await store.usage(user.id)),
     billingEnabled: Boolean(stripe),
     hasSubscription: Boolean(user.stripe_customer_id),
     demo: !ai,
@@ -160,7 +160,7 @@ function replyError(res, err) {
 async function api(req, res, pathname) {
   const m = req.method;
 
-  if (m === "POST" && pathname === "/api/billing/webhook") return webhook(req, res);
+  if (m === "POST" && pathname === "/api/billing/webhook") return await webhook(req, res);
 
   if (m === "POST" && pathname === "/api/demo-reply") {
     const body = await json(req);
@@ -186,28 +186,28 @@ async function api(req, res, pathname) {
       if (body.agreeToTerms !== true) {
         return send(res, 400, { error: "Please agree to the Terms of Service and Privacy Policy to create an account." });
       }
-      if (store.userByEmail(c.email)) return send(res, 409, { error: "That email already has an account. Log in instead." });
-      const id = store.createUser(c.email, auth.hashPassword(c.password), TERMS_VERSION);
-      return send(res, 201, me(store.userById(id)), startSession(res, id));
+      if (await store.userByEmail(c.email)) return send(res, 409, { error: "That email already has an account. Log in instead." });
+      const id = await store.createUser(c.email, auth.hashPassword(c.password), TERMS_VERSION);
+      return send(res, 201, await me(await store.userById(id)), await startSession(res, id));
     }
-    const user = store.userByEmail(c.email);
+    const user = await store.userByEmail(c.email);
     if (!user || !auth.verifyPassword(c.password, user.password_hash)) {
       return send(res, 401, { error: "That email and password don't match." });
     }
-    return send(res, 200, me(user), startSession(res, user.id));
+    return send(res, 200, await me(user), await startSession(res, user.id));
   }
 
-  const user = currentUser(req);
+  const user = await currentUser(req);
   if (!user) return send(res, 401, { error: "Log in to continue." });
 
   if (m === "POST" && pathname === "/api/logout") {
-    store.deleteSession(auth.readCookie(req));
+    await store.deleteSession(auth.readCookie(req));
     return send(res, 200, { ok: true }, { "Set-Cookie": auth.sessionCookie("", { secure: SECURE_COOKIES, maxAgeMs: 0 }) });
   }
-  if (m === "GET" && pathname === "/api/me") return send(res, 200, me(user));
+  if (m === "GET" && pathname === "/api/me") return send(res, 200, await me(user));
 
   if (m === "GET" && pathname === "/api/account/export") {
-    return send(res, 200, store.exportData(user.id), {
+    return send(res, 200, await store.exportData(user.id), {
       "Content-Disposition": `attachment; filename="replydesk-data-${new Date().toISOString().slice(0, 10)}.json"`,
     });
   }
@@ -229,16 +229,16 @@ async function api(req, res, pathname) {
         return send(res, 502, { error: `We couldn't cancel your subscription automatically. Nothing was deleted. Try again, or email ${SITE.CONTACT_EMAIL}.` });
       }
     }
-    store.deleteUser(user.id);
+    await store.deleteUser(user.id);
     return send(res, 200, { ok: true }, { "Set-Cookie": auth.sessionCookie("", { secure: SECURE_COOKIES, maxAgeMs: 0 }) });
   }
 
   if (m === "PUT" && pathname === "/api/business") {
-    store.saveBusiness(user.id, replies.cleanBusiness(await json(req)));
-    return send(res, 200, me(user));
+    await store.saveBusiness(user.id, replies.cleanBusiness(await json(req)));
+    return send(res, 200, await me(user));
   }
 
-  if (m === "GET" && pathname === "/api/reviews") return send(res, 200, { reviews: store.reviews(user.id) });
+  if (m === "GET" && pathname === "/api/reviews") return send(res, 200, { reviews: await store.reviews(user.id) });
 
   if (m === "POST" && pathname === "/api/reviews") {
     const body = await json(req);
@@ -247,23 +247,23 @@ async function api(req, res, pathname) {
     if (incoming.reviews.length > 200) return send(res, 400, { error: "Import up to 200 reviews at a time." });
     const added = [];
     const skipped = [];
-    incoming.reviews.forEach((r, i) => {
+    for (const [i, r] of incoming.reviews.entries()) {
       const c = replies.cleanReview(r);
       if (c.error) skipped.push({ row: i + 1, error: c.error });
-      else added.push(store.addReview(user.id, c.review));
-    });
+      else added.push(await store.addReview(user.id, c.review));
+    }
     if (!added.length) return send(res, 400, { error: skipped[0]?.error || "No reviews to add.", skipped });
-    return send(res, 201, { added: added.length, skipped, reviews: store.reviews(user.id) });
+    return send(res, 201, { added: added.length, skipped, reviews: await store.reviews(user.id) });
   }
 
   const one = /^\/api\/reviews\/(\d+)(\/reply)?$/.exec(pathname);
   if (one) {
     const id = Number(one[1]);
-    const review = store.review(user.id, id);
+    const review = await store.review(user.id, id);
     if (!review) return send(res, 404, { error: "That review no longer exists." });
 
     if (m === "POST" && one[2]) {
-      const q = replies.quota(user.plan, store.usage(user.id));
+      const q = replies.quota(user.plan, await store.usage(user.id));
       if (q.left <= 0) {
         return send(res, 402, {
           error: user.plan === "free"
@@ -273,10 +273,10 @@ async function api(req, res, pathname) {
         });
       }
       try {
-        const text = await generate(store.business(user.id), review);
-        store.addUsage(user.id);
-        store.updateReview(user.id, id, { reply: text, status: "drafted" });
-        return send(res, 200, { review: store.review(user.id, id), quota: replies.quota(user.plan, store.usage(user.id)) });
+        const text = await generate(await store.business(user.id), review);
+        await store.addUsage(user.id);
+        await store.updateReview(user.id, id, { reply: text, status: "drafted" });
+        return send(res, 200, { review: await store.review(user.id, id), quota: replies.quota(user.plan, await store.usage(user.id)) });
       } catch (err) {
         return replyError(res, err);
       }
@@ -286,11 +286,11 @@ async function api(req, res, pathname) {
       const fields = {};
       if (typeof body.reply === "string") fields.reply = body.reply.slice(0, 5000);
       if (["new", "drafted", "posted"].includes(body.status)) fields.status = body.status;
-      store.updateReview(user.id, id, fields);
-      return send(res, 200, { review: store.review(user.id, id) });
+      await store.updateReview(user.id, id, fields);
+      return send(res, 200, { review: await store.review(user.id, id) });
     }
     if (m === "DELETE" && !one[2]) {
-      store.deleteReview(user.id, id);
+      await store.deleteReview(user.id, id);
       return send(res, 200, { ok: true });
     }
   }
@@ -335,15 +335,15 @@ async function webhook(req, res) {
   const obj = event.data.object;
   if (event.type === "checkout.session.completed" && obj.mode === "subscription") {
     const userId = Number(obj.client_reference_id);
-    if (store.userById(userId)) {
-      store.setCustomer(userId, obj.customer);
-      store.setPlan(userId, "pro");
+    if (await store.userById(userId)) {
+      await store.setCustomer(userId, obj.customer);
+      await store.setPlan(userId, "pro");
     }
   } else if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") {
-    const user = store.userByCustomer(obj.customer);
+    const user = await store.userByCustomer(obj.customer);
     if (user) {
       const active = event.type === "customer.subscription.updated" && ["active", "trialing", "past_due"].includes(obj.status);
-      store.setPlan(user.id, active ? "pro" : "free");
+      await store.setPlan(user.id, active ? "pro" : "free");
     }
   }
   send(res, 200, { received: true });

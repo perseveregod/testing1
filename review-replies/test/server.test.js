@@ -106,7 +106,7 @@ test("signed Stripe webhook upgrades and downgrades the plan", async () => {
     return res.status;
   };
   const { open, makeStore } = require("../lib/db");
-  const userId = makeStore(open(process.env.DB_FILE)).userByEmail("pay@shop.co").id;
+  const userId = (await makeStore(open(process.env.DB_FILE)).userByEmail("pay@shop.co")).id;
 
   assert.strictEqual(await send({ type: "checkout.session.completed", data: { object: { mode: "subscription", client_reference_id: String(userId), customer: "cus_1" } } }, "whsec_wrong"), 400);
   assert.strictEqual(await send({ type: "checkout.session.completed", data: { object: { mode: "subscription", client_reference_id: String(userId), customer: "cus_1" } } }), 200);
