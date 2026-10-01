@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { getCategory, FILTER_GROUPS } from "@/lib/categories";
 import { DEFAULT_CENTER } from "@/lib/client/defaults";
-import { distanceFrom, NEAR_RADIUS_MI, useNearYou, type InitialIncidents } from "@/lib/client/hooks";
+import { distanceFrom, NEAR_RADIUS_MI, useHydrated, useNearYou, type InitialIncidents } from "@/lib/client/hooks";
 import { useT } from "@/lib/client/lang";
 import { neighborhoodFor } from "@/lib/houston";
 import { formatRemaining, useClock, useSafeWalk } from "@/lib/client/safewalk";
@@ -36,15 +36,17 @@ const SEV = { low: 0, moderate: 1, high: 2, critical: 3 } as const;
  * 3. look something up (official resources).
  */
 export function SafetyScreen({ initial }: { initial?: InitialIncidents | null }) {
-  const { position } = useLocation();
-  const center = position ?? DEFAULT_CENTER;
+  const { lastPosition } = useLocation();
+  const hydrated = useHydrated();
+  const here = lastPosition;
+  const center = hydrated ? (here ?? DEFAULT_CENTER) : null;
   const { items, isLoading, mutate } = useNearYou(center, initial);
   const refresh = useCallback(() => mutate(), [mutate]);
   const walk = useSafeWalk()?.walk ?? null;
   const now = useClock(walk != null);
   const overdue = walk != null && now > 0 && now > walk.endsAt;
   const { t, es } = useT();
-  const hood = position ? neighborhoodFor(position) : null;
+  const hood = here ? neighborhoodFor(here) : null;
 
   const briefing = useMemo(() => {
     // Same number as the Map and Feed: everything still active, pets included.
@@ -151,7 +153,7 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
                 {briefing.top.length > 0 && (
                   <ul className="mt-3 divide-y divide-line border-t border-line">
                     {briefing.top.map((i) => (
-                      <BriefRow key={i.id} incident={i} distanceMi={distanceFrom(position, i)} />
+                      <BriefRow key={i.id} incident={i} distanceMi={distanceFrom(here, i)} />
                     ))}
                   </ul>
                 )}
@@ -179,7 +181,7 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
             {briefing.pets.length > 0 ? (
               <ul className="divide-y divide-line rounded-card bg-surface px-4">
                 {briefing.pets.map((i) => (
-                  <BriefRow key={i.id} incident={i} distanceMi={distanceFrom(position, i)} />
+                  <BriefRow key={i.id} incident={i} distanceMi={distanceFrom(here, i)} />
                 ))}
               </ul>
             ) : (

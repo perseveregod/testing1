@@ -4,7 +4,8 @@ import { useCallback, useMemo, useState } from "react";
 import { MapPinned, Navigation, ShieldCheck } from "lucide-react";
 import { categoriesInGroup, type FilterGroup } from "@/lib/categories";
 import { DEFAULT_CENTER } from "@/lib/client/defaults";
-import { activeLabel, distanceFrom, nearYouParams, useFeedFreshness, useIncidents, type InitialIncidents } from "@/lib/client/hooks";
+import { distanceFrom, nearYouParams, useFeedFreshness, useHydrated, useIncidents, type InitialIncidents } from "@/lib/client/hooks";
+import { useArrivals, useScrolledPast } from "@/lib/client/arrivals";
 import { useClock } from "@/lib/client/safewalk";
 import { errorMessage } from "@/lib/client/api";
 import { useT } from "@/lib/client/lang";
@@ -21,6 +22,7 @@ import {
 import { EmergencyNote } from "@/components/EmergencyNote";
 import { DemoNotice } from "@/components/incident/DemoNotice";
 import { PageHeader } from "@/components/nav/PageHeader";
+import { LiveStatus, NewItemsPill } from "@/components/feed/LiveStatus";
 import { ButtonLink } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Controls";
 import { EmptyState, ErrorState, RowSkeleton } from "@/components/ui/States";
@@ -40,15 +42,21 @@ const FILTERS: { id: FeedFilter; label: Key }[] = [
 ];
 
 export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
-  const { position, status, request } = useLocation();
-  const { t, es, timeAgo } = useT();
+  const { position, lastPosition, status, request } = useLocation();
+  const { t } = useT();
   const now = Math.floor(useClock(true) / 30_000) * 30_000;
   const fresh = useFeedFreshness(now);
   const [filter, setFilter] = useState<FeedFilter>("nearby");
   // Mount a short list first; the rest comes on request. Keeps the tab instant.
   const [limit, setLimit] = useState(30);
-  const center = position ?? DEFAULT_CENTER;
-  const hood = position ? neighborhoodFor(position) : null;
+  // Where the person last was stands in until the live fix arrives, so the
+  // list opens on their part of town instead of downtown.
+  const hydrated = useHydrated();
+  const here = lastPosition;
+  // (Null while hydrating: the remembered position isn't readable yet, and
+  // asking for downtown in the meantime would be a wasted download.)
+  const center = hydrated ? (here ?? DEFAULT_CENTER) : null;
+  const hood = here ? neighborhoodFor(here) : null;
   const isGroup = filter !== "nearby" && filter !== "newest";
 
   // Same query (and cache entry) as the map's count, so the tab opens with
@@ -57,17 +65,21 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
     nearYouParams(center, { categories: isGroup ? categoriesInGroup(filter) : undefined }),
     initial,
   );
+  // Rows that came in since the last answer glow briefly; while scrolled
+  // down, a pill counts them until the person is back at the top.
+  const scrolled = useScrolledPast(240);
+  const { arrived, pending } = useArrivals(items, { scrolled });
 
   const sorted = useMemo(() => {
     // One row per event, live ones first (nearest or newest), then what ended.
     const folded = foldDuplicates(items);
-    const byDistance = filter === "nearby" && position;
+    const byDistance = filter === "nearby" && here;
     return [...folded].sort(
       (a, b) =>
         Number(a.status === "resolved") - Number(b.status === "resolved") ||
-        (byDistance ? (distanceFrom(position, a) ?? 0) - (distanceFrom(position, b) ?? 0) : b.createdAt.localeCompare(a.createdAt)),
+        (byDistance ? (distanceFrom(here, a) ?? 0) - (distanceFrom(here, b) ?? 0) : b.createdAt.localeCompare(a.createdAt)),
     );
-  }, [items, filter, position]);
+  }, [items, filter, here]);
 
   const activeCount = items.filter((i) => i.status !== "resolved").length;
   const allDemo = items.length > 0 && items.every((i) => i.isDemo);
@@ -104,6 +116,7 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
           </div>
         }
       />
+      <NewItemsPill count={pending} onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} />
       <PullToRefresh onRefresh={refresh}>
         <div className="relative mx-auto max-w-lg px-4">
           {position && hood && (
@@ -120,7 +133,7 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
             >
               <Navigation className="size-4 shrink-0 text-brand" aria-hidden />
               <span className="truncate text-[13px] text-muted">
-                {t("feed.showingCentral")}
+                {hood ? t("near.hoodWithin", { hood, n: 5 }) : t("feed.showingCentral")}
                 {status === "denied" || status === "unavailable" ? (
                   <span className="text-faint">{t("feed.locationOff")}</span>
                 ) : (
@@ -133,24 +146,14 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
           {!isLoading && !error && top && (
             <TopIncidentCard
               incident={top}
-              distanceMi={distanceFrom(position, top)}
+              distanceMi={distanceFrom(here, top)}
             />
           )}
 
           {!isLoading && !error && allDemo && <DemoNotice />}
 
           {!isLoading && !error && sorted.length > 0 && (
-            <p className="flex items-baseline justify-between gap-3 px-0 pb-1 pt-2 text-[13px] text-faint tnum">
-              <span>
-                {activeLabel(activeCount, undefined, es)}
-                {t("feed.last24")}
-              </span>
-              {fresh.checkedAt != null && now > 0 && (
-                <span className={`shrink-0 ${fresh.stale ? "text-warn" : ""}`}>
-                  {t(fresh.stale ? "fresh.shortStale" : "fresh.short", { t: timeAgo(new Date(fresh.checkedAt).toISOString(), now) })}
-                </span>
-              )}
-            </p>
+            <LiveStatus activeCount={activeCount} checkedAt={fresh.checkedAt} stale={fresh.stale} now={now} />
           )}
 
           <div className="stagger divide-y divide-line">
@@ -190,12 +193,13 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
                 return (
                   <div
                     key={i.id}
+                    data-arrived={arrived.has(i.id) ? "" : undefined}
                     style={{ "--i": Math.min(idx, 10) } as React.CSSProperties}
                   >
                     {showHeader && (
                       <h2 className="t-section -mx-4 bg-transparent px-4 pb-1 pt-5">{t(section)}</h2>
                     )}
-                    <IncidentRow incident={i} distanceMi={distanceFrom(position, i)} />
+                    <IncidentRow incident={i} distanceMi={distanceFrom(here, i)} />
                   </div>
                 );
               })

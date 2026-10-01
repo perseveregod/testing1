@@ -849,3 +849,48 @@ body {
   transform: translate(-50%, -50%);
 }
 /* The map's quick chips sit in a 44px-tall row so the whole band is tappable. */
+
+/* Live feed: a breathing dot while feeds are being checked, a glow on rows
+   that just came in, and the "3 new" pill. */
+.live-dot {
+  position: relative;
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-ok);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-ok) 55%, transparent);
+  animation: live-breathe 2.2s ease-out infinite;
+}
+.live-dot-stale {
+  background: var(--color-warn);
+  box-shadow: none;
+  animation: none;
+}
+@keyframes live-breathe {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-ok) 55%, transparent); }
+  70% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--color-ok) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-ok) 0%, transparent); }
+}
+[data-arrived] {
+  animation: row-arrive 6s var(--ease-out) both;
+}
+@keyframes row-arrive {
+  0% { opacity: 0; transform: translateY(-6px); background: color-mix(in srgb, var(--color-brand) 18%, transparent); }
+  6% { opacity: 1; transform: none; }
+  40% { background: color-mix(in srgb, var(--color-brand) 14%, transparent); }
+  100% { background: transparent; }
+}
+.pill-in {
+  animation: haven-pop 220ms var(--ease-out) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .live-dot,
+  .pill-in {
+    animation: none;
+  }
+  [data-arrived] {
+    animation: none;
+    background: color-mix(in srgb, var(--color-brand) 10%, transparent);
+  }
+}

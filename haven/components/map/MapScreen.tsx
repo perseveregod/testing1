@@ -22,9 +22,9 @@ import { useClock } from "@/lib/client/safewalk";
 import { StormReportSheet } from "@/components/storm/StormReportSheet";
 import { DEFAULT_CENTER, EMERGENCY_NUMBER } from "@/lib/client/defaults";
 import { errorMessage } from "@/lib/client/api";
-import { distanceFrom, useIncidents, useNearYou, useViewer, type InitialIncidents } from "@/lib/client/hooks";
+import { distanceFrom, useHydrated, useIncidents, useNearYou, useViewer, type InitialIncidents } from "@/lib/client/hooks";
 import { distanceMiles, type LatLng } from "@/lib/geo";
-import { useLocation } from "@/components/providers/LocationProvider";
+import { lastKnownPosition, useLocation } from "@/components/providers/LocationProvider";
 import { IncidentPreview } from "@/components/incident/IncidentPreview";
 import { getCategory, type FilterGroup } from "@/lib/categories";
 import { Spinner } from "@/components/ui/States";
@@ -165,7 +165,7 @@ function MapControl({
 
 export function MapScreen({ initial, active = true }: { initial?: InitialIncidents | null; active?: boolean }) {
   const mapRef = useRef<MapHandle>(null);
-  const { position, status, request } = useLocation();
+  const { position, lastPosition, status, request } = useLocation();
   const { viewer } = useViewer();
   const [viewport, setViewport] = useState<Viewport | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -176,7 +176,7 @@ export function MapScreen({ initial, active = true }: { initial?: InitialInciden
   // Optional layers. Cameras come from OpenStreetMap, 25 mi around the default area.
   const layerPrefs = useLayerPrefs();
   const [pickedCamera, setPickedCamera] = useState<PickedCamera | null>(null);
-  const camCenter = useMemo(() => position ?? DEFAULT_CENTER, [position]);
+  const camCenter = useMemo(() => lastPosition ?? DEFAULT_CENTER, [lastPosition]);
   // A static snapshot rendered at build time and refreshed every few hours
   // (app/layers/alpr-houston): instant, never waits on Overpass.
   const { data: camData } = useSWR<{ cameras: { id: string; lat: number; lng: number; operator: string | null; manufacturer: string | null; direction: number | null; note: string | null }[]; updatedAt: string | null }>(
@@ -234,7 +234,15 @@ export function MapScreen({ initial, active = true }: { initial?: InitialInciden
   const stormReportOpen = storm.on && reportTick > reportClosedAt;
 
   const area = useMemo(() => queryArea(viewport), [viewport]);
-  const { items, isLoading, isValidating, error, mutate } = useIncidents(
+  // The remembered position isn't known until hydration is over; asking for
+  // downtown in the meantime would be a wasted download.
+  const hydrated = useHydrated();
+  // The count in the status chip is the shared "near you" number every tab
+  // uses. Where the person last was stands in for the live fix, so the count
+  // and the first pins are already their part of town, straight from the
+  // copy kept on this device.
+  const near = useNearYou(hydrated ? (lastPosition ?? DEFAULT_CENTER) : null, initial);
+  const viewportQuery = useIncidents(
     storm.on
       ? {
           // Storm Mode: only power / flooding / place reports from the last 6 hours.
@@ -245,16 +253,16 @@ export function MapScreen({ initial, active = true }: { initial?: InitialInciden
           includeResolved: false,
         }
       : {
-          // Before the map reports a viewport, ask for the default area so the
-          // server-rendered incidents apply from the first paint.
-          center: area?.center ?? DEFAULT_CENTER,
+          // Nothing until the map reports a viewport: the "near you" answer
+          // covers the first frame (it's a superset of what's in view).
+          center: area?.center ?? null,
           radiusMi: area?.radiusMi ?? 5,
           ...filterParams(filters, viewer),
         },
     storm.on ? null : initial,
   );
-  // The count in the status chip is the shared "near you" number every tab uses.
-  const near = useNearYou(position ?? DEFAULT_CENTER, initial);
+  const { isLoading, isValidating, error, mutate } = viewportQuery;
+  const items = !storm.on && !area ? near.items : viewportQuery.items;
   const bottomRef = useRef<HTMLDivElement>(null);
   const [bottomH, setBottomH] = useState(0);
   useEffect(() => {
@@ -350,7 +358,8 @@ export function MapScreen({ initial, active = true }: { initial?: InitialInciden
         selectedId={selectedId}
         onSelect={setSelectedId}
         userPosition={position}
-        initialCenter={DEFAULT_CENTER}
+        initialCenter={lastPosition ?? DEFAULT_CENTER}
+        startFrom={lastKnownPosition}
         cameras={cameraGeo}
         onCameraPick={(props, at) =>
           setPickedCamera({

@@ -1,16 +1,67 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import type { LatLng } from "@/lib/geo";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { approximate, distanceMiles, type LatLng } from "@/lib/geo";
 
 // One shared geolocation watcher for the whole app. Location never leaves the
 // device except as (a) query params for nearby incidents and (b) a ~1 km
 // rounded point when the person turns on "alerts near me".
+//
+// The last fix, rounded to ~100 m, is kept on the device so the next open can
+// start on the right part of town before the GPS answers.
+
+const LAST_KEY = "haven.lastpos.v1";
+let lastStored: LatLng | null | undefined;
+const lastListeners = new Set<() => void>();
+
+function readLast(): LatLng | null {
+  if (lastStored !== undefined) return lastStored;
+  try {
+    const v = JSON.parse(localStorage.getItem(LAST_KEY) ?? "null") as LatLng | null;
+    lastStored = v && Number.isFinite(v.lat) && Number.isFinite(v.lng) ? v : null;
+  } catch {
+    lastStored = null;
+  }
+  return lastStored;
+}
+
+function rememberLast(p: LatLng) {
+  const rounded = approximate(p, 3);
+  const prev = readLast();
+  // Only a real move is worth a write; a watch ticks every few seconds.
+  if (prev && distanceMiles(prev, rounded) < 0.1) return;
+  lastStored = rounded;
+  try {
+    localStorage.setItem(LAST_KEY, JSON.stringify(rounded));
+  } catch {
+    // Storage blocked: the next open starts downtown, as before.
+  }
+  lastListeners.forEach((l) => l());
+}
+
+/** The remembered position, read directly (for code that runs once, outside render). */
+export function lastKnownPosition(): LatLng | null {
+  return typeof window === "undefined" ? null : readLast();
+}
+
+function useLastStored(): LatLng | null {
+  return useSyncExternalStore(
+    (cb) => {
+      lastListeners.add(cb);
+      return () => lastListeners.delete(cb);
+    },
+    readLast,
+    () => null,
+  );
+}
 
 export type LocationStatus = "idle" | "prompt" | "locating" | "granted" | "denied" | "unavailable";
 
 interface LocationState {
+  /** A live fix, or null until the browser gives one. */
   position: LatLng | null;
+  /** The live fix, or where the person last was (~100 m) until it arrives. Null on a first visit. */
+  lastPosition: LatLng | null;
   accuracyM: number | null;
   /** Degrees clockwise from north while moving; null when unknown or still. */
   heading: number | null;
@@ -29,6 +80,8 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<LocationStatus>("idle");
   const watchId = useRef<number | null>(null);
   const precise = useRef(false);
+  const stored = useLastStored();
+  const lastPosition = position ?? stored;
 
   const start = useCallback(() => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -40,6 +93,7 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
     watchId.current = navigator.geolocation.watchPosition(
       (pos) => {
         setPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        rememberLast({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         setAccuracy(pos.coords.accuracy);
         const h = pos.coords.heading;
         // Browsers report NaN or null when still; only a moving fix has a heading.
@@ -101,8 +155,8 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ position, accuracyM, heading, status, request: start, setPrecise }),
-    [position, accuracyM, heading, status, start, setPrecise],
+    () => ({ position, lastPosition, accuracyM, heading, status, request: start, setPrecise }),
+    [position, lastPosition, accuracyM, heading, status, start, setPrecise],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

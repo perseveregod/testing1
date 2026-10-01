@@ -24,6 +24,11 @@ import {
   beaconGeoJson,
   ACTIVITY,
   activityGeoJson,
+  RIPPLE,
+  RIPPLE_MS,
+  addRippleLayer,
+  rippleGeoJson,
+  setRipple,
   addActivityLayer,
   addLightsLayers,
   enhanceStyle,
@@ -73,6 +78,8 @@ interface Props {
   onSelect: (id: string | null) => void;
   userPosition: LatLng | null;
   initialCenter: LatLng;
+  /** Asked once, when the map is created: a better starting point than `initialCenter`, if one is known by then. */
+  startFrom?: () => LatLng | null;
   onViewportChange: (v: Viewport) => void;
   mode: MapMode;
   onCameraChange?: (c: Camera) => void;
@@ -126,6 +133,7 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
     onSelect,
     userPosition,
     initialCenter,
+    startFrom,
     onViewportChange,
     mode,
     onCameraChange,
@@ -322,10 +330,11 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
       if (cancelled || !container.current) return;
       lib.current = ml;
       resolved.current = resolveMode(modeRef.current, new Date());
+      const start = startFrom?.() ?? initialCenter;
       const m = new ml.Map({
         container: container.current,
         style: styleUrlFor(resolved.current),
-        center: [initialCenter.lng, initialCenter.lat],
+        center: [start.lng, start.lat],
         zoom: introRef.current ? 10.9 : 14.6,
         pitch: introRef.current ? 0 : PITCH_3D,
         bearing: introRef.current ? 0 : BEARING_3D,
@@ -414,6 +423,7 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
         (m.getSource(ACTIVITY) as GeoJSONSource | undefined)?.setData(
           activityGeoJson(latest.current),
         );
+        addRippleLayer(m);
         // Lights from above; pins and their glow take over past LIGHTS_ZOOM.
         if (m.getLayer("incidents-glow")) m.setLayerZoomRange("incidents-glow", LIGHTS_ZOOM, 24);
         if (m.getLayer(ACTIVITY)) m.setLayerZoomRange(ACTIVITY, LIGHTS_ZOOM, 24);
@@ -521,11 +531,36 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Push incidents into the clustered source.
+  // Push incidents into the clustered source. Ones that weren't there a
+  // moment ago get a ring that spreads and fades, so a refresh reads as
+  // something arriving rather than the map blinking.
+  const knownIds = useRef<Set<string> | null>(null);
+  const rippleRaf = useRef(0);
+  useEffect(() => () => cancelAnimationFrame(rippleRaf.current), []);
   useEffect(() => {
     latest.current = incidents;
     const src = map.current?.getSource(SOURCE) as GeoJSONSource | undefined;
     if (!ready || !src) return;
+    const m = map.current!;
+    const before = knownIds.current;
+    knownIds.current = new Set(incidents.map((i) => i.id));
+    if (before && before.size > 0 && booted.current) {
+      const fresh = incidents.filter((i) => !before.has(i.id));
+      // A handful is news; a whole new list (new area, new filter) is not.
+      if (fresh.length > 0 && fresh.length <= 12) {
+        (m.getSource(RIPPLE) as GeoJSONSource | undefined)?.setData(rippleGeoJson(fresh));
+        cancelAnimationFrame(rippleRaf.current);
+        let start = 0;
+        const tick = (now: number) => {
+          if (!start) start = now;
+          const t = (now - start) / RIPPLE_MS;
+          setRipple(m, t);
+          if (t < 1) rippleRaf.current = requestAnimationFrame(tick);
+          else (m.getSource(RIPPLE) as GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: [] });
+        };
+        rippleRaf.current = requestAnimationFrame(tick);
+      }
+    }
     src.setData(toGeoJson(incidents));
     (map.current?.getSource(BEACONS) as GeoJSONSource | undefined)?.setData(
       beaconGeoJson(incidents),

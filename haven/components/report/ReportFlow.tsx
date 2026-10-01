@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import useSWR from "swr";
+import useSWR, { useSWRConfig } from "swr";
 import { Check, ChevronLeft, Layers, LocateFixed, X } from "lucide-react";
 import { EVERYDAY_CATEGORIES, categoriesInGroup, getCategory } from "@/lib/categories";
 import { apiSend, ApiClientError, errorMessage, fetcher } from "@/lib/client/api";
@@ -43,6 +43,7 @@ function newRequestId() {
 export function ReportFlow() {
   const router = useRouter();
   const toast = useToast();
+  const { mutate: refreshLists } = useSWRConfig();
   const { t } = useT();
   const { position, request, status } = useLocation();
   const [step, setStep] = useState<Step>(1);
@@ -86,6 +87,8 @@ export function ReportFlow() {
       });
       setResult(r);
       setStep(5);
+      // The map and feed show it the moment the person goes back.
+      void refreshLists((key) => typeof key === "string" && key.startsWith("/api/incidents"));
     } catch (err) {
       const msg = errorMessage(err);
       toast(msg, "error");

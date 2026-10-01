@@ -427,3 +427,52 @@ export function addActivityLayer(m: MlMap, before?: string) {
     if (m.getLayer(ACTIVITY)) m.setPaintProperty(ACTIVITY, "circle-opacity", ["interpolate", ["linear"], ["get", "twinkle"], 0, 0.45, 1, 0.9]);
   });
 }
+
+// ---- arrivals ---------------------------------------------------------------
+
+export const RIPPLE = "incident-ripple";
+export const RIPPLE_MS = 1800;
+
+/** One ring per incident that just appeared, in its category color. */
+export function rippleGeoJson(incidents: PublicIncident[]): GeoJSON.FeatureCollection {
+  return {
+    type: "FeatureCollection",
+    features: incidents.map((i) => ({
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [i.longitude, i.latitude] },
+      properties: { color: getCategory(i.category).color },
+    })),
+  };
+}
+
+/** Adds the ripple layer (idempotent): an expanding ring that fades out. */
+export function addRippleLayer(m: MlMap, before?: string) {
+  if (m.getSource(RIPPLE)) return;
+  m.addSource(RIPPLE, { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+  m.addLayer(
+    {
+      id: RIPPLE,
+      type: "circle",
+      source: RIPPLE,
+      paint: {
+        "circle-radius": 6,
+        "circle-color": ["get", "color"],
+        "circle-opacity": 0,
+        "circle-stroke-color": ["get", "color"],
+        "circle-stroke-width": 2.5,
+        "circle-stroke-opacity": 0,
+      },
+    },
+    before,
+  );
+}
+
+/** Drives the ring: `t` runs 0 → 1 over RIPPLE_MS. */
+export function setRipple(m: MlMap, t: number) {
+  if (!m.getLayer(RIPPLE)) return;
+  const k = Math.min(1, Math.max(0, t));
+  const ease = 1 - (1 - k) ** 2;
+  m.setPaintProperty(RIPPLE, "circle-radius", 6 + 34 * ease);
+  m.setPaintProperty(RIPPLE, "circle-stroke-opacity", 0.85 * (1 - k));
+  m.setPaintProperty(RIPPLE, "circle-opacity", 0.18 * (1 - k));
+}

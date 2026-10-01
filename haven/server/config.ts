@@ -100,7 +100,7 @@ export const config = {
       lng: num("DEMO_CENTER_LNG", num("NEXT_PUBLIC_DEFAULT_LNG", -95.3698)),
     },
     /** Minimum minutes between automatic (on-read) ingests. */
-    ingestIntervalMin: num("INGEST_INTERVAL_MIN", 5),
+    ingestIntervalMin: num("INGEST_INTERVAL_MIN", 3),
     cronSecret: env.CRON_SECRET ?? "",
     contactEmail: env.HAVEN_CONTACT_EMAIL ?? "",
   },

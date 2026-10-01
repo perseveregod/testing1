@@ -1,9 +1,11 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import useSWR from "swr";
 import { distanceMiles, type LatLng } from "@/lib/geo";
 import type { AlertPreferences, DataSource, NotificationItem, PricingInfo, PublicIncident, SavedPlace, Viewer } from "@/lib/types";
 import { fetcher } from "./api";
+import { useFeedCache, writeFeedCache } from "./feedCache";
 
 export function useViewer() {
   const { data, error, isLoading, mutate } = useSWR<{ viewer: Viewer }>("/api/me", fetcher, {
@@ -49,7 +51,7 @@ export function useNotifications() {
  * against the caller's clock (a ticking `now`), never Date.now() in render.
  */
 export function useFeedFreshness(now: number): { checkedAt: number | null; stale: boolean } {
-  const { data } = useSWR<{ sources: DataSource[] }>("/api/sources", fetcher, { refreshInterval: 60_000, revalidateOnFocus: true });
+  const { data } = useSWR<{ sources: DataSource[] }>("/api/sources", fetcher, { refreshInterval: 30_000, revalidateOnFocus: true });
   const live = (data?.sources ?? []).filter((s) => s.enabled && s.kind !== "demo" && s.kind !== "user" && s.lastSyncedAt);
   if (live.length === 0) return { checkedAt: null, stale: false };
   const checkedAt = Math.max(...live.map((s) => new Date(s.lastSyncedAt!).getTime()));
@@ -109,15 +111,33 @@ export interface InitialIncidents {
   data: IncidentsResponse;
 }
 
-/** `initial` is server-fetched data for a specific key; used as that key's fallback so the first paint has incidents. */
+const NO_ITEMS: PublicIncident[] = [];
+
+const noop = () => () => {};
+/** False while hydrating (what the server rendered), true after. */
+export function useHydrated(): boolean {
+  return useSyncExternalStore(noop, () => true, () => false);
+}
+
+/**
+ * Incidents for a query. Polls every 30 s while the tab is visible (a poll
+ * whose answer hasn't changed costs a 304 and nothing else), again on focus
+ * and reconnect. The first paint comes from `initial` (server-fetched for
+ * that exact key) or from the last answer kept on this device.
+ */
 export function useIncidents(p: IncidentParams, initial?: InitialIncidents | null) {
   const url = incidentsUrl(p);
+  const remembered = useFeedCache(p, url);
+  const hydrated = useHydrated();
   const { data, error, isLoading, isValidating, mutate } = useSWR<IncidentsResponse>(url, fetcher, {
-    refreshInterval: 60_000,
+    refreshInterval: 30_000,
+    focusThrottleInterval: 5_000,
     keepPreviousData: true,
-    fallbackData: initial && initial.key === url ? initial.data : undefined,
+    fallbackData: initial && initial.key === url ? initial.data : remembered,
+    onSuccess: (d) => writeFeedCache(p, d),
   });
-  return { data, items: data?.items ?? [], error, isLoading: isLoading && !data, isValidating, mutate };
+  // Hydration counts as loading: the device copy fills in right after it.
+  return { data, items: data?.items ?? NO_ITEMS, error, isLoading: !data && (isLoading || !hydrated), isValidating, mutate };
 }
 
 /** Distance from the person (not the query center), when we know where they are. */
