@@ -8,6 +8,7 @@ import { apiSend, errorMessage } from "@/lib/client/api";
 import { setCampusId, useCampusId } from "@/lib/client/campus";
 import { setMapFocus } from "@/lib/client/mapFocus";
 import { useIncidents, usePlaces } from "@/lib/client/hooks";
+import { useT } from "@/lib/client/lang";
 import { CAMPUSES, getCampus, telHref, type Campus } from "@/lib/campuses";
 import { useToast } from "@/components/providers/ToastProvider";
 import { Sheet } from "@/components/ui/Sheet";
@@ -17,6 +18,7 @@ export function CampusCard() {
   const campusId = useCampusId();
   const campus = getCampus(campusId);
   const [picking, setPicking] = useState(false);
+  const { es } = useT();
 
   return (
     <>
@@ -31,9 +33,9 @@ export function CampusCard() {
             <GraduationCap className="size-6" aria-hidden />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-[16px] font-bold tracking-[-0.01em]">Student? Add your campus</span>
+            <span className="block text-[16px] font-bold tracking-[-0.01em]">{es ? "¿Estudiante? Agregue su campus" : "Student? Add your campus"}</span>
             <span className="mt-0.5 block text-[13.5px] leading-snug text-muted">
-              Campus police, safety escorts and what&apos;s happening around campus.
+              {es ? "Policía del campus, acompañantes de seguridad y qué pasa alrededor del campus." : "Campus police, safety escorts and what's happening around campus."}
             </span>
           </span>
           <ChevronRight className="size-5 shrink-0 text-faint" aria-hidden />
@@ -51,6 +53,7 @@ function CampusDetails({ campus, onChange }: { campus: Campus; onChange: () => v
   const { items, isLoading } = useIncidents({ center, radiusMi: 1, sort: "newest", limit: 50 });
   const { places, max, mutate } = usePlaces();
   const [busy, setBusy] = useState(false);
+  const { es, title } = useT();
   const active = items.filter((i) => i.status !== "resolved");
   const saved = places.some((p) => p.kind === "school" && Math.abs(p.latitude - campus.lat) < 0.002 && Math.abs(p.longitude - campus.lng) < 0.002);
 
@@ -66,9 +69,16 @@ function CampusDetails({ campus, onChange }: { campus: Campus; onChange: () => v
         alertsEnabled: true,
       });
       await mutate();
-      toast(`You'll get alerts around ${campus.name}.`, "success");
+      toast(es ? `Recibirá alertas alrededor de ${campus.name}.` : `You'll get alerts around ${campus.name}.`, "success");
     } catch (err) {
-      toast(places.length >= max ? "Your free saved place is already used. Remove it in Profile, or upgrade to save more." : errorMessage(err), "error");
+      toast(
+        places.length >= max
+          ? es
+            ? "Su lugar guardado gratis ya está en uso. Quítelo en Perfil o mejore su plan para guardar más."
+            : "Your free saved place is already used. Remove it in Profile, or upgrade to save more."
+          : errorMessage(err),
+        "error",
+      );
     } finally {
       setBusy(false);
     }
@@ -81,14 +91,20 @@ function CampusDetails({ campus, onChange }: { campus: Campus; onChange: () => v
           <GraduationCap className="size-6" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-faint">Your campus</p>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-faint">{es ? "Su campus" : "Your campus"}</p>
           <p className="line-clamp-2 text-[17px] font-bold leading-tight tracking-[-0.015em]">{campus.name}</p>
           <p className="text-[13px] text-muted tnum">
-            {isLoading ? "Checking nearby…" : `${active.length} ${active.length === 1 ? "incident" : "incidents"} within 1 mi today`}
+            {isLoading
+              ? es
+                ? "Revisando los alrededores…"
+                : "Checking nearby…"
+              : es
+                ? `${active.length} ${active.length === 1 ? "incidente" : "incidentes"} a menos de 1 mi hoy`
+                : `${active.length} ${active.length === 1 ? "incident" : "incidents"} within 1 mi today`}
           </p>
         </div>
         <button onClick={onChange} className="press -mr-1 min-h-11 rounded-full px-3 text-[13.5px] font-semibold text-brand">
-          Change
+          {es ? "Cambiar" : "Change"}
         </button>
       </div>
 
@@ -97,7 +113,7 @@ function CampusDetails({ campus, onChange }: { campus: Campus; onChange: () => v
           {active.slice(0, 2).map((i) => (
             <li key={i.id}>
               <Link href={`/incidents/${i.id}`} transitionTypes={["nav-forward"]} className="flex min-h-11 items-center gap-2 rounded-xl bg-surface-2 px-3 py-2 text-[13.5px]">
-                <span className="truncate font-semibold">{i.title}</span>
+                <span className="truncate font-semibold">{title(i)}</span>
                 <span className="truncate text-muted">· {i.approximateAddress}</span>
               </Link>
             </li>
@@ -110,20 +126,20 @@ function CampusDetails({ campus, onChange }: { campus: Campus; onChange: () => v
           href={telHref(campus.police.emergency)}
           className="press flex min-h-12 items-center justify-center gap-2 whitespace-nowrap rounded-2xl bg-live px-3 text-[14px] font-bold text-white"
         >
-          <ShieldAlert className="size-4 shrink-0" aria-hidden /> Police
+          <ShieldAlert className="size-4 shrink-0" aria-hidden /> {es ? "Policía" : "Police"}
         </a>
         <a
           href={telHref(campus.police.nonEmergency)}
           className="press flex min-h-12 items-center justify-center gap-2 whitespace-nowrap rounded-2xl bg-surface-2 px-3 text-[14px] font-semibold"
         >
-          <Phone className="size-4" aria-hidden /> Non-emergency
+          <Phone className="size-4" aria-hidden /> {es ? "No emergencia" : "Non-emergency"}
         </a>
         {campus.escort ? (
           <a
             href={telHref(campus.escort.phone)}
             className="press flex min-h-12 items-center justify-center gap-2 whitespace-nowrap rounded-2xl bg-surface-2 px-3 text-[14px] font-semibold"
           >
-            <Footprints className="size-4" aria-hidden /> Safety escort
+            <Footprints className="size-4" aria-hidden /> {es ? "Acompañante" : "Safety escort"}
           </a>
         ) : (
           <Link
@@ -131,7 +147,7 @@ function CampusDetails({ campus, onChange }: { campus: Campus; onChange: () => v
             transitionTypes={["nav-forward"]}
             className="press flex min-h-12 items-center justify-center gap-2 whitespace-nowrap rounded-2xl bg-surface-2 px-3 text-[14px] font-semibold"
           >
-            <Footprints className="size-4" aria-hidden /> Safe Walk
+            <Footprints className="size-4" aria-hidden /> {es ? "Camino seguro" : "Safe Walk"}
           </Link>
         )}
         <button
@@ -141,7 +157,7 @@ function CampusDetails({ campus, onChange }: { campus: Campus; onChange: () => v
           }}
           className="press flex min-h-12 items-center justify-center gap-2 whitespace-nowrap rounded-2xl bg-surface-2 px-3 text-[14px] font-semibold"
         >
-          <MapPinned className="size-4" aria-hidden /> On the map
+          <MapPinned className="size-4" aria-hidden /> {es ? "En el mapa" : "On the map"}
         </button>
       </div>
 
@@ -151,16 +167,16 @@ function CampusDetails({ campus, onChange }: { campus: Campus; onChange: () => v
         className="press mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-brand/15 px-3 text-[14px] font-semibold text-brand disabled:opacity-80"
       >
         {saved ? <Check className="size-4" aria-hidden /> : <BellPlus className="size-4" aria-hidden />}
-        {saved ? "Getting alerts around campus" : "Get alerts around campus"}
+        {saved ? (es ? "Recibiendo alertas del campus" : "Getting alerts around campus") : es ? "Recibir alertas del campus" : "Get alerts around campus"}
       </button>
 
       <p className="mt-3 text-[12px] leading-snug text-faint">
         {campus.escort ? `${campus.escort.note} ` : ""}
-        Numbers from{" "}
+        {es ? "Números de " : "Numbers from "}
         <a href={campus.police.url} target="_blank" rel="noopener noreferrer" className="underline">
           {campus.police.name}
         </a>
-        . In an emergency, call 911.
+        {es ? ". En una emergencia, llame al 911." : ". In an emergency, call 911."}
       </p>
     </div>
   );
@@ -168,9 +184,10 @@ function CampusDetails({ campus, onChange }: { campus: Campus; onChange: () => v
 
 function CampusPicker({ open, onClose, current }: { open: boolean; onClose: () => void; current: string | null }) {
   const schools = [...new Set(CAMPUSES.map((c) => c.school))];
+  const { es } = useT();
   return (
-    <Sheet open={open} onClose={onClose} title="Your campus">
-      <p className="mb-3 text-[13.5px] leading-snug text-muted">Saved on this device only. You can change it any time.</p>
+    <Sheet open={open} onClose={onClose} title={es ? "Su campus" : "Your campus"}>
+      <p className="mb-3 text-[13.5px] leading-snug text-muted">{es ? "Se guarda solo en este dispositivo. Puede cambiarlo cuando quiera." : "Saved on this device only. You can change it any time."}</p>
       <div className="space-y-4 pb-2">
         {schools.map((school) => (
           <div key={school}>
@@ -202,10 +219,10 @@ function CampusPicker({ open, onClose, current }: { open: boolean; onClose: () =
             }}
             className="press min-h-11 w-full rounded-full text-[14px] font-medium text-muted"
           >
-            Remove my campus
+            {es ? "Quitar mi campus" : "Remove my campus"}
           </button>
         )}
-        <p className="px-1 text-[12.5px] text-faint">Don&apos;t see your school? More Houston campuses are coming.</p>
+        <p className="px-1 text-[12.5px] text-faint">{es ? "¿No ve su escuela? Pronto habrá más campus de Houston." : "Don't see your school? More Houston campuses are coming."}</p>
       </div>
     </Sheet>
   );

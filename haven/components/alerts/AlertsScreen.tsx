@@ -18,7 +18,7 @@ import { AlertSettings } from "./AlertSettings";
 export function AlertsScreen() {
   const [tab, setTab] = useState<"inbox" | "settings">("inbox");
   const { items, unread, isLoading, mutate } = useNotifications();
-  const { t, timeAgo } = useT();
+  const { t, timeAgo, title } = useT();
 
   async function markAll() {
     await mutate(
@@ -86,7 +86,7 @@ export function AlertsScreen() {
                   <CategoryIcon category={n.category} muted={Boolean(n.readAt)} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-baseline justify-between gap-3">
-                      <p className={`truncate text-[15.5px] tracking-[-0.01em] ${n.readAt ? "text-muted" : "font-semibold"}`}>{n.title}</p>
+                      <p className={`truncate text-[15.5px] tracking-[-0.01em] ${n.readAt ? "text-muted" : "font-semibold"}`}>{title({ title: n.title, category: n.category, storm: null })}</p>
                       <span className="shrink-0 text-[13px] text-faint tnum">{timeAgo(n.createdAt)}</span>
                     </div>
                     <p className={`mt-0.5 line-clamp-2 text-[14px] leading-snug ${n.readAt ? "text-faint" : "text-muted"}`}>{n.body}</p>
