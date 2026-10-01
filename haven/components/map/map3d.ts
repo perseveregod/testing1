@@ -3,7 +3,7 @@
 // OpenFreeMap vector tiles except satellite, which needs a MapTiler key set as
 // NEXT_PUBLIC_MAPTILER_KEY in the hosting environment.
 
-import type { Map as MlMap } from "maplibre-gl";
+import type { FilterSpecification, Map as MlMap } from "maplibre-gl";
 import { getCategory, SEVERITY_RANK } from "@/lib/categories";
 import { MAP_STYLE_URL } from "@/lib/client/defaults";
 import { offsetMeters } from "@/lib/geo";
@@ -42,6 +42,138 @@ export function styleUrlFor(mode: ResolvedMode): string {
 
 const BUILDINGS_3D = "haven-buildings-3d";
 export const BEACONS = "incident-beacons";
+
+// ---- city lights --------------------------------------------------------------
+// Zoomed out past this, the city reads as lights from above (think the lobby
+// globe in a multiplayer game): a glow per active incident, pulsing where
+// it's live, blinking on one by one when the map first opens.
+
+export const LIGHTS = "city-lights";
+export const LIGHTS_ZOOM = 12.6;
+const LIGHTS_HALO = "city-lights-halo";
+const LIGHTS_PULSE = "city-lights-pulse";
+const LIGHTS_CORE = "city-lights-core";
+const LIGHT_LAYERS = [LIGHTS_HALO, LIGHTS_PULSE, LIGHTS_CORE];
+
+function shuffleKey(id: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < id.length; i++) {
+    h ^= id.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+/** One light per active incident; `seq` is a scattered order for the blink-on. */
+export function lightsGeoJson(incidents: PublicIncident[], now = Date.now()): GeoJSON.FeatureCollection {
+  const active = incidents.filter((i) => i.status !== "resolved");
+  const order = [...active].sort((a, b) => shuffleKey(a.id) - shuffleKey(b.id));
+  const seq = new Map(order.map((i, k) => [i.id, k]));
+  return {
+    type: "FeatureCollection",
+    features: active.map((i) => {
+      const sev = SEVERITY_RANK[i.severity];
+      const fresh = now - new Date(i.createdAt).getTime() < 3_600_000;
+      return {
+        type: "Feature",
+        geometry: { type: "Point", coordinates: [i.longitude, i.latitude] },
+        properties: {
+          id: i.id,
+          color: getCategory(i.category).color,
+          sev,
+          seq: seq.get(i.id) ?? 0,
+          live: sev >= 2 || fresh,
+          // Each light pulses on its own beat.
+          phase: (shuffleKey(i.id + "p") % 1000) / 1000,
+        },
+      };
+    }),
+  };
+}
+
+const haloRadius = (z: number, base: number) => ["interpolate", ["linear"], ["zoom"], 8, base * 0.6, LIGHTS_ZOOM, base] as unknown as number;
+
+/** Adds the three light layers (idempotent). Visible only below LIGHTS_ZOOM. */
+export function addLightsLayers(m: MlMap, night: boolean, before?: string) {
+  if (m.getSource(LIGHTS)) return;
+  m.addSource(LIGHTS, { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+  const sevRadius = (lo: number, hi: number) => ["interpolate", ["linear"], ["get", "sev"], 0, lo, 3, hi] as unknown as number;
+  m.addLayer(
+    {
+      id: LIGHTS_HALO,
+      type: "circle",
+      source: LIGHTS,
+      maxzoom: LIGHTS_ZOOM,
+      paint: {
+        "circle-color": ["get", "color"],
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, sevRadius(7, 16), LIGHTS_ZOOM, sevRadius(14, 34)],
+        "circle-blur": 1,
+        "circle-opacity": night ? 0.65 : 0.4,
+      },
+    },
+    before,
+  );
+  m.addLayer(
+    {
+      id: LIGHTS_PULSE,
+      type: "circle",
+      source: LIGHTS,
+      maxzoom: LIGHTS_ZOOM,
+      filter: ["get", "live"],
+      paint: {
+        "circle-color": ["get", "color"],
+        "circle-radius": haloRadius(0, 10),
+        "circle-blur": 0.7,
+        "circle-opacity": 0.5,
+      },
+    },
+    before,
+  );
+  m.addLayer(
+    {
+      id: LIGHTS_CORE,
+      type: "circle",
+      source: LIGHTS,
+      maxzoom: LIGHTS_ZOOM,
+      paint: {
+        "circle-color": night ? "#ffffff" : ["get", "color"],
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, sevRadius(1.4, 2.4), LIGHTS_ZOOM, sevRadius(2.4, 4)],
+        "circle-blur": 0.15,
+        "circle-opacity": night ? 0.95 : 1,
+      },
+    },
+    before,
+  );
+}
+
+/** Show lights with seq < upto (null = all). Used for the blink-on. */
+export function setLightsReveal(m: MlMap, upto: number | null) {
+  for (const id of LIGHT_LAYERS) {
+    if (!m.getLayer(id)) continue;
+    const base: unknown[] = id === LIGHTS_PULSE ? [["get", "live"]] : [];
+    const reveal = upto == null ? [] : [["<", ["get", "seq"], upto]];
+    const parts = [...base, ...reveal];
+    m.setFilter(id, parts.length === 0 ? null : parts.length === 1 ? (parts[0] as unknown as FilterSpecification) : (["all", ...parts] as unknown as FilterSpecification));
+  }
+}
+
+/** One frame of the pulse: live lights breathe on a ~1.6 s cycle, each on its own phase. */
+export function pulseLights(m: MlMap, t: number) {
+  if (!m.getLayer(LIGHTS_PULSE)) return;
+  const cycle = ((t / 1600) % 1);
+  // phase per feature: p = (cycle + phase) % 1 → radius grows, opacity fades.
+  const p = ["%", ["+", cycle, ["get", "phase"]], 1];
+  m.setPaintProperty(LIGHTS_PULSE, "circle-radius", [
+    "interpolate",
+    ["linear"],
+    ["zoom"],
+    8,
+    ["+", 4, ["*", 14, p]],
+    LIGHTS_ZOOM,
+    ["+", 8, ["*", 30, p]],
+  ]);
+  m.setPaintProperty(LIGHTS_PULSE, "circle-opacity", ["*", 0.55, ["-", 1, p]]);
+}
 
 function firstSymbolLayer(m: MlMap): string | undefined {
   return m.getStyle().layers?.find((l) => l.type === "symbol")?.id;
@@ -129,7 +261,7 @@ export function enhanceStyle(m: MlMap, mode: ResolvedMode) {
         id: BEACONS,
         type: "fill-extrusion",
         source: BEACONS,
-        minzoom: 12,
+        minzoom: LIGHTS_ZOOM,
         paint: {
           "fill-extrusion-color": ["get", "color"],
           "fill-extrusion-height": ["interpolate", ["linear"], ["zoom"], 12, 0, 14, ["get", "height"]],

@@ -144,7 +144,7 @@ function MapControl({
   );
 }
 
-export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
+export function MapScreen({ initial, active = true }: { initial?: InitialIncidents | null; active?: boolean }) {
   const mapRef = useRef<MapHandle>(null);
   const { position, status, request } = useLocation();
   const { viewer } = useViewer();
@@ -197,6 +197,11 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
     }
   }, []);
   const flewToUser = useRef(false);
+  // Cold start: open from above with the city's lights blinking on, then fly in.
+  const [introDone, setIntroDone] = useState(false);
+  const [lit, setLit] = useState<number | null>(null);
+  const onLights = useCallback((n: number | null) => setLit(n), []);
+  const onIntroDone = useCallback(() => setIntroDone(true), []);
 
   const storm = useStormPrefs();
   const st = strings(storm.lang);
@@ -249,7 +254,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
   const frameKey = storm.on ? "storm" : "all";
   useEffect(() => {
     // Normal mode with location: the map flies to you instead (below).
-    if (framed.current[frameKey] || (position && !storm.on) || items.length === 0) return;
+    if (!introDone || framed.current[frameKey] || (position && !storm.on) || items.length === 0) return;
     let live = items.filter((i) => i.status !== "resolved");
     // Storm Mode with location: frame you plus the closest reports around you.
     if (storm.on && position) {
@@ -261,7 +266,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
     const points = live.map((i) => ({ lat: i.latitude, lng: i.longitude }));
     if (storm.on && position) points.push(position);
     if (mapRef.current?.fitTo(points)) framed.current[frameKey] = true;
-  }, [items, position, viewport, frameKey, storm.on]);
+  }, [items, position, viewport, frameKey, storm.on, introDone]);
 
   // "On the map" from another tab (e.g. a campus): go there instead of framing.
   useEffect(() => {
@@ -273,13 +278,14 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
     mapRef.current?.flyTo(f.point, 15);
   }, [viewport]);
 
-  // Jump to the person's location the first time we learn it.
+  // Jump to the person's location the first time we learn it (a long, slow
+  // descent right after the lights; the usual quick hop otherwise).
   useEffect(() => {
-    if (position && !flewToUser.current) {
+    if (introDone && position && !flewToUser.current) {
       flewToUser.current = true;
-      mapRef.current?.flyTo(position, 14);
+      mapRef.current?.flyTo(position, 14, { duration: 2600 });
     }
-  }, [position]);
+  }, [position, introDone]);
 
   const selected = items.find((i) => i.id === selectedId) ?? null;
   // First visit: one line under the chips until a pin is tapped.
@@ -338,6 +344,10 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
         onViewportChange={setViewport}
         mode={mode}
         onCameraChange={setCamera}
+        intro
+        active={active}
+        onLights={onLights}
+        onIntroDone={onIntroDone}
       />
       {/* Soft gradients so the controls read over the map. */}
       <div
@@ -506,7 +516,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
             <div className="mb-2">
               <NearbyPeek
                 items={storm.on ? items : near.items}
-                activeCount={storm.on ? activeCount : near.activeCount}
+                activeCount={storm.on ? activeCount : lit == null ? near.activeCount : Math.round((near.activeCount * lit) / Math.max(1, activeCount))}
                 loading={storm.on ? loading : near.isLoading}
                 error={storm.on ? (error ? errorMessage(error) : null) : near.error ? errorMessage(near.error) : null}
                 onRetry={() => (storm.on ? mutate() : near.mutate())}

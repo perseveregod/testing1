@@ -25,9 +25,15 @@ import {
   ACTIVITY,
   activityGeoJson,
   addActivityLayer,
+  addLightsLayers,
   enhanceStyle,
+  LIGHTS,
+  LIGHTS_ZOOM,
+  lightsGeoJson,
   PITCH_3D,
+  pulseLights,
   resolveMode,
+  setLightsReveal,
   styleUrlFor,
   tuneNightStyle,
   tuneDayStyle,
@@ -40,7 +46,7 @@ import {
 // React (portals), so markers stay crisp, accessible buttons with real icons.
 
 export interface MapHandle {
-  flyTo(p: LatLng, zoom?: number): void;
+  flyTo(p: LatLng, zoom?: number, opts?: { duration?: number }): void;
   /** Flips between the tilted 3D view and a flat top-down view. */
   toggle3D(): void;
   /** Turns the map back to north-up. */
@@ -73,6 +79,13 @@ interface Props {
   /** License plate reader cameras to draw (null hides the layer). */
   cameras?: GeoJSON.FeatureCollection | null;
   onCameraPick?: (props: Record<string, unknown>, at: LatLng) => void;
+  /** Open from above with the city's lights blinking on, then hand off (onIntroDone). */
+  intro?: boolean;
+  /** The intro waits until the map is actually on screen. */
+  active?: boolean;
+  /** How many lights are lit during the blink-on; null once all are. */
+  onLights?: (lit: number | null) => void;
+  onIntroDone?: () => void;
 }
 
 type Visible =
@@ -102,6 +115,7 @@ type Visible =
 
 const RING = "haven-ring";
 const CAMERAS = "alpr-cameras";
+const LIGHTS_CORE_LAYER = "city-lights-core";
 const RING_METERS = 1609.344;
 const SOURCE = "incidents";
 
@@ -117,13 +131,27 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
     onCameraChange,
     cameras,
     onCameraPick,
+    intro,
+    active = true,
+    onLights,
+    onIntroDone,
   },
   ref,
 ) {
   const onCameraPickRef = useRef(onCameraPick);
+  const onLightsRef = useRef(onLights);
+  const onIntroDoneRef = useRef(onIntroDone);
   useEffect(() => {
     onCameraPickRef.current = onCameraPick;
-  }, [onCameraPick]);
+    onLightsRef.current = onLights;
+    onIntroDoneRef.current = onIntroDone;
+  }, [onCameraPick, onLights, onIntroDone]);
+  // Below LIGHTS_ZOOM the city is lights, not pins.
+  const [lightsMode, setLightsMode] = useState(Boolean(intro));
+  const lightsRef = useRef(Boolean(intro));
+  // The blink-on runs once per map, the first time the lights are in view.
+  const booted = useRef(!intro);
+  const introRef = useRef(Boolean(intro));
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MlMap | null>(null);
   const lib = useRef<typeof import("maplibre-gl") | null>(null);
@@ -152,12 +180,12 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
   });
 
   useImperativeHandle(ref, () => ({
-    flyTo(p, zoom) {
+    flyTo(p, zoom, opts) {
       map.current?.flyTo({
         center: [p.lng, p.lat],
         zoom: zoom ?? Math.max(map.current.getZoom(), 14),
         pitch: map.current.getPitch() > 5 ? PITCH_3D : 0,
-        duration: 1600,
+        duration: opts?.duration ?? 1600,
         curve: 1.6,
         essential: true,
         easing: (t) => 1 - Math.pow(1 - t, 3),
@@ -226,7 +254,7 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
     const m = map.current;
     const ml = lib.current;
     if (!m || !ml || !m.getSource(SOURCE)) return;
-    const features = m.querySourceFeatures(SOURCE);
+    const features = m.getZoom() < LIGHTS_ZOOM ? [] : m.querySourceFeatures(SOURCE);
     const next = new Map<string, Visible>();
     for (const f of features) {
       const p = f.properties as Record<string, unknown>;
@@ -298,9 +326,9 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
         container: container.current,
         style: styleUrlFor(resolved.current),
         center: [initialCenter.lng, initialCenter.lat],
-        zoom: 14.6,
-        pitch: PITCH_3D,
-        bearing: BEARING_3D,
+        zoom: introRef.current ? 10.9 : 14.6,
+        pitch: introRef.current ? 0 : PITCH_3D,
+        bearing: introRef.current ? 0 : BEARING_3D,
         maxPitch: 72,
         // Always visible (not collapsed) so the OpenStreetMap / OpenFreeMap credit is shown per license.
         attributionControl: { compact: true },
@@ -386,6 +414,12 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
         (m.getSource(ACTIVITY) as GeoJSONSource | undefined)?.setData(
           activityGeoJson(latest.current),
         );
+        // Lights from above; pins and their glow take over past LIGHTS_ZOOM.
+        if (m.getLayer("incidents-glow")) m.setLayerZoomRange("incidents-glow", LIGHTS_ZOOM, 24);
+        if (m.getLayer(ACTIVITY)) m.setLayerZoomRange(ACTIVITY, LIGHTS_ZOOM, 24);
+        addLightsLayers(m, resolved.current !== "day", "incidents-glow");
+        (m.getSource(LIGHTS) as GeoJSONSource | undefined)?.setData(lightsGeoJson(latest.current));
+        if (!booted.current) setLightsReveal(m, 0);
         // The colored glow under pins reads as light on the night map and as a
         // smudge on the day map, so it is nearly off there.
         m.setPaintProperty(
@@ -423,6 +457,14 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
         emitViewport();
         onCamera.current?.({ bearing: m.getBearing(), pitch: m.getPitch() });
       });
+      m.on("zoom", () => {
+        const lights = m.getZoom() < LIGHTS_ZOOM;
+        if (lights !== lightsRef.current) {
+          lightsRef.current = lights;
+          setLightsMode(lights);
+          syncMarkers();
+        }
+      });
       m.on("rotate", () =>
         onCamera.current?.({ bearing: m.getBearing(), pitch: m.getPitch() }),
       );
@@ -432,6 +474,20 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
       m.on("click", (e) => {
         if ((e.originalEvent.target as HTMLElement).closest(".haven-marker"))
           return;
+        if (lightsRef.current && m.getLayer(LIGHTS_CORE_LAYER)) {
+          const hit = m.queryRenderedFeatures(
+            [
+              [e.point.x - 16, e.point.y - 16],
+              [e.point.x + 16, e.point.y + 16],
+            ],
+            { layers: [LIGHTS_CORE_LAYER] },
+          )[0];
+          if (hit) {
+            const [lng, lat] = (hit.geometry as GeoJSON.Point).coordinates;
+            m.flyTo({ center: [lng, lat], zoom: 14.6, duration: 1400 });
+            return;
+          }
+        }
         if (m.getLayer(CAMERAS)) {
           const hit = m.queryRenderedFeatures(
             [
@@ -475,7 +531,81 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
     (map.current?.getSource(ACTIVITY) as GeoJSONSource | undefined)?.setData(
       activityGeoJson(incidents),
     );
+    (map.current?.getSource(LIGHTS) as GeoJSONSource | undefined)?.setData(lightsGeoJson(incidents));
   }, [incidents, ready]);
+
+  // Live lights breathe while the city is in view.
+  useEffect(() => {
+    const m = map.current;
+    if (!ready || !lightsMode || !m) return;
+    let raf = 0;
+    const tick = (t: number) => {
+      pulseLights(m, t);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [ready, lightsMode, styleEpoch]);
+
+  // The blink-on: once the first paint is in, lights come on one at a time
+  // (scattered, not left to right), the count ticks up, then the intro hands
+  // off to the normal framing. A tap anywhere skips it.
+  const incidentCount = incidents.length;
+  useEffect(() => {
+    const m = map.current;
+    if (!painted || !active || !lightsMode || booted.current || !m) return;
+    if (incidentCount === 0) {
+      // Nothing to light yet: give the data a moment, then move on regardless.
+      const t = setTimeout(() => {
+        if (booted.current) return;
+        booted.current = true;
+        setLightsReveal(m, null);
+        onLightsRef.current?.(null);
+        onIntroDoneRef.current?.();
+      }, 2000);
+      return () => clearTimeout(t);
+    }
+    booted.current = true;
+    const total = latest.current.filter((i) => i.status !== "resolved").length;
+    // About two seconds for the whole city, however many lights there are.
+    const step = total > 0 ? Math.max(40, Math.min(170, 2200 / total)) : 0;
+    let k = 0;
+    onLightsRef.current?.(0);
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      if (timer) clearTimeout(timer);
+      m.off("mousedown", finish);
+      m.off("touchstart", finish);
+      m.off("wheel", finish);
+      setLightsReveal(m, null);
+      onLightsRef.current?.(null);
+      onIntroDoneRef.current?.();
+    };
+    const next = () => {
+      k += 1;
+      setLightsReveal(m, k);
+      onLightsRef.current?.(Math.min(k, total));
+      if (k >= total) {
+        // Hold on the lit city for a beat before flying in.
+        timer = setTimeout(finish, 1000);
+        return;
+      }
+      timer = setTimeout(next, step);
+    };
+    m.on("mousedown", finish);
+    m.on("touchstart", finish);
+    m.on("wheel", finish);
+    timer = setTimeout(total > 0 ? next : finish, 500);
+    return () => {
+      if (timer) clearTimeout(timer);
+      m.off("mousedown", finish);
+      m.off("touchstart", finish);
+      m.off("wheel", finish);
+    };
+  }, [painted, active, lightsMode, incidentCount]);
 
   // Switch between day, night and satellite. Re-checks auto mode every few minutes.
   useEffect(() => {

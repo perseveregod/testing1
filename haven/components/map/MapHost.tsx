@@ -12,7 +12,7 @@ export function MapHost() {
   const onMap = usePathname() === "/";
   return (
     <div className="map-host" data-active={onMap ? "true" : "false"} inert={!onMap}>
-      <MapScreen />
+      <MapScreen active={onMap} />
     </div>
   );
 }
