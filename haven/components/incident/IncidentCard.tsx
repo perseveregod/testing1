@@ -84,7 +84,7 @@ export function TopIncidentCard({ incident, distanceMi }: { incident: PublicInci
     <Link
       href={`/incidents/${incident.id}`}
       transitionTypes={["nav-forward"]}
-      className="press relative mt-2 block overflow-hidden rounded-[22px] bg-surface p-4 shadow-[inset_0_0_0_1px_var(--line)]"
+      className="press relative mt-2 block overflow-hidden rounded-[20px] bg-surface p-4 shadow-[inset_0_0_0_1px_var(--line)]"
     >
       <div
         className="pointer-events-none absolute -right-10 -top-12 size-48 rounded-full opacity-35 blur-3xl"

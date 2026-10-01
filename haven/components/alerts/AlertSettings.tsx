@@ -41,8 +41,8 @@ export function AlertSettings() {
   if (isLoading || !prefs || !limits) {
     return (
       <div className="space-y-3 pt-4" aria-busy>
-        <Skeleton className="h-28 w-full rounded-[18px]" />
-        <Skeleton className="h-40 w-full rounded-[18px]" />
+        <Skeleton className="h-28 w-full rounded-[20px]" />
+        <Skeleton className="h-40 w-full rounded-[20px]" />
       </div>
     );
   }
@@ -180,7 +180,7 @@ function BrowserNotifications() {
   }, []);
   if (perm === null || perm === "granted") return null;
   return (
-    <div className="mt-4 flex items-start gap-3 rounded-[18px] bg-surface p-4">
+    <div className="mt-4 flex items-start gap-3 rounded-[20px] bg-surface p-4">
       <BellRing className="mt-0.5 size-5 shrink-0 text-brand" aria-hidden />
       <div className="flex-1">
         <p className="text-[15px] font-semibold tracking-[-0.01em]">Device notifications</p>

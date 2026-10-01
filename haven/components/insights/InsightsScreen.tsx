@@ -51,8 +51,8 @@ export function InsightsScreen() {
       <div className="mx-auto max-w-lg px-5 pt-3">
         {isLoading && !ins ? (
           <div className="space-y-3" aria-busy>
-            <Skeleton className="h-28 w-full rounded-[18px]" />
-            <Skeleton className="h-40 w-full rounded-[18px]" />
+            <Skeleton className="h-28 w-full rounded-[20px]" />
+            <Skeleton className="h-40 w-full rounded-[20px]" />
           </div>
         ) : error ? (
           <ErrorState message={errorMessage(error)} onRetry={() => mutate()} />
@@ -114,7 +114,7 @@ export function InsightsScreen() {
         )}
 
         {!premium && (
-          <Link href="/upgrade" transitionTypes={["nav-forward"]} className="press mt-8 flex items-center gap-3 rounded-[18px] bg-surface px-4 py-3.5">
+          <Link href="/upgrade" transitionTypes={["nav-forward"]} className="press mt-8 flex items-center gap-3 rounded-[20px] bg-surface px-4 py-3.5">
             <Lock className="size-[18px] shrink-0 text-gold" aria-hidden />
             <span className="flex-1 text-[14px] leading-snug text-muted">Free shows 7 days. Lifetime shows 30 days of trends for every saved place.</span>
           </Link>

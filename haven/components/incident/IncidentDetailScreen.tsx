@@ -109,16 +109,8 @@ export function IncidentDetailScreen({ id }: { id: string }) {
           label={`Map showing the approximate location: ${incident.approximateAddress}`}
           attribution={false}
         />
-        <div className="vignette absolute inset-0" />
-        <div className="grain absolute inset-0 opacity-60" />
         <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-bg via-bg/70 to-transparent" />
         <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-bg/80 to-transparent" />
-        {!ended && (
-          <div
-            className="haven-drift absolute left-1/2 top-1/2 size-[60vw] max-w-[320px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-40 blur-3xl"
-            style={{ background: `radial-gradient(circle, ${def.color} 0%, transparent 65%)` }}
-          />
-        )}
       </div>
 
       <PageHeader
@@ -150,7 +142,7 @@ export function IncidentDetailScreen({ id }: { id: string }) {
         </div>
 
         {incident.status !== "under_review" && (
-          <div className="haven-rise mt-6 rounded-[18px] bg-surface px-4 pb-3 pt-4" style={{ animationDelay: "40ms" }}>
+          <div className="haven-rise mt-6 rounded-[20px] bg-surface px-4 pb-3 pt-4" style={{ animationDelay: "40ms" }}>
             <StatusStepper status={incident.status} color={def.color} />
           </div>
         )}

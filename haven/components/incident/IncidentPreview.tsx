@@ -87,7 +87,7 @@ function PreviewCard({
     <div
       role="dialog"
       aria-label={`${def.label} details`}
-      className={`glass pointer-events-auto relative mx-auto w-full max-w-lg overflow-hidden rounded-[24px] ${closing ? "haven-sheet-out" : "haven-sheet-in"}`}
+      className={`glass pointer-events-auto relative mx-auto w-full max-w-lg overflow-hidden rounded-[20px] ${closing ? "haven-sheet-out" : "haven-sheet-in"}`}
       style={{
         transform: dy ? `translateY(${dy}px)` : undefined,
         transition: dy ? "none" : "transform 260ms var(--ease-out)",

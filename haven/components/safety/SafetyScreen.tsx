@@ -78,7 +78,7 @@ export function SafetyScreen() {
           <Link
             href="/safety/walk"
             transitionTypes={["nav-forward"]}
-            className="press relative block overflow-hidden rounded-[22px] bg-surface p-4 shadow-[inset_0_0_0_1px_var(--line)]"
+            className="press relative block overflow-hidden rounded-[20px] bg-surface p-4 shadow-[inset_0_0_0_1px_var(--line)]"
           >
             <div
               className="pointer-events-none absolute -right-12 -top-14 size-52 rounded-full bg-brand/30 blur-3xl"
@@ -204,7 +204,7 @@ export function SafetyScreen() {
                   <p className="mb-1.5 px-1 text-[12.5px] font-semibold uppercase tracking-[0.08em] text-faint">
                     {g.title}
                   </p>
-                  <ul className="divide-y divide-line overflow-hidden rounded-[18px] bg-surface">
+                  <ul className="divide-y divide-line overflow-hidden rounded-[20px] bg-surface">
                     {g.items.map((r) => {
                       const external = r.href.startsWith("http");
                       return (

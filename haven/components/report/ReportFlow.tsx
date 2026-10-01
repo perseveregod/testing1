@@ -273,7 +273,7 @@ function StepDetails({ category, value, onChange, onNext }: { category: Category
         value={value}
         onChange={(e) => onChange(e.target.value.slice(0, MAX_DESCRIPTION))}
         placeholder={`${def.hint}…`}
-        className="w-full resize-none rounded-[18px] bg-surface p-4 text-[17px] leading-relaxed outline-none ring-brand/60 transition placeholder:text-faint focus:ring-2"
+        className="w-full resize-none rounded-[20px] bg-surface p-4 text-[17px] leading-relaxed outline-none ring-brand/60 transition placeholder:text-faint focus:ring-2"
       />
       <p className="mt-1.5 text-right text-[12px] text-faint tnum">
         {value.length}/{MAX_DESCRIPTION}
@@ -329,7 +329,7 @@ function StepReview({
 
   return (
     <div className="haven-rise flex flex-1 flex-col">
-      <div className="divide-y divide-line rounded-[18px] bg-surface px-4">
+      <div className="divide-y divide-line rounded-[20px] bg-surface px-4">
         <ReviewRow label="Category" onEdit={() => onEdit(1)}>
           <span className="flex items-center gap-2.5">
             <CategoryIcon category={category} size="sm" />

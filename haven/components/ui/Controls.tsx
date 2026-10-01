@@ -126,7 +126,7 @@ export function Group({
           {action}
         </div>
       )}
-      <div className="divide-y divide-line overflow-hidden rounded-[18px] bg-surface px-4">{children}</div>
+      <div className="divide-y divide-line overflow-hidden rounded-[20px] bg-surface px-4">{children}</div>
       {footer && <div className="px-4 pt-2 text-[13px] leading-snug text-faint">{footer}</div>}
     </section>
   );

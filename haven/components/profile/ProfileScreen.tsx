@@ -64,7 +64,7 @@ export function ProfileScreen() {
         {/* Plan */}
         {viewer &&
           (viewer.plan === "lifetime" ? (
-            <div className="mt-6 flex items-center gap-3 rounded-[18px] bg-surface px-4 py-3.5">
+            <div className="mt-6 flex items-center gap-3 rounded-[20px] bg-surface px-4 py-3.5">
               <Sparkles className="size-5 shrink-0 text-gold" aria-hidden />
               <div className="flex-1">
                 <p className="text-[15.5px] font-semibold tracking-[-0.01em]">Haven Lifetime</p>
@@ -75,7 +75,7 @@ export function ProfileScreen() {
             <Link
               href="/upgrade"
               transitionTypes={["nav-forward"]}
-              className="press mt-6 flex items-center gap-3 rounded-[18px] bg-gradient-to-r from-gold/[0.14] to-surface px-4 py-3.5"
+              className="press mt-6 flex items-center gap-3 rounded-[20px] bg-gradient-to-r from-gold/[0.14] to-surface px-4 py-3.5"
             >
               <Sparkles className="size-5 shrink-0 text-gold" aria-hidden />
               <div className="flex-1">

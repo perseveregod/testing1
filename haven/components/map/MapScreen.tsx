@@ -157,15 +157,7 @@ export function MapScreen() {
         mode={mode}
         onCameraChange={setCamera}
       />
-      {/* Atmosphere: vignette and grain over the map, gradients under the controls. */}
-      <div
-        className="vignette pointer-events-none absolute inset-0"
-        aria-hidden
-      />
-      <div
-        className="grain pointer-events-none absolute inset-0 opacity-70"
-        aria-hidden
-      />
+      {/* Soft gradients so the controls read over the map. */}
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-bg/90 via-bg/40 to-transparent"
         aria-hidden
@@ -206,7 +198,7 @@ export function MapScreen() {
           </IconButton>
         </div>
         <div className="no-scrollbar pointer-events-auto mx-auto mt-2.5 flex max-w-lg items-center gap-2 overflow-x-auto px-4 pb-1">
-          <div className="glass inline-flex h-8 shrink-0 items-center gap-2 rounded-full pl-1 pr-3 text-[12.5px] font-semibold text-text/90 tnum">
+          <div className="inline-flex h-8 shrink-0 items-center gap-2 bg-surface/95 rounded-full pl-1 pr-3 text-[12.5px] font-semibold text-text/90 tnum">
             {isLoading || (isValidating && !items.length) ? (
               <span className="flex items-center gap-2 pl-2 text-muted">
                 <Spinner className="size-3" /> Loading
@@ -251,8 +243,8 @@ export function MapScreen() {
                 }
                 className={`press inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold ${
                   on
-                    ? "bg-text text-bg shadow-[0_4px_14px_-4px_rgba(0,0,0,0.5)]"
-                    : "glass text-text/90"
+                    ? "bg-text text-bg"
+                    : "bg-surface/95 text-text/90"
                 }`}
               >
                 {q.color && (
@@ -272,7 +264,7 @@ export function MapScreen() {
       {/* Bottom: locate button + preview / location prompt */}
       <div className="pointer-events-none absolute inset-x-0 z-20 bottom-nav-offset">
         <div className="mx-auto flex max-w-lg flex-col items-end gap-3 px-4 pb-3">
-          <div className="glass pointer-events-auto flex flex-col overflow-hidden rounded-[18px]">
+          <div className="glass pointer-events-auto flex flex-col overflow-hidden rounded-[20px]">
             <button
               type="button"
               onClick={() => setLayersOpen(true)}
@@ -347,7 +339,7 @@ export function MapScreen() {
           />
 
           {showPrompt && (
-            <div className="glass haven-rise pointer-events-auto w-full rounded-[22px] p-4">
+            <div className="glass haven-rise pointer-events-auto w-full rounded-[20px] p-4">
               <div className="flex items-start gap-3">
                 <Navigation
                   className="mt-0.5 size-5 shrink-0 text-brand"

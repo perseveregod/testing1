@@ -141,7 +141,7 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
       let marker = markers.current.get(key);
       if (!marker) {
         const el = document.createElement("div");
-        marker = new ml.Marker({ element: el, anchor: "center" }).setLngLat([lng, lat]).addTo(m);
+        marker = new ml.Marker({ element: el, anchor: "bottom" }).setLngLat([lng, lat]).addTo(m);
         markers.current.set(key, marker);
       } else {
         marker.setLngLat([lng, lat]);
@@ -414,8 +414,8 @@ function PointMarker({
   onClick: () => void;
 }) {
   const def = getCategory(category);
-  const size = selected ? 46 : severity >= 2 ? 38 : 34;
-  const color = ended ? "#7a7f89" : def.color;
+  const color = ended ? "#6b7280" : def.color;
+  const size = selected ? 44 : severity >= 2 ? 36 : 32;
   return (
     <button
       type="button"
@@ -425,28 +425,46 @@ function PointMarker({
       }}
       aria-label={`${def.label}${ended ? " (ended)" : ""}`}
       aria-pressed={selected}
-      className="haven-marker haven-pop relative flex items-center justify-center rounded-full"
-      style={{
-        width: size,
-        height: size,
-        background: selected ? color : "rgba(20, 21, 25, 0.92)",
-        color: selected ? "#0b0c0f" : color,
-        border: `${selected ? 2.5 : 1.5}px solid ${selected ? "#fff" : color}`,
-        opacity: ended ? 0.7 : 1,
-        boxShadow: selected ? `0 0 0 8px color-mix(in srgb, ${color} 28%, transparent), 0 8px 24px rgba(0,0,0,.5)` : "0 4px 14px rgba(0,0,0,.45)",
-      }}
+      className="haven-marker haven-pop relative flex items-center justify-center"
+      style={{ width: size, height: size + 6, opacity: ended ? 0.75 : 1 }}
     >
-      {severity >= 3 && !ended && !selected && (
-        <span className="haven-pulse absolute inset-0 rounded-full" style={{ background: `color-mix(in srgb, ${color} 40%, transparent)` }} aria-hidden />
-      )}
-      <CategoryGlyph category={category} animated={!ended} className="relative" style={{ width: size * 0.58, height: size * 0.58 }} />
+      {/* Pin head: solid category color with a white glyph, like a maps app. */}
+      <span
+        className="absolute left-1/2 top-0 flex -translate-x-1/2 items-center justify-center rounded-full"
+        style={{
+          width: size,
+          height: size,
+          background: color,
+          color: "#fff",
+          border: `${selected ? 3 : 2}px solid #fff`,
+          boxShadow: selected
+            ? `0 0 0 6px color-mix(in srgb, ${color} 30%, transparent), 0 6px 16px rgba(0,0,0,.45)`
+            : "0 3px 10px rgba(0,0,0,.4)",
+          transition: "width 160ms, height 160ms, box-shadow 160ms",
+        }}
+      >
+        <CategoryGlyph category={category} animated={false} style={{ width: size * 0.55, height: size * 0.55 }} />
+      </span>
+      {/* Pin point */}
+      <span
+        className="absolute left-1/2 -translate-x-1/2"
+        style={{
+          bottom: 0,
+          width: 0,
+          height: 0,
+          borderLeft: "5px solid transparent",
+          borderRight: "5px solid transparent",
+          borderTop: "7px solid #fff",
+        }}
+        aria-hidden
+      />
     </button>
   );
 }
 
 function ClusterMarker({ count, maxSev, onClick }: { count: number; maxSev: number; onClick: () => void }) {
-  const ring = ["#9b9fa8", "#f5b84b", "#ff8a5c", "#ff5f57"][Math.max(0, Math.min(3, maxSev))];
-  const size = count >= 50 ? 52 : count >= 10 ? 46 : 40;
+  const ring = ["#9aa3b2", "#f5b84b", "#ff8a5c", "#ff5f57"][Math.max(0, Math.min(3, maxSev))];
+  const size = count >= 50 ? 48 : count >= 10 ? 42 : 36;
   return (
     <button
       type="button"
@@ -455,15 +473,8 @@ function ClusterMarker({ count, maxSev, onClick }: { count: number; maxSev: numb
         onClick();
       }}
       aria-label={`${count} incidents here. Zoom in.`}
-      className="haven-marker haven-pop flex items-center justify-center rounded-full text-[14px] font-semibold text-text tnum"
-      style={{
-        width: size,
-        height: size,
-        background: "rgba(20, 21, 25, 0.92)",
-        border: `2px solid ${ring}`,
-        boxShadow: `0 0 0 5px color-mix(in srgb, ${ring} 18%, transparent), 0 4px 14px rgba(0,0,0,.5)`,
-        backdropFilter: "blur(4px)",
-      }}
+      className="haven-marker haven-pop flex items-center justify-center rounded-full bg-white text-[14px] font-bold text-[#0b0c0f] tnum"
+      style={{ width: size, height: size, boxShadow: `0 0 0 3px ${ring}, 0 4px 12px rgba(0,0,0,.45)` }}
     >
       {count}
     </button>

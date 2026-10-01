@@ -30,15 +30,16 @@ describe("incident beacons", () => {
     status: "active",
   } as unknown as PublicIncident;
 
-  it("raises a taller column for more serious live incidents and none for ended ones", () => {
+  it("raises columns only for serious live incidents, taller for critical", () => {
     const fc = beaconGeoJson([
       base,
+      { ...base, severity: "critical" } as PublicIncident,
       { ...base, severity: "low" } as PublicIncident,
       { ...base, status: "resolved" } as PublicIncident,
     ]);
     expect(fc.features).toHaveLength(2);
-    const [high, low] = fc.features.map((f) => (f.properties as { height: number }).height);
-    expect(high).toBeGreaterThan(low);
+    const [high, critical] = fc.features.map((f) => (f.properties as { height: number }).height);
+    expect(critical).toBeGreaterThan(high);
     const ring = (fc.features[0].geometry as GeoJSON.Polygon).coordinates[0];
     expect(ring[0]).toEqual(ring[ring.length - 1]);
   });

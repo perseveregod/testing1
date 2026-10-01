@@ -75,7 +75,8 @@ export function enhanceStyle(m: MlMap, mode: ResolvedMode) {
             : ["interpolate", ["linear"], ["coalesce", ["get", "render_height"], 0], 0, "#e9e4dc", 40, "#ddd8d0", 120, "#cfd5de", 250, "#bfc9d8"],
           "fill-extrusion-height": grownHeight("render_height"),
           "fill-extrusion-base": grownHeight("render_min_height"),
-          "fill-extrusion-opacity": night ? 0.94 : 0.88,
+          // Opaque extrusions skip the expensive depth-sorted transparency pass.
+          "fill-extrusion-opacity": 1,
           "fill-extrusion-vertical-gradient": true,
         },
       },
@@ -112,8 +113,8 @@ export function enhanceStyle(m: MlMap, mode: ResolvedMode) {
         },
   );
 
-  // A globe when zoomed far out; it flattens as you zoom in.
-  m.setProjection({ type: "globe" });
+  // Globe only when zoomed far out; flat (and cheaper) in the city.
+  m.setProjection({ type: ["interpolate", ["linear"], ["zoom"], 8, "vertical-perspective", 10, "mercator"] });
 
   if (!m.getSource(BEACONS)) {
     m.addSource(BEACONS, { type: "geojson", data: { type: "FeatureCollection", features: [] } });
@@ -128,7 +129,7 @@ export function enhanceStyle(m: MlMap, mode: ResolvedMode) {
           "fill-extrusion-color": ["get", "color"],
           "fill-extrusion-height": ["interpolate", ["linear"], ["zoom"], 12, 0, 14, ["get", "height"]],
           "fill-extrusion-base": 0,
-          "fill-extrusion-opacity": night ? 0.55 : 0.45,
+          "fill-extrusion-opacity": night ? 0.6 : 0.5,
           "fill-extrusion-vertical-gradient": true,
         },
       },
@@ -143,9 +144,11 @@ export function beaconGeoJson(incidents: PublicIncident[]): GeoJSON.FeatureColle
   for (const i of incidents) {
     if (i.status === "resolved") continue;
     const sev = SEVERITY_RANK[i.severity];
+    // Only serious incidents get a light column; keeps the scene clean and cheap.
+    if (sev < 2) continue;
     const ring: [number, number][] = [];
-    for (let k = 0; k <= 16; k++) {
-      const a = (k / 16) * Math.PI * 2;
+    for (let k = 0; k <= 10; k++) {
+      const a = (k / 10) * Math.PI * 2;
       const p = offsetMeters({ lat: i.latitude, lng: i.longitude }, Math.sin(a) * 7, Math.cos(a) * 7);
       ring.push([p.lng, p.lat]);
     }

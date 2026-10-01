@@ -61,9 +61,9 @@ export function UpgradeScreen() {
             style={{ maskImage: "linear-gradient(to bottom, black 55%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 55%, transparent 100%)" }}
             aria-hidden
           >
-            <div className="haven-drift absolute left-[20%] top-[10%] size-72 rounded-full bg-gold/25 blur-3xl" />
-            <div className="haven-drift-slow absolute right-[10%] top-[30%] size-64 rounded-full bg-brand/15 blur-3xl" />
-            <div className="grain absolute inset-0 opacity-50" />
+            <div className="absolute left-[20%] top-[10%] size-72 rounded-full bg-gold/25 blur-3xl" />
+            <div className="absolute right-[10%] top-[30%] size-64 rounded-full bg-brand/15 blur-3xl" />
+            
           </div>
           <p className="relative text-[13px] font-semibold uppercase tracking-[0.14em] text-gold">Lifetime</p>
           <h2 className="relative mt-3 text-[40px] font-bold leading-[1.02] tracking-[-0.04em]">
