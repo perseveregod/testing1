@@ -28,18 +28,21 @@ export function useArrivals<T extends { id: string }>(
   // when a prop changes" pattern), so there is no setState in an effect.
   // (An empty list is the same empty list, whatever its identity.)
   if (state.items !== items && !(items.length === 0 && state.items?.length === 0)) {
-    const ids = new Set(items.map((i) => i.id));
+    // Everything ever shown stays known, so a filter that narrows and widens
+    // the list doesn't turn old rows into "new" ones.
+    const known = new Set(state.known);
+    for (const i of items) known.add(i.id);
     let next: State<T>;
     if (!state.items?.length || items.length === 0) {
       // The first real answer is the baseline, not a batch of news.
-      next = { ...state, items, known: ids };
+      next = { ...state, items, known };
     } else {
       const fresh = items.filter((i) => !state.known.has(i.id)).map((i) => i.id);
       // A wholesale change (new area, new filter) is a different list, not news.
       const news = fresh.length > 0 && fresh.length <= (opts.max ?? 12);
       next = {
         items,
-        known: ids,
+        known,
         arrived: news ? new Set(fresh) : state.arrived,
         gen: news ? state.gen + 1 : state.gen,
         pending: news && opts.scrolled ? state.pending + fresh.length : state.pending,
