@@ -2,9 +2,9 @@ import type { StyleSpecification } from "maplibre-gl";
 import { MAP_STYLE_URL } from "@/lib/client/defaults";
 
 /** True when MapLibre failed to fetch the style document itself. */
-export function isStyleError(err: unknown): boolean {
+export function isStyleError(err: unknown, styleUrl: string = MAP_STYLE_URL): boolean {
   const url = (err as { url?: string } | undefined)?.url;
-  return typeof url === "string" && url.split("?")[0] === MAP_STYLE_URL.split("?")[0];
+  return typeof url === "string" && url.split("?")[0] === styleUrl.split("?")[0];
 }
 
 /**

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { LocateFixed, Navigation, Search, SlidersHorizontal } from "lucide-react";
+import { Layers, LocateFixed, Navigation, Navigation2, Search, SlidersHorizontal } from "lucide-react";
 import { DEFAULT_CENTER } from "@/lib/client/defaults";
 import { distanceFrom, useIncidents, useViewer } from "@/lib/client/hooks";
 import type { LatLng } from "@/lib/geo";
@@ -12,7 +12,20 @@ import { getCategory, type FilterGroup } from "@/lib/categories";
 import { IconButton } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/States";
 import { activeFilterCount, DEFAULT_FILTERS, FilterSheet, filterParams, type MapFilters } from "./FilterSheet";
-import { IncidentMap, type MapHandle, type Viewport } from "./IncidentMap";
+import { IncidentMap, type Camera, type MapHandle, type Viewport } from "./IncidentMap";
+import { LayersSheet } from "./LayersSheet";
+import { BEARING_3D, PITCH_3D, type MapMode } from "./map3d";
+
+const MODE_KEY = "haven.mapMode";
+
+function savedMode(): MapMode {
+  try {
+    const v = typeof window === "undefined" ? null : localStorage.getItem(MODE_KEY);
+    return v === "night" || v === "day" || v === "satellite" ? v : "auto";
+  } catch {
+    return "auto";
+  }
+}
 import { SearchSheet } from "./SearchSheet";
 
 /** One-tap category filters along the top of the map. */
@@ -49,6 +62,18 @@ export function MapScreen() {
   const [filters, setFilters] = useState<MapFilters>(DEFAULT_FILTERS);
   const [searchLabel, setSearchLabel] = useState<string | null>(null);
   const [promptDismissed, setPromptDismissed] = useState(false);
+  const [mode, setMode] = useState<MapMode>(savedMode);
+  const [layersOpen, setLayersOpen] = useState(false);
+  const [camera, setCamera] = useState<Camera>({ bearing: BEARING_3D, pitch: PITCH_3D });
+
+  const chooseMode = useCallback((m: MapMode) => {
+    setMode(m);
+    try {
+      localStorage.setItem(MODE_KEY, m);
+    } catch {
+      // Storage blocked: the choice lasts for this visit.
+    }
+  }, []);
   const flewToUser = useRef(false);
 
   const area = useMemo(() => queryArea(viewport), [viewport]);
@@ -89,6 +114,8 @@ export function MapScreen() {
         userPosition={position}
         initialCenter={DEFAULT_CENTER}
         onViewportChange={setViewport}
+        mode={mode}
+        onCameraChange={setCamera}
       />
       {/* Atmosphere: vignette and grain over the map, gradients under the controls. */}
       <div className="vignette pointer-events-none absolute inset-0" aria-hidden />
@@ -157,6 +184,44 @@ export function MapScreen() {
       {/* Bottom: locate button + preview / location prompt */}
       <div className="pointer-events-none absolute inset-x-0 z-20 bottom-nav-offset">
         <div className="mx-auto flex max-w-lg flex-col items-end gap-3 px-4 pb-3">
+          <div className="glass pointer-events-auto flex flex-col overflow-hidden rounded-[18px]">
+            <button
+              type="button"
+              onClick={() => setLayersOpen(true)}
+              aria-label="Map style"
+              title="Map style"
+              className="press flex size-12 items-center justify-center"
+            >
+              <Layers className="size-[19px]" aria-hidden />
+            </button>
+            <span className="mx-2.5 h-px bg-line-strong" aria-hidden />
+            <button
+              type="button"
+              onClick={() => mapRef.current?.toggle3D()}
+              aria-label={camera.pitch > 5 ? "Switch to flat 2D view" : "Switch to 3D view"}
+              className="press flex size-12 items-center justify-center text-[13px] font-extrabold tracking-[0.02em]"
+            >
+              {camera.pitch > 5 ? "2D" : "3D"}
+            </button>
+            {Math.abs(camera.bearing) > 2 && (
+              <>
+                <span className="mx-2.5 h-px bg-line-strong" aria-hidden />
+                <button
+                  type="button"
+                  onClick={() => mapRef.current?.resetNorth()}
+                  aria-label="Point the map north"
+                  className="press haven-pop flex size-12 flex-col items-center justify-center"
+                >
+                  <Navigation2
+                    className="size-[17px] fill-live text-live transition-transform duration-150"
+                    style={{ transform: `rotate(${-camera.bearing}deg)` }}
+                    aria-hidden
+                  />
+                  <span className="text-[8.5px] font-bold leading-none text-muted">N</span>
+                </button>
+              </>
+            )}
+          </div>
           <IconButton label={position ? "Center on my location" : "Use my location"} onClick={locate} className="pointer-events-auto">
             {status === "locating" ? (
               <Spinner className="size-[18px]" />
@@ -210,6 +275,7 @@ export function MapScreen() {
           mapRef.current?.flyTo(p, 15);
         }}
       />
+      <LayersSheet open={layersOpen} onClose={() => setLayersOpen(false)} value={mode} onChange={chooseMode} />
       <FilterSheet open={filterOpen} onClose={() => setFilterOpen(false)} value={filters} onChange={setFilters} viewer={viewer} />
     </div>
   );

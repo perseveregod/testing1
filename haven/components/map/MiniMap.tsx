@@ -7,6 +7,7 @@ import { MapPin } from "lucide-react";
 import { MAP_STYLE_URL } from "@/lib/client/defaults";
 import type { LatLng } from "@/lib/geo";
 import { tuneStyle } from "./IncidentMap";
+import { enhanceStyle } from "./map3d";
 import { FALLBACK_RASTER_STYLE, isStyleError } from "./mapStyle";
 
 /**
@@ -53,7 +54,10 @@ export function MiniMap({
         container: container.current,
         style: MAP_STYLE_URL,
         center: [center.lng, center.lat],
-        zoom: mode === "picker" ? 16 : 14.5,
+        zoom: mode === "picker" ? 16 : 15.4,
+        // The incident page shows the scene in 3D; the location picker stays flat.
+        pitch: mode === "picker" ? 0 : 55,
+        bearing: mode === "picker" ? 0 : -20,
         interactive: mode === "picker",
         attributionControl: attribution ? { compact: true } : false,
         dragRotate: false,
@@ -68,7 +72,16 @@ export function MiniMap({
           m.setStyle(FALLBACK_RASTER_STYLE);
         }
       });
-      m.on("style.load", () => tuneStyle(m));
+      m.on("style.load", () => {
+        tuneStyle(m);
+        if (mode !== "picker") {
+          try {
+            enhanceStyle(m, "night");
+          } catch {
+            // 3D extras are decoration; the flat map still works.
+          }
+        }
+      });
       m.on("load", () => {
         setLoaded(true);
         const c = m.getCenter();
