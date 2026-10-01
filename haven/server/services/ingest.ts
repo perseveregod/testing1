@@ -11,7 +11,9 @@ import { dispatchAlerts } from "./alerts";
 // endpoint in production and lazily (at most every INGEST_INTERVAL_MIN) when
 // the map loads, so local development needs no scheduler.
 
-const DEMO_REFRESH_MS = 6 * 3_600_000;
+// Demo data is regenerated this often so its timestamps (and the 6-hour Storm
+// Mode window) stay fresh.
+const DEMO_REFRESH_MS = 90 * 60_000;
 const NOTIFY_IF_NEWER_THAN_MS = 30 * 60_000;
 
 export interface IngestResult {
@@ -139,12 +141,23 @@ async function ingestOne(adapter: SourceAdapter, now: Date): Promise<IngestResul
         reporterId: null,
         createdAt: item.observedAt,
         updatedAt: item.observedAt,
-        confirmationCount: 0,
+        confirmationCount: item.confirmations ?? 0,
         endedCount: 0,
         flagCount: 0,
         mergedIntoId: null,
+        storm: item.storm ?? null,
       };
-      await store.insertIncident(rec);
+      try {
+        await store.insertIncident(rec);
+      } catch (err) {
+        // Storm demo rows need the Storm Mode database update; skip them
+        // rather than failing the whole feed until it's applied.
+        if (item.storm) {
+          console.warn("[haven] storm demo row skipped:", (err as Error).message);
+          continue;
+        }
+        throw err;
+      }
       await store.insertUpdate({
         id: randomUUID(),
         incidentId: rec.id,

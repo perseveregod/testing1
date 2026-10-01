@@ -1,4 +1,4 @@
-import type { CategoryId, DataSource, IncidentStatus, Severity } from "@/lib/types";
+import type { CategoryId, DataSource, IncidentStatus, Severity, StormInfo } from "@/lib/types";
 
 // Every incident feed (city open data, weather, demo seed...) is an adapter
 // that returns normalized incidents. The ingest service upserts them by
@@ -16,6 +16,10 @@ export interface NormalizedIncident {
   severity: Severity;
   status: IncidentStatus;
   observedAt: string;
+  /** Storm Mode demo reports. */
+  storm?: StormInfo;
+  /** Demo only: start with this many neighbor confirmations. */
+  confirmations?: number;
 }
 
 export interface SourceContext {

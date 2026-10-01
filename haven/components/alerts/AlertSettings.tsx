@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { BellRing, MapPin } from "lucide-react";
-import { CATEGORIES } from "@/lib/categories";
+import { EVERYDAY_CATEGORIES } from "@/lib/categories";
 import { apiSend, errorMessage } from "@/lib/client/api";
 import { useAlertPrefs, usePlaces, useViewer } from "@/lib/client/hooks";
 import { RADIUS_OPTIONS_MI } from "@/lib/plans";
@@ -49,9 +49,9 @@ export function AlertSettings() {
 
   const allCats = prefs.categories.length === 0;
   const toggleCat = (c: CategoryId) => {
-    const current = allCats ? CATEGORIES.map((x) => x.id) : prefs.categories;
+    const current = allCats ? EVERYDAY_CATEGORIES.map((x) => x.id) : prefs.categories;
     const next = current.includes(c) ? current.filter((x) => x !== c) : [...current, c];
-    save({ categories: next.length === CATEGORIES.length ? [] : next });
+    save({ categories: next.length === EVERYDAY_CATEGORIES.length ? [] : next });
   };
   const free = viewer.plan === "free";
 
@@ -116,7 +116,7 @@ export function AlertSettings() {
           <Chip active={allCats} onClick={() => save({ categories: [] })} disabled={!prefs.enabled}>
             All
           </Chip>
-          {CATEGORIES.map((c) => (
+          {EVERYDAY_CATEGORIES.map((c) => (
             <Chip key={c.id} active={!allCats && prefs.categories.includes(c.id)} onClick={() => toggleCat(c.id)} disabled={!prefs.enabled}>
               {c.short}
             </Chip>

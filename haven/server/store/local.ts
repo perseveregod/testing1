@@ -37,6 +37,7 @@ interface Data {
   alertPrefs: (AlertPreferences & { userId: string })[];
   notifications: (NotificationItem & { userId: string })[];
   sources: DataSource[];
+  photos: Record<string, string>;
 }
 
 const empty = (): Data => ({
@@ -48,6 +49,7 @@ const empty = (): Data => ({
   votes: [],
   flags: [],
   reports: [],
+  photos: {},
   places: [],
   alertPrefs: [],
   notifications: [],
@@ -153,6 +155,13 @@ export class LocalStore implements Store {
   async getIncidentByExternalId(sourceId: string, externalId: string) {
     const i = this.data.incidents.find((x) => x.sourceId === sourceId && x.externalId === externalId);
     return i ? { ...i } : null;
+  }
+  async savePhoto(incidentId: string, dataUrl: string) {
+    this.data.photos[incidentId] = dataUrl;
+    this.save();
+  }
+  async getPhoto(incidentId: string) {
+    return this.data.photos[incidentId] ?? null;
   }
   async insertIncident(rec: IncidentRecord) {
     this.data.incidents.push({ ...rec });

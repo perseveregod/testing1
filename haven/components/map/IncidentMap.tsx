@@ -5,6 +5,8 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useSta
 import { createPortal } from "react-dom";
 import type { GeoJSONSource, Map as MlMap, Marker } from "maplibre-gl";
 import { getCategory, SEVERITY_RANK } from "@/lib/categories";
+import { STATE_STYLE, stormFade } from "@/lib/storm";
+import type { StormState } from "@/lib/types";
 import { distanceMiles, type LatLng } from "@/lib/geo";
 import type { PublicIncident } from "@/lib/types";
 import { CategoryGlyph } from "@/components/incident/AnimatedIcons";
@@ -60,7 +62,7 @@ interface Props {
 }
 
 type Visible =
-  | { key: string; kind: "point"; el: HTMLElement; id: string; category: PublicIncident["category"]; severity: number; ended: boolean; age: number }
+  | { key: string; kind: "point"; el: HTMLElement; id: string; category: PublicIncident["category"]; severity: number; ended: boolean; age: number; stormState: StormState | null; confirms: number; stormFadeValue: number }
   | { key: string; kind: "cluster"; el: HTMLElement; clusterId: number; count: number; maxSev: number; lng: number; lat: number };
 
 const SOURCE = "incidents";
@@ -179,7 +181,7 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
         key,
         p.cluster
           ? { key, kind: "cluster", el, clusterId: Number(p.cluster_id), count: Number(p.point_count), maxSev: Number(p.maxSev ?? 0), lng, lat }
-          : { key, kind: "point", el, id: String(p.id), category: p.category as PublicIncident["category"], severity: Number(p.sevRank), ended: Boolean(p.ended), age: Number(p.age ?? 0) },
+          : { key, kind: "point", el, id: String(p.id), category: p.category as PublicIncident["category"], severity: Number(p.sevRank), ended: Boolean(p.ended), age: Number(p.age ?? 0), stormState: (p.stormState as StormState | undefined) || null, confirms: Number(p.confirms ?? 0), stormFadeValue: Number(p.stormFade ?? 1) },
       );
     }
     for (const [key, marker] of markers.current) {
@@ -397,6 +399,16 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
           v.kind === "cluster" ? (
             <ClusterMarker count={v.count} maxSev={v.maxSev} onClick={() => zoomIntoCluster(v.clusterId, v.lng, v.lat)} />
           ) : (
+            v.stormState ? (
+              <StormPin
+                category={v.category}
+                state={v.stormState}
+                confirms={v.confirms}
+                fade={v.stormFadeValue}
+                selected={v.id === selectedId}
+                onClick={() => onSelect(v.id)}
+              />
+            ) : (
             <PointMarker
               category={v.category}
               severity={v.severity}
@@ -405,6 +417,7 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
               selected={v.id === selectedId}
               onClick={() => onSelect(v.id)}
             />
+            )
           ),
           v.el,
           v.key,
@@ -432,6 +445,10 @@ function toGeoJson(incidents: PublicIncident[]): GeoJSON.FeatureCollection {
         ended: i.status === "resolved",
         // Hours old, for recency fading on the marker.
         age: (Date.now() - new Date(i.createdAt).getTime()) / 3_600_000,
+        // Storm reports: state, neighbor confirmations, and 2h/6h fading by last activity.
+        stormState: i.storm?.state ?? "",
+        confirms: i.confirmationCount,
+        stormFade: i.storm ? stormFade(i.updatedAt) : 1,
       },
     })),
   };
@@ -519,6 +536,84 @@ function PointMarker({
         </span>
       )}
       {/* Pin point */}
+      <span
+        className="absolute left-1/2 -translate-x-1/2"
+        style={{ bottom: 0, width: 0, height: 0, borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderTop: "8px solid #fff" }}
+        aria-hidden
+      />
+    </button>
+  );
+}
+
+/**
+ * A storm report pin: colored by what it says (flooded is big, red and
+ * pulsing), with the number of neighbors who confirmed it.
+ */
+function StormPin({
+  category,
+  state,
+  confirms,
+  fade,
+  selected,
+  onClick,
+}: {
+  category: PublicIncident["category"];
+  state: StormState;
+  confirms: number;
+  fade: number;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  const style = STATE_STYLE[state];
+  const flooded = state === "flooded";
+  const size = selected ? 50 : flooded ? 46 : 38;
+  const label = `${getCategory(category).label}: ${state}${confirms ? `, ${confirms} confirmed` : ""}`;
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      aria-label={label}
+      aria-pressed={selected}
+      className="haven-marker haven-pop relative flex items-center justify-center"
+      style={{ width: size, height: size + 7, opacity: selected ? 1 : Math.max(0.45, fade) }}
+    >
+      {flooded && (
+        <span className="haven-pulse absolute left-1/2 top-0 -translate-x-1/2 rounded-full" style={{ width: size, height: size, background: "rgba(255,45,32,.55)" }} aria-hidden />
+      )}
+      <span
+        className="absolute left-1/2 top-0 flex -translate-x-1/2 items-center justify-center"
+        style={{
+          width: size,
+          height: size,
+          borderRadius: flooded ? "30%" : "9999px",
+          background: style.color,
+          color: state === "closed" || flooded ? "#fff" : "#0b0c0f",
+          border: `${flooded ? 3 : 2.5}px solid #fff`,
+          boxShadow: selected
+            ? `0 0 0 6px color-mix(in srgb, ${style.color} 35%, transparent), 0 8px 20px rgba(0,0,0,.55)`
+            : "0 0 0 1px rgba(0,0,0,.35), 0 4px 12px rgba(0,0,0,.5)",
+        }}
+      >
+        <CategoryGlyph category={category} animated={false} style={{ width: size * 0.56, height: size * 0.56 }} />
+        {/* Good news gets a check, bad news an x: readable without color. */}
+        <span
+          className="absolute -bottom-1 -left-1 flex size-[17px] items-center justify-center rounded-full bg-white text-[11px] font-black leading-none text-[#0b0c0f]"
+          aria-hidden
+        >
+          {style.bad ? "✕" : "✓"}
+        </span>
+      </span>
+      {confirms > 0 && (
+        <span
+          className="absolute -right-2 -top-1.5 flex h-[19px] min-w-[19px] items-center justify-center rounded-full bg-[#0b0c0f] px-1 text-[11px] font-bold text-white ring-2 ring-white tnum"
+          aria-hidden
+        >
+          {confirms}
+        </span>
+      )}
       <span
         className="absolute left-1/2 -translate-x-1/2"
         style={{ bottom: 0, width: 0, height: 0, borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderTop: "8px solid #fff" }}

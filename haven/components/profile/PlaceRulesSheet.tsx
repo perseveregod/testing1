@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CATEGORIES } from "@/lib/categories";
+import { EVERYDAY_CATEGORIES } from "@/lib/categories";
 import { apiSend, errorMessage } from "@/lib/client/api";
 import { useViewer } from "@/lib/client/hooks";
 import { RADIUS_OPTIONS_MI } from "@/lib/plans";
@@ -39,9 +39,9 @@ function RulesForm({ place, onClose, onSaved }: { place: SavedPlace; onClose: ()
   const [busy, setBusy] = useState(false);
 
   const toggle = (c: CategoryId) => {
-    const current = cats ?? CATEGORIES.map((x) => x.id);
+    const current = cats ?? EVERYDAY_CATEGORIES.map((x) => x.id);
     const next = current.includes(c) ? current.filter((x) => x !== c) : [...current, c];
-    setCats(next.length === CATEGORIES.length ? [] : next);
+    setCats(next.length === EVERYDAY_CATEGORIES.length ? [] : next);
   };
 
   async function save() {
@@ -95,7 +95,7 @@ function RulesForm({ place, onClose, onSaved }: { place: SavedPlace; onClose: ()
         <Chip active={cats !== null && cats.length === 0} onClick={() => setCats([])}>
           All
         </Chip>
-        {CATEGORIES.map((c) => (
+        {EVERYDAY_CATEGORIES.map((c) => (
           <Chip key={c.id} active={cats !== null && cats.length > 0 && cats.includes(c.id)} onClick={() => toggle(c.id)}>
             {c.short}
           </Chip>

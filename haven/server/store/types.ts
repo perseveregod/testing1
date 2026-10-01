@@ -94,6 +94,10 @@ export interface Store {
   listUpdates(incidentId: string): Promise<IncidentUpdateRecord[]>;
   insertUpdate(rec: IncidentUpdateRecord): Promise<void>;
 
+  // Storm report photos (small JPEG data URLs), kept out of list queries.
+  savePhoto(incidentId: string, dataUrl: string): Promise<void>;
+  getPhoto(incidentId: string): Promise<string | null>;
+
   // votes (confirmations + "it's over") and flags; one per user per kind.
   // Inserting a vote or flag also bumps the matching counter on the incident.
   getVotes(incidentId: string, userId: string): Promise<VoteKind[]>;

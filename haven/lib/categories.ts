@@ -1,6 +1,6 @@
 import type { CategoryId, Severity } from "./types";
 
-export type FilterGroup = "police" | "fire" | "medical" | "traffic" | "weather" | "other";
+export type FilterGroup = "police" | "fire" | "medical" | "traffic" | "weather" | "other" | "storm";
 
 export interface CategoryDef {
   id: CategoryId;
@@ -128,6 +128,43 @@ export const CATEGORIES: readonly CategoryDef[] = [
     dedupeWindowMin: 720,
     hint: "Lost or found dogs, cats and other pets",
   },
+  // Storm Mode. Reports fade after 2h and disappear after 6h without a confirm.
+  {
+    id: "power",
+    label: "Power",
+    short: "Power",
+    color: "#FFC233",
+    group: "storm",
+    defaultSeverity: "moderate",
+    staleAfterHours: 6,
+    dedupeRadiusM: 60,
+    dedupeWindowMin: 360,
+    hint: "Power out or back on on this block",
+  },
+  {
+    id: "flooding",
+    label: "Street flooding",
+    short: "Flooding",
+    color: "#FF3B30",
+    group: "storm",
+    defaultSeverity: "critical",
+    staleAfterHours: 6,
+    dedupeRadiusM: 60,
+    dedupeWindowMin: 360,
+    hint: "Flooded or passable street",
+  },
+  {
+    id: "place",
+    label: "Open places",
+    short: "Place",
+    color: "#34C759",
+    group: "storm",
+    defaultSeverity: "low",
+    staleAfterHours: 6,
+    dedupeRadiusM: 60,
+    dedupeWindowMin: 360,
+    hint: "A gas station, store or cooling center that's open or closed",
+  },
   {
     id: "other",
     label: "Other",
@@ -180,3 +217,12 @@ export const SEVERITY_LABEL: Record<Severity, string> = {
   high: "High",
   critical: "Critical",
 };
+
+export const STORM_CATEGORIES: CategoryId[] = ["power", "flooding", "place"];
+
+export function isStormCategory(c: CategoryId): boolean {
+  return STORM_CATEGORIES.includes(c);
+}
+
+/** Everyday categories: everything except Storm Mode's. Used by the report picker and alert settings. */
+export const EVERYDAY_CATEGORIES: readonly CategoryDef[] = CATEGORIES.filter((c) => c.group !== "storm");

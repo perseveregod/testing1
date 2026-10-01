@@ -8,7 +8,11 @@ import type {
   NotificationItem,
   PlanId,
   SavedPlace,
+  StormInfo,
+  StormPlaceType,
+  StormState,
 } from "@/lib/types";
+import { ApiError } from "../http";
 import type {
   AlertCandidate,
   EntitlementRecord,
@@ -67,6 +71,8 @@ function toIncident(r: Row): IncidentRecord {
     endedCount: Number(r.ended_count ?? 0),
     flagCount: Number(r.flag_count ?? 0),
     mergedIntoId: str(r.merged_into_id),
+    storm: r.storm_state ? { state: r.storm_state as StormState, placeType: (str(r.storm_place_type) as StormPlaceType | null) ?? null } : null,
+    hasPhoto: Boolean(r.has_photo),
   };
 }
 
@@ -89,11 +95,24 @@ const INCIDENT_COLUMNS: Record<keyof IncidentRecord, string> = {
   endedCount: "ended_count",
   flagCount: "flag_count",
   mergedIntoId: "merged_into_id",
+  storm: "", // expanded to storm_state / storm_place_type in fromIncident
+  hasPhoto: "has_photo",
 };
 
 function fromIncident(p: Partial<IncidentRecord>): Row {
   const out: Row = {};
   for (const [k, v] of Object.entries(p)) {
+    if (k === "storm") {
+      // Only written for storm reports, so databases without the Storm Mode
+      // columns keep working for everything else.
+      const st = v as StormInfo | null | undefined;
+      if (st) {
+        out.storm_state = st.state;
+        out.storm_place_type = st.placeType;
+      }
+      continue;
+    }
+    if (k === "hasPhoto" && !v) continue;
     const col = INCIDENT_COLUMNS[k as keyof IncidentRecord];
     // Counters are owned by database triggers.
     if (col && !["confirmation_count", "ended_count", "flag_count"].includes(col)) out[col] = v;
@@ -269,7 +288,22 @@ export class SupabaseStore implements Store {
     return data ? toIncident(data) : null;
   }
   async insertIncident(rec: IncidentRecord) {
-    check(await this.db.from("incidents").insert(fromIncident(rec)));
+    // Counters normally belong to triggers; on insert, seed them (demo data).
+    const row = { ...fromIncident(rec), confirmation_count: rec.confirmationCount };
+    const res = await this.db.from("incidents").insert(row);
+    if (res.error && (rec.storm || rec.category === "missing_pet") && /storm_|has_photo|category_check|column/i.test(res.error.message)) {
+      // The database hasn't had the Storm Mode migration yet.
+      throw new ApiError(503, "Storm Mode needs a one-time database update before reports can be saved.", "schema_update_needed");
+    }
+    check(res);
+  }
+  async savePhoto(incidentId: string, dataUrl: string) {
+    check(await this.db.from("incident_photos").upsert({ incident_id: incidentId, data_url: dataUrl }));
+  }
+  async getPhoto(incidentId: string) {
+    const res = await this.db.from("incident_photos").select("data_url").eq("incident_id", incidentId).maybeSingle();
+    if (res.error) return null; // table not created yet: no photo
+    return res.data ? String((res.data as Row).data_url) : null;
   }
   async updateIncident(id: string, patch: Partial<IncidentRecord>) {
     const row = fromIncident(patch);

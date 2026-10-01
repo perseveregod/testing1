@@ -17,6 +17,20 @@ export const createReportSchema = z.object({
   description: z.string().max(MAX_DESCRIPTION * 2).default(""),
   /** Client-generated id so a retried submit can't create a second report. */
   clientRequestId: z.string().min(8).max(64).optional(),
+  /** Storm Mode reports only. */
+  storm: z
+    .object({
+      state: z.enum(["out", "on", "flooded", "passable", "open", "closed"]),
+      placeType: z.enum(["gas", "grocery", "laundromat", "restaurant", "cooling", "charging"]).nullable().default(null),
+    })
+    .nullable()
+    .optional(),
+  /** Optional photo: a JPEG data URL the browser already shrank and stripped of location data. */
+  photo: z
+    .string()
+    .max(300_000, "That photo is too large.")
+    .regex(/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/, "Photos must be JPEG.")
+    .optional(),
 });
 
 export const incidentUpdateSchema = z.object({

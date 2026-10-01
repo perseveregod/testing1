@@ -392,6 +392,42 @@ export function PetIcon(p: IconProps) {
   );
 }
 
+export function PowerIcon(p: IconProps) {
+  return (
+    <Svg {...p} label="Power">
+      <path d="M13.2 2.5 5.5 13.2h5.1l-1.4 8.3 8.3-11.4h-5.3l1-7.6Z" fill="currentColor" />
+    </Svg>
+  );
+}
+
+export function FloodIcon(p: IconProps) {
+  return (
+    <Svg {...p} label="Flooding">
+      <path d="M12 3.2 6.5 11.4a6 6 0 0 0-.4.8h11.8a6 6 0 0 0-.4-.8L12 3.2Z" fill="currentColor" opacity={0.9} />
+      {[14.6, 18.6].map((y) => (
+        <path
+          key={y}
+          d={`M3 ${y}c1.5 0 1.5-1.4 3-1.4s1.5 1.4 3 1.4 1.5-1.4 3-1.4 1.5 1.4 3 1.4 1.5-1.4 3-1.4 1.5 1.4 3 1.4`}
+          stroke="currentColor"
+          strokeWidth={1.8}
+          strokeLinecap="round"
+          fill="none"
+        />
+      ))}
+    </Svg>
+  );
+}
+
+export function StoreIcon(p: IconProps) {
+  return (
+    <Svg {...p} label="Place">
+      <path d="M4 9.2 5.6 4h12.8L20 9.2c0 1.5-1.2 2.6-2.7 2.6-1.3 0-2.4-.9-2.6-2.1-.2 1.2-1.3 2.1-2.7 2.1s-2.5-.9-2.7-2.1c-.2 1.2-1.3 2.1-2.6 2.1C5.2 11.8 4 10.7 4 9.2Z" fill="currentColor" />
+      <path d="M5.5 12.8V20h13v-7.2" stroke="currentColor" strokeWidth={1.8} fill="none" />
+      <rect x="10" y="15" width="4" height="5" rx="0.6" fill="currentColor" />
+    </Svg>
+  );
+}
+
 export const ANIMATED_ICONS: Record<
   CategoryId,
   (p: IconProps) => React.JSX.Element
@@ -405,6 +441,9 @@ export const ANIMATED_ICONS: Record<
   severe_weather: WeatherIcon,
   public_safety: SafetyIcon,
   missing_pet: PetIcon,
+  power: PowerIcon,
+  flooding: FloodIcon,
+  place: StoreIcon,
   other: OtherIcon,
 };
 

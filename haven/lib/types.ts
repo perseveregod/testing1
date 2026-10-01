@@ -12,7 +12,22 @@ export type CategoryId =
   | "severe_weather"
   | "public_safety"
   | "missing_pet"
+  // Storm Mode (only shown while Storm Mode is on)
+  | "power"
+  | "flooding"
+  | "place"
   | "other";
+
+/** What a storm report says. Each storm category has a pair of states. */
+export type StormState = "out" | "on" | "flooded" | "passable" | "open" | "closed";
+
+/** For "place" storm reports: what kind of place. */
+export type StormPlaceType = "gas" | "grocery" | "laundromat" | "restaurant" | "cooling" | "charging";
+
+export interface StormInfo {
+  state: StormState;
+  placeType: StormPlaceType | null;
+}
 
 export type Severity = "low" | "moderate" | "high" | "critical";
 
@@ -59,6 +74,10 @@ export interface IncidentRecord {
   endedCount: number;
   flagCount: number;
   mergedIntoId: string | null;
+  /** Storm Mode reports only. */
+  storm?: StormInfo | null;
+  /** A photo is stored separately (see Store.getPhoto). */
+  hasPhoto?: boolean;
 }
 
 export interface IncidentUpdateRecord {
@@ -99,6 +118,9 @@ export interface PublicIncident {
   /** No other person or official source has backed this up yet. */
   unverified: boolean;
   isDemo: boolean;
+  /** Storm Mode reports only. */
+  storm: StormInfo | null;
+  hasPhoto: boolean;
 }
 
 export interface PublicIncidentUpdate {
@@ -112,6 +134,8 @@ export interface PublicIncidentUpdate {
 
 export interface IncidentDetail extends PublicIncident {
   updates: PublicIncidentUpdate[];
+  /** A small JPEG data URL, when the reporter attached one. */
+  photo: string | null;
   /** How many "it's over" votes end a community report (official feeds end themselves). */
   endedVotesNeeded: number;
   viewer: {

@@ -7,9 +7,16 @@ import {
   Navigation,
   Navigation2,
   Search,
+  CloudLightning,
   SlidersHorizontal,
+  Zap,
   X,
 } from "lucide-react";
+import { setStormPrefs, useStormPrefs } from "@/lib/client/stormMode";
+import { STATE_STYLE, strings, type StormKind } from "@/lib/storm";
+import { STORM_CATEGORIES } from "@/lib/categories";
+import { StormBanner } from "@/components/storm/StormBanner";
+import { StormReportSheet } from "@/components/storm/StormReportSheet";
 import { DEFAULT_CENTER } from "@/lib/client/defaults";
 import { distanceFrom, useIncidents, useViewer, type InitialIncidents } from "@/lib/client/hooks";
 import type { LatLng } from "@/lib/geo";
@@ -154,27 +161,54 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
   }, []);
   const flewToUser = useRef(false);
 
+  const storm = useStormPrefs();
+  const st = strings(storm.lang);
+  const [stormFilter, setStormFilter] = useState<StormKind | null>(null);
+  const [stormReportOpen, setStormReportOpen] = useState(false);
+
   const area = useMemo(() => queryArea(viewport), [viewport]);
   const { items, isLoading, isValidating, error, mutate } = useIncidents(
-    {
-      // Before the map reports a viewport, ask for the default area so the
-      // server-rendered incidents apply from the first paint.
-      center: area?.center ?? DEFAULT_CENTER,
-      radiusMi: area?.radiusMi ?? 5,
-      ...filterParams(filters, viewer),
-    },
-    initial,
+    storm.on
+      ? {
+          // Storm Mode: only power / flooding / place reports from the last 6 hours.
+          center: area?.center ?? DEFAULT_CENTER,
+          radiusMi: Math.max(area?.radiusMi ?? 10, 10),
+          categories: stormFilter ? [stormFilter] : STORM_CATEGORIES,
+          sinceHours: 6,
+          includeResolved: false,
+        }
+      : {
+          // Before the map reports a viewport, ask for the default area so the
+          // server-rendered incidents apply from the first paint.
+          center: area?.center ?? DEFAULT_CENTER,
+          radiusMi: area?.radiusMi ?? 5,
+          ...filterParams(filters, viewer),
+        },
+    storm.on ? null : initial,
   );
+  // An official weather alert in view: offer Storm Mode.
+  const weatherAlert = !storm.on && items.some((i) => i.source.kind === "weather" && i.status !== "resolved");
 
   // Without the person's location, open framed on what's live right now
   // instead of an empty downtown view. Runs once, on the first data.
-  const framed = useRef(false);
+  // Framed once per mode, so turning Storm Mode on or off re-frames the map.
+  const framed = useRef<Record<string, boolean>>({});
+  const frameKey = storm.on ? "storm" : "all";
   useEffect(() => {
-    if (framed.current || position || items.length === 0) return;
-    const live = items.filter((i) => i.status !== "resolved");
+    // Normal mode with location: the map flies to you instead (below).
+    if (framed.current[frameKey] || (position && !storm.on) || items.length === 0) return;
+    let live = items.filter((i) => i.status !== "resolved");
+    // Storm Mode with location: frame you plus the closest reports around you.
+    if (storm.on && position) {
+      live = [...live]
+        .sort((a, b) => (distanceFrom(position, a) ?? 0) - (distanceFrom(position, b) ?? 0))
+        .slice(0, 6);
+    }
     if (live.length === 0) return;
-    if (mapRef.current?.fitTo(live.map((i) => ({ lat: i.latitude, lng: i.longitude })))) framed.current = true;
-  }, [items, position, viewport]);
+    const points = live.map((i) => ({ lat: i.latitude, lng: i.longitude }));
+    if (storm.on && position) points.push(position);
+    if (mapRef.current?.fitTo(points)) framed.current[frameKey] = true;
+  }, [items, position, viewport, frameKey, storm.on]);
 
   // Jump to the person's location the first time we learn it.
   useEffect(() => {
@@ -195,6 +229,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
   }, [position, request]);
 
   const showPrompt =
+    !storm.on &&
     !selected &&
     !position &&
     !promptDismissed &&
@@ -246,6 +281,21 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
           </button>
           <button
             type="button"
+            aria-label={storm.on ? `${st.stormMode}: ${st.on}` : `${st.stormMode}: ${st.off}`}
+            aria-pressed={storm.on}
+            onClick={() => {
+              setSelectedId(null);
+              setStormPrefs({ on: !storm.on });
+            }}
+            className={`press relative flex size-12 shrink-0 items-center justify-center rounded-full ${
+              storm.on ? "bg-[#ff2d20] text-white shadow-[0_6px_20px_-6px_rgba(255,45,32,0.8)]" : "glass text-text"
+            }`}
+          >
+            <CloudLightning className="size-[19px]" aria-hidden />
+          </button>
+          {!storm.on && (
+          <button
+            type="button"
             aria-label={`Filters${filterCount ? ` (${filterCount} active)` : ""}`}
             onClick={() => setFilterOpen(true)}
             className="glass press relative flex size-12 shrink-0 items-center justify-center rounded-full text-text"
@@ -257,6 +307,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
               </span>
             )}
           </button>
+          )}
         </div>
 
         <div
@@ -264,7 +315,30 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
           role="toolbar"
           aria-label="Quick filters"
         >
-          {QUICK.map((q) => {
+          {storm.on && (
+            <span className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-[#ff2d20] px-3.5 text-[13px] font-bold text-white">
+              <CloudLightning className="size-4" aria-hidden /> {st.stormMode}
+            </span>
+          )}
+          {storm.on &&
+            ([null, "power", "flooding", "place"] as (StormKind | null)[]).map((k) => {
+              const on = stormFilter === k;
+              const dot = k === "power" ? STATE_STYLE.out.color : k === "flooding" ? STATE_STYLE.flooded.color : k === "place" ? STATE_STYLE.open.color : null;
+              return (
+                <button
+                  key={k ?? "all"}
+                  aria-pressed={on}
+                  onClick={() => setStormFilter(k)}
+                  className={`press inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold ${
+                    on ? "bg-text text-bg" : "glass text-text"
+                  }`}
+                >
+                  {dot && <span className="size-2 rounded-full" style={{ background: dot }} aria-hidden />}
+                  {k ? st[`kind_${k}`] : st.filterAll}
+                </button>
+              );
+            })}
+          {!storm.on && QUICK.map((q) => {
             const on =
               q.id === null
                 ? filters.groups.length === 0
@@ -317,7 +391,11 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
                   aria-hidden
                 />
                 <span>
-                  {activeCount} active · last 24h
+                  {storm.on
+                    ? storm.lang === "es"
+                      ? `${activeCount} reportes de tormenta · últimas 6 h`
+                      : `${activeCount} storm reports · last 6h`
+                    : `${activeCount} active · last 24h`}
                 </span>
                 {allDemo && (
                   <span className="rounded-[4px] bg-white/[0.1] px-1.5 py-px text-[10.5px] font-semibold uppercase tracking-[0.06em] text-text/80">
@@ -328,6 +406,26 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
             )}
           </p>
         </div>
+
+        {storm.on && (
+          <div className="mx-auto mt-2 max-w-lg px-4">
+            <StormBanner />
+          </div>
+        )}
+        {weatherAlert && (
+          <div className="pointer-events-auto mx-auto mt-2 flex max-w-lg px-4">
+            <div className="glass inline-flex min-h-11 items-center gap-2 rounded-full py-1 pl-3.5 pr-1 text-[13px] font-semibold">
+              <CloudLightning className="size-4 text-[#ff6b5f]" aria-hidden />
+              <span>{st.suggest}</span>
+              <button
+                onClick={() => setStormPrefs({ on: true })}
+                className="press inline-flex min-h-9 items-center rounded-full bg-[#ff2d20] px-3 text-[12.5px] font-bold text-white"
+              >
+                {st.turnOn}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Right: map controls. Pinned above the tab bar; they step aside while a card is up. */}
@@ -382,6 +480,22 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
       {/* Bottom: incident preview or the one-time location prompt */}
       <div className="pointer-events-none absolute inset-x-0 z-30 bottom-nav-offset">
         <div className="mx-auto max-w-lg px-4 pb-3">
+          {storm.on && !selected && (
+            <div className="flex flex-col items-center gap-2">
+              {!loading && !error && activeCount === 0 && (
+                <p className="glass pointer-events-auto max-w-xs rounded-[16px] px-4 py-2.5 text-center text-[13px] leading-snug text-muted">
+                  {st.empty}
+                </p>
+              )}
+              <button
+                onClick={() => setStormReportOpen(true)}
+                className="press pointer-events-auto inline-flex h-14 items-center gap-2 rounded-full bg-[#ffc233] px-6 text-[16px] font-extrabold text-[#1b1300] shadow-[0_10px_30px_-8px_rgba(255,194,51,0.7)]"
+              >
+                <Zap className="size-5 fill-current" aria-hidden />
+                {st.report}
+              </button>
+            </div>
+          )}
           <IncidentPreview
             incident={selected}
             distanceMi={selected ? distanceFrom(position, selected) : null}
@@ -420,6 +534,15 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
           setSearchLabel(label);
           setSelectedId(null);
           mapRef.current?.flyTo(p, 15);
+        }}
+      />
+      <StormReportSheet
+        open={stormReportOpen}
+        onClose={() => setStormReportOpen(false)}
+        mapCenter={viewport?.center ?? null}
+        myPosition={position}
+        onSent={(id) => {
+          void mutate().then(() => setSelectedId(id));
         }}
       />
       <LayersSheet

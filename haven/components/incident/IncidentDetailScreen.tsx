@@ -146,10 +146,15 @@ export function IncidentDetailScreen({ id }: { id: string }) {
           )}
         </div>
 
-        {incident.status !== "under_review" && (
+        {incident.status !== "under_review" && !incident.storm && (
           <div className="haven-rise mt-6 rounded-card bg-surface px-4 pb-3 pt-4" style={{ animationDelay: "40ms" }}>
             <StatusStepper status={incident.status} color={def.color} />
           </div>
+        )}
+
+        {incident.photo && (
+          // eslint-disable-next-line @next/next/no-img-element -- stored data URL
+          <img src={incident.photo} alt="Photo from the person who reported this" className="haven-rise mt-6 max-h-80 w-full rounded-[20px] object-cover" />
         )}
 
         {incident.description && (

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import { Check, ChevronLeft, Layers, LocateFixed, X } from "lucide-react";
-import { CATEGORIES, categoriesInGroup, getCategory } from "@/lib/categories";
+import { EVERYDAY_CATEGORIES, categoriesInGroup, getCategory } from "@/lib/categories";
 import { apiSend, ApiClientError, errorMessage, fetcher } from "@/lib/client/api";
 import { DEFAULT_CENTER } from "@/lib/client/defaults";
 import { useIncidents } from "@/lib/client/hooks";
@@ -174,7 +174,7 @@ function StepCategory({ value, onPick }: { value: CategoryId | null; onPick: (c:
   return (
     <div className="haven-rise flex flex-1 flex-col">
       <div className="grid grid-cols-3 gap-2.5">
-        {CATEGORIES.map((c, i) => (
+        {EVERYDAY_CATEGORIES.map((c, i) => (
           <button
             key={c.id}
             onClick={() => onPick(c.id)}

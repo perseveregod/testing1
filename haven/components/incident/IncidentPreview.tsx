@@ -6,6 +6,8 @@ import { fetcher } from "@/lib/client/api";
 import { dateTime } from "@/lib/time";
 import type { IncidentDetail } from "@/lib/types";
 import { StatusStepper, Timeline } from "./Timeline";
+import { useStormPrefs } from "@/lib/client/stormMode";
+import { STATE_STYLE, strings as stormStrings, stormTitle } from "@/lib/storm";
 import { Check, ChevronDown, ChevronRight, ChevronUp, Share2, X } from "lucide-react";
 import { apiSend, errorMessage } from "@/lib/client/api";
 import { shareIncident } from "@/lib/client/share";
@@ -70,6 +72,9 @@ function PreviewCard({
   const { data: detail } = useSWR<{ incident: IncidentDetail }>(expanded ? `/api/incidents/${incident.id}` : null, fetcher);
   const def = getCategory(incident.category);
   const ended = incident.status === "resolved";
+  const { lang } = useStormPrefs();
+  const storm = incident.storm;
+  const sl = stormStrings(lang);
 
   async function confirm() {
     setBusy(true);
@@ -122,10 +127,12 @@ function PreviewCard({
           <div className="min-w-0 flex-1 pt-0.5">
             <p className="flex min-w-0 items-center gap-2 text-[13px] font-medium" style={{ color: ended ? "var(--muted)" : def.color }}>
               <span className="truncate">{def.label}</span>
-              {isLive(incident) && <LiveBadge />}
+              {isLive(incident) && !storm && <LiveBadge />}
               <OriginBadge incident={incident} />
             </p>
-            <h2 className="mt-0.5 line-clamp-2 text-[18px] font-bold leading-snug tracking-[-0.02em]">{incident.title}</h2>
+            <h2 className="mt-0.5 line-clamp-2 text-[18px] font-bold leading-snug tracking-[-0.02em]" style={storm ? { color: STATE_STYLE[storm.state].color } : undefined}>
+              {storm ? stormTitle(storm, lang) : incident.title}
+            </h2>
           </div>
           <button
             onClick={onClose}
@@ -146,13 +153,15 @@ function PreviewCard({
         {incident.description && (
           <p className={`mt-2.5 text-[15px] leading-[1.5] text-text/85 ${expanded ? "" : "line-clamp-2"}`}>{incident.description}</p>
         )}
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px]">
-          <StatusPill status={incident.status} />
-          <SeverityLabel severity={incident.severity} />
-          <span className="text-muted tnum">
-            {incident.confirmationCount + (confirmed ? 1 : 0)} confirmed · {sourceLabel(incident)}
-          </span>
-        </div>
+        {!storm && (
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px]">
+            <StatusPill status={incident.status} />
+            <SeverityLabel severity={incident.severity} />
+            <span className="text-muted tnum">
+              {incident.confirmationCount + (confirmed ? 1 : 0)} confirmed · {sourceLabel(incident)}
+            </span>
+          </div>
+        )}
 
         <div className="mt-4 grid grid-cols-[1fr_auto_auto] gap-2">
           <Button variant={expanded ? "secondary" : "primary"} onClick={() => setExpanded((e) => !e)} className="whitespace-nowrap">
@@ -174,13 +183,22 @@ function PreviewCard({
             aria-label={confirmed ? "Confirmed" : "Confirm you see this too"}
           >
             <Check className="size-5" strokeWidth={2.4} aria-hidden />
-            <span className="max-[360px]:sr-only">{confirmed ? "You saw it" : "I see it"}</span>
+            <span className="max-[360px]:sr-only">{storm ? (confirmed ? sl.confirmed : sl.confirm) : confirmed ? "You saw it" : "I see it"}</span>
           </Button>
           <Button variant="secondary" onClick={share} aria-label="Share">
             <Share2 className="size-5" aria-hidden />
           </Button>
         </div>
 
+        {storm && (
+          <p className="mt-2 text-[13px] font-medium text-muted tnum">
+            {incident.confirmationCount + (confirmed ? 1 : 0) > 0 ? sl.confirms(incident.confirmationCount + (confirmed ? 1 : 0)) : sl.noConfirms}
+          </p>
+        )}
+        {expanded && detail?.incident.photo && (
+          // eslint-disable-next-line @next/next/no-img-element -- stored data URL
+          <img src={detail.incident.photo} alt="Photo from the person who reported this" className="mt-4 max-h-64 w-full rounded-[16px] object-cover" />
+        )}
         {expanded && (
           <div className="mt-5 border-t border-line pt-4">
             {incident.status !== "under_review" && (

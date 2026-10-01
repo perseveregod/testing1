@@ -1,9 +1,12 @@
 import { randomUUID } from "node:crypto";
-import { categoriesInGroup, getCategory, SEVERITY_RANK } from "@/lib/categories";
+import { categoriesInGroup, getCategory, isStormCategory, SEVERITY_RANK } from "@/lib/categories";
+import { isValidStorm, STORM_HIDE_HOURS, stormSeverity, stormTitle } from "@/lib/storm";
 import { approximate, distanceMeters, distanceMiles, METERS_PER_MILE } from "@/lib/geo";
 import { moderateText } from "@/lib/moderation";
 import { estimateSeverity, maxSeverity } from "@/lib/severity";
 import type {
+  StormPlaceType,
+  StormState,
   CategoryId,
   IncidentDetail,
   IncidentRecord,
@@ -54,6 +57,8 @@ export function toPublic(rec: IncidentRecord, from?: { lat: number; lng: number 
     distanceMi: from ? distanceMiles(from, { lat: rec.latitude, lng: rec.longitude }) : null,
     unverified: source.kind === "user" && rec.confirmationCount === 0,
     isDemo: source.kind === "demo",
+    storm: rec.storm ?? null,
+    hasPhoto: Boolean(rec.hasPhoto),
   };
 }
 
@@ -62,7 +67,11 @@ export async function listIncidents(q: ListQuery, viewer: Viewer | null) {
   if (!limits.advancedFilters && (q.minSeverity || q.verifiedOnly)) {
     throw new ApiError(403, "Advanced filters are part of Haven Lifetime.", "premium_required");
   }
-  const sinceHours = Math.min(q.sinceHours ?? 24, limits.historyHours);
+  // Storm Mode asks only for storm categories; everything else leaves them out.
+  const stormQuery = q.categories.length > 0 && q.categories.every(isStormCategory);
+  const sinceHours = stormQuery
+    ? Math.min(q.sinceHours ?? STORM_HIDE_HOURS, STORM_HIDE_HOURS)
+    : Math.min(q.sinceHours ?? 24, limits.historyHours);
   const center = q.lat != null && q.lng != null ? { lat: q.lat, lng: q.lng } : null;
   const records = await getStore().queryIncidents({
     center: center ?? undefined,
@@ -75,8 +84,10 @@ export async function listIncidents(q: ListQuery, viewer: Viewer | null) {
   let items = records
     // Flagged-for-review incidents stay visible only to the person who reported them.
     .filter((r) => r.status !== "under_review" || (viewer && r.reporterId === viewer.id))
+    .filter((r) => (stormQuery ? isStormCategory(r.category) : !isStormCategory(r.category)))
     .map((r) => toPublic(r, center));
-  if (!q.includeResolved) items = items.filter((i) => i.status !== "resolved");
+  // Storm reports vanish once stale (6h); they never linger as "ended".
+  if (!q.includeResolved || stormQuery) items = items.filter((i) => i.status !== "resolved");
   if (q.minSeverity) items = items.filter((i) => SEVERITY_RANK[i.severity] >= SEVERITY_RANK[q.minSeverity!]);
   if (q.verifiedOnly) items = items.filter((i) => !i.unverified);
 
@@ -108,13 +119,15 @@ export async function getIncidentDetail(
   if (rec.status === "under_review" && !isReporter) {
     throw new ApiError(404, "This incident is under review.", "under_review");
   }
-  const [updates, votes, flagged] = await Promise.all([
+  const [updates, votes, flagged, photo] = await Promise.all([
     store.listUpdates(rec.id),
     viewer ? store.getVotes(rec.id, viewer.id) : Promise.resolve([]),
     viewer ? store.hasFlag(rec.id, viewer.id) : Promise.resolve(false),
+    rec.hasPhoto ? store.getPhoto(rec.id) : Promise.resolve(null),
   ]);
   return {
     ...toPublic(rec, from),
+    photo,
     updates: updates.map((u) => ({
       id: u.id,
       kind: u.kind,
@@ -141,6 +154,10 @@ export interface CreateReportInput {
   longitude: number;
   description: string;
   clientRequestId?: string;
+  /** Storm Mode reports only. */
+  storm?: { state: StormState; placeType: StormPlaceType | null } | null;
+  /** Storm Mode reports only: a small JPEG data URL. */
+  photo?: string;
 }
 
 export interface CreateReportResult {
@@ -208,6 +225,10 @@ export async function createReport(
 
   // Never store the exact point someone tapped: snap to ~110 m.
   const point = approximate({ lat: input.latitude, lng: input.longitude }, 3);
+
+  if (isStormCategory(input.category) || input.storm) {
+    return createStormReport(input, user, mod.text, mod.redacted, point, now);
+  }
   const severity = estimateSeverity(input.category, mod.text);
   const nowIso = new Date(now).toISOString();
   const duplicate = await findDuplicate(input.category, point, now);
@@ -274,6 +295,105 @@ export async function createReport(
   });
   await dispatchAlerts(rec, user.id);
   return { incidentId: rec.id, merged: false, redacted: mod.redacted };
+}
+
+/**
+ * Storm reports work per block: the same state again counts as a confirmation;
+ * a different state (e.g. "power back on" after "power out") replaces the
+ * older report, which is hidden and linked to the new one.
+ */
+async function createStormReport(
+  input: CreateReportInput,
+  user: UserRecord,
+  text: string,
+  redacted: boolean,
+  point: { lat: number; lng: number },
+  now: number,
+): Promise<CreateReportResult> {
+  const store = getStore();
+  const storm = input.storm ? { state: input.storm.state, placeType: input.storm.placeType ?? null } : null;
+  if (!storm || !isValidStorm(input.category, storm)) {
+    throw new ApiError(422, "That storm report isn't complete.", "invalid_storm");
+  }
+  const nowIso = new Date(now).toISOString();
+  const sameBlock = (
+    await store.queryIncidents({
+      center: point,
+      radiusM: getCategory(input.category).dedupeRadiusM,
+      since: new Date(now - STORM_HIDE_HOURS * HOUR).toISOString(),
+      categories: [input.category],
+      limit: 20,
+    })
+  ).filter(
+    (r) =>
+      r.storm &&
+      r.storm.placeType === storm.placeType &&
+      r.status !== "under_review" &&
+      effectiveStatus(r, now) !== "resolved",
+  );
+  sameBlock.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const current = sameBlock[0];
+
+  const logReport = (incidentId: string, merged: boolean) =>
+    store.insertReport({
+      id: randomUUID(),
+      userId: user.id,
+      incidentId,
+      category: input.category,
+      latitude: point.lat,
+      longitude: point.lng,
+      description: text,
+      clientRequestId: input.clientRequestId ?? null,
+      merged,
+      createdAt: nowIso,
+    });
+
+  if (current && current.storm!.state === storm.state) {
+    await mergeInto(current, user.id, text, current.severity, nowIso);
+    await logReport(current.id, true);
+    return { incidentId: current.id, merged: true, redacted };
+  }
+
+  const address = (await describeLocation(point.lat, point.lng)) || "Approximate location";
+  const id = randomUUID();
+  const rec: IncidentRecord = {
+    id,
+    category: input.category,
+    title: stormTitle(storm, "en"),
+    description: text,
+    latitude: point.lat,
+    longitude: point.lng,
+    approximateAddress: address,
+    severity: stormSeverity(storm.state),
+    status: "active",
+    sourceId: "user",
+    externalId: null,
+    reporterId: user.id,
+    createdAt: nowIso,
+    updatedAt: nowIso,
+    confirmationCount: 0,
+    endedCount: 0,
+    flagCount: 0,
+    mergedIntoId: null,
+    storm,
+    hasPhoto: Boolean(input.photo),
+  };
+  await store.insertIncident(rec);
+  if (input.photo) await store.savePhoto(id, input.photo);
+  await store.insertUpdate({
+    id: randomUUID(),
+    incidentId: id,
+    kind: "created",
+    body: text ? `Reported: "${text}"` : "Reported by someone nearby.",
+    authorId: user.id,
+    createdAt: nowIso,
+  });
+  // Older reports on this block with a different state are superseded.
+  for (const old of sameBlock) {
+    await store.updateIncident(old.id, { status: "resolved", mergedIntoId: id, updatedAt: nowIso });
+  }
+  await logReport(id, false);
+  return { incidentId: id, merged: false, redacted };
 }
 
 /** Attach a new report to an existing incident: it counts as a confirmation. */

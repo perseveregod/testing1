@@ -1,0 +1,39 @@
+name: Haven feed pull
+
+# Pulls the live incident feeds every 10 minutes so incidents get captured
+# even when nobody has the app open (Vercel's free cron only runs daily).
+# Needs two repository secrets:
+#   HAVEN_URL        e.g. https://haven-kappa-ten.vercel.app
+#   HAVEN_CRON_SECRET  the same value as CRON_SECRET in Vercel
+# Without them the job exits quietly.
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: haven-ingest
+  cancel-in-progress: false
+
+jobs:
+  pull:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Trigger ingest
+        env:
+          HAVEN_URL: ${{ secrets.HAVEN_URL }}
+          SECRET: ${{ secrets.HAVEN_CRON_SECRET }}
+        run: |
+          if [ -z "$HAVEN_URL" ] || [ -z "$SECRET" ]; then
+            echo "HAVEN_URL or HAVEN_CRON_SECRET not set; skipping."
+            exit 0
+          fi
+          status=$(curl -sS -o /tmp/out.json -w '%{http_code}' --max-time 90 \
+            -H "Authorization: Bearer $SECRET" "$HAVEN_URL/api/cron/ingest")
+          echo "HTTP $status"
+          head -c 600 /tmp/out.json; echo
+          test "$status" = "200"

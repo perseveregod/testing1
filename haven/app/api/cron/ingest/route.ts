@@ -14,5 +14,7 @@ export const GET = route(async (req: Request) => {
     given.length === expected.length &&
     timingSafeEqual(Buffer.from(given), Buffer.from(expected));
   if (!ok) throw new ApiError(401, "Unauthorized", "unauthorized");
-  return json({ results: await ingestAll(true) });
+  // Not forced: each source keeps its own interval (live feeds every few
+  // minutes, demo data every 90), so frequent schedulers don't churn the demo.
+  return json({ results: await ingestAll(false) });
 });
