@@ -5,6 +5,7 @@ import { Bell, BellRing, MapPin, Smartphone } from "lucide-react";
 import { EVERYDAY_CATEGORIES } from "@/lib/categories";
 import { apiSend, errorMessage } from "@/lib/client/api";
 import { useAlertPrefs, usePlaces, useViewer } from "@/lib/client/hooks";
+import { useT } from "@/lib/client/lang";
 import { RADIUS_OPTIONS_MI } from "@/lib/plans";
 import type { AlertPreferences, CategoryId } from "@/lib/types";
 import { useLocation } from "@/components/providers/LocationProvider";
@@ -21,6 +22,7 @@ export function AlertSettings() {
   const { places } = usePlaces();
   const { request: requestLocation } = useLocation();
   const toast = useToast();
+  const { t, cat } = useT();
   const limits = viewer?.limits;
 
   async function save(patch: Partial<AlertPreferences>) {
@@ -63,7 +65,7 @@ export function AlertSettings() {
       <BrowserNotifications />
 
       <Group>
-        <Toggle checked={prefs.enabled} onChange={(v) => save({ enabled: v })} label="Incident alerts" description="New incidents in your area" />
+        <Toggle checked={prefs.enabled} onChange={(v) => save({ enabled: v })} label={t("alerts.incident")} description={t("alerts.incidentBody")} />
         <Toggle
           checked={prefs.nearMe}
           disabled={!prefs.enabled}
@@ -71,33 +73,33 @@ export function AlertSettings() {
             if (v) requestLocation();
             save({ nearMe: v });
           }}
-          label="Near my current location"
-          description="Shares an approximate (~1 km) location while on. Turning it off deletes it."
+          label={t("alerts.nearMe")}
+          description={t("alerts.nearMeBody")}
         />
         <Toggle
           checked={prefs.savedPlaceAlerts}
           disabled={!prefs.enabled}
           onChange={(v) => save({ savedPlaceAlerts: v })}
-          label="Near my saved places"
-          description={places.length ? `${places.length} saved ${places.length === 1 ? "place" : "places"}` : "No saved places yet"}
+          label={t("alerts.nearPlaces")}
+          description={places.length ? (places.length === 1 ? t("alerts.savedPlace1") : t("alerts.savedPlaces", { n: places.length })) : t("alerts.noPlaces")}
         />
         <Toggle
           checked={prefs.criticalOnly}
           disabled={!prefs.enabled}
           onChange={(v) => save({ criticalOnly: v })}
-          label="Critical only"
-          description="Major fires, evacuations, severe weather warnings"
+          label={t("alerts.criticalOnly")}
+          description={t("alerts.criticalOnlyBody")}
         />
       </Group>
 
       <Group
-        title="Alert radius"
+        title={t("alerts.radius")}
         footer={
           free && (
             <>
-              Free covers up to {limits.maxAlertRadiusMi} miles.{" "}
+              {t("alerts.freeRadius", { n: limits.maxAlertRadiusMi })}
               <a href="/upgrade" className="text-gold">
-                Lifetime goes to 25.
+                {t("alerts.lifetimeRadius")}
               </a>
             </>
           )
@@ -105,7 +107,7 @@ export function AlertSettings() {
       >
         <div className="py-3.5">
           <Segmented
-            label="Alert radius"
+            label={t("alerts.radius")}
             value={prefs.radiusMi}
             disabled={!prefs.enabled}
             onChange={(v) => save({ radiusMi: v })}
@@ -114,14 +116,14 @@ export function AlertSettings() {
         </div>
       </Group>
 
-      <Group title="Categories">
+      <Group title={t("alerts.categories")}>
         <div className="flex flex-wrap gap-2 py-3.5">
           <Chip active={allCats} onClick={() => save({ categories: [] })} disabled={!prefs.enabled}>
-            All
+            {t("common.all")}
           </Chip>
           {EVERYDAY_CATEGORIES.map((c) => (
             <Chip key={c.id} active={!allCats && prefs.categories.includes(c.id)} onClick={() => toggleCat(c.id)} disabled={!prefs.enabled}>
-              {c.short}
+              {cat(c.id).short}
             </Chip>
           ))}
         </div>
@@ -130,7 +132,7 @@ export function AlertSettings() {
       <QuietHours prefs={prefs} allowed={limits.quietHours} onSave={save} />
 
       <Group>
-        <Row icon={<MapPin className="size-5" />} title="Saved places" detail="Home, Work, School and more" href="/profile#places" />
+        <Row icon={<MapPin className="size-5" />} title={t("alerts.places")} detail={t("alerts.placesBody")} href="/profile#places" />
       </Group>
     </div>
   );
@@ -140,23 +142,24 @@ function QuietHours({ prefs, allowed, onSave }: { prefs: AlertPreferences; allow
   const on = Boolean(prefs.quietHoursStart && prefs.quietHoursEnd);
   const [start, setStart] = useState(prefs.quietHoursStart ?? "22:00");
   const [end, setEnd] = useState(prefs.quietHoursEnd ?? "07:00");
+  const { t } = useT();
 
   return (
-    <Group title="Quiet hours" footer={!allowed ? "Part of Haven Lifetime." : undefined}>
+    <Group title={t("alerts.quiet")} footer={!allowed ? t("alerts.quietLifetime") : undefined}>
       <Toggle
         checked={on}
         locked={!allowed}
         disabled={!allowed || !prefs.enabled}
         onChange={(v) => onSave(v ? { quietHoursStart: start, quietHoursEnd: end } : { quietHoursStart: null, quietHoursEnd: null })}
-        label="Only critical alerts overnight"
-        description="Everything else waits in your inbox"
+        label={t("alerts.quietLabel")}
+        description={t("alerts.quietBody")}
       />
       {on && (
         <div className="grid grid-cols-2 gap-3 py-3.5">
           {(
             [
-              ["From", start, setStart, "quietHoursStart"],
-              ["Until", end, setEnd, "quietHoursEnd"],
+              [t("alerts.from"), start, setStart, "quietHoursStart"],
+              [t("alerts.until"), end, setEnd, "quietHoursEnd"],
             ] as const
           ).map(([label, value, set, key]) => (
             <label key={key} className="block">
@@ -179,16 +182,17 @@ function QuietHours({ prefs, allowed, onSave }: { prefs: AlertPreferences; allow
 function BrowserNotifications() {
   const push = usePush();
   const toast = useToast();
+  const { t } = useT();
   const [installOpen, setInstallOpen] = useState(false);
   if (push.status === "loading") return null;
 
   const copy: Record<Exclude<PushStatus, "loading">, { title: string; body: string }> = {
-    on: { title: "Push notifications are on", body: `Alerts reach this device even when Haven is closed.${push.devices > 1 ? ` ${push.devices} devices in total.` : ""}` },
-    off: { title: "Push notifications", body: "Get alerts on this device even when Haven is closed. Only incidents near your places, nothing else." },
-    install: { title: "Add Haven to your Home Screen", body: "On iPhone, notifications only work from the Home Screen. Takes ten seconds." },
-    setup: { title: "Push is being set up", body: "Alerts show in this inbox for now. Device notifications switch on once the push keys are configured." },
-    denied: { title: "Notifications are blocked", body: "You said no in the browser prompt. To change it: Settings › Haven › Notifications. Alerts still land in this inbox." },
-    unsupported: { title: "Device notifications", body: "This browser can't show notifications. Alerts still land in this inbox." },
+    on: { title: t("push.on"), body: `${t("push.onBody")}${push.devices > 1 ? t("push.devices", { n: push.devices }) : ""}` },
+    off: { title: t("push.off"), body: t("push.offBody") },
+    install: { title: t("push.install"), body: t("push.installBody") },
+    setup: { title: t("push.setup"), body: t("push.setupBody") },
+    denied: { title: t("push.denied"), body: t("push.deniedBody") },
+    unsupported: { title: t("push.unsupported"), body: t("push.unsupportedBody") },
   };
   const c = copy[push.status];
 
@@ -204,7 +208,7 @@ function BrowserNotifications() {
         <div className="mt-3 flex flex-wrap gap-2">
           {push.status === "off" && (
             <Button size="sm" onClick={push.enable} loading={push.busy}>
-              Turn on
+              {t("common.turnOn")}
             </Button>
           )}
           {push.status === "on" && (
@@ -214,19 +218,19 @@ function BrowserNotifications() {
                 variant="secondary"
                 onClick={async () => {
                   const n = await push.sendTest().catch(() => 0);
-                  toast(n > 0 ? "Sent. It should arrive in a moment." : "Nothing sent. Try turning push off and on.", n > 0 ? "success" : "error");
+                  toast(n > 0 ? t("push.testSent") : t("push.testFailed"), n > 0 ? "success" : "error");
                 }}
               >
-                Send a test
+                {t("push.sendTest")}
               </Button>
               <Button size="sm" variant="ghost" onClick={push.disable} loading={push.busy}>
-                Turn off on this device
+                {t("push.turnOffDevice")}
               </Button>
             </>
           )}
           {push.status === "install" && (
             <Button size="sm" onClick={() => setInstallOpen(true)}>
-              Show me how
+              {t("common.showMeHow")}
             </Button>
           )}
         </div>

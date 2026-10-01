@@ -2,6 +2,7 @@
 
 import { categoriesInGroup, FILTER_GROUPS, type FilterGroup } from "@/lib/categories";
 import type { IncidentParams } from "@/lib/client/hooks";
+import { useT } from "@/lib/client/lang";
 import type { Viewer } from "@/lib/types";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
@@ -47,10 +48,10 @@ export function filterParams(f: MapFilters, viewer: Viewer | null): Partial<Inci
 }
 
 const TIME_OPTIONS = [
-  { value: 6, label: "6h" },
-  { value: 24, label: "24h" },
-  { value: 24 * 7, label: "7d" },
-  { value: 24 * 30, label: "30d" },
+  { value: 6, hours: 6 },
+  { value: 24, hours: 24 },
+  { value: 24 * 7, days: 7 },
+  { value: 24 * 30, days: 30 },
 ];
 
 function Label({ children, aside }: { children: React.ReactNode; aside?: React.ReactNode }) {
@@ -77,80 +78,85 @@ export function FilterSheet({
 }) {
   const premium = viewer?.limits.advancedFilters ?? false;
   const maxHours = viewer?.limits.historyHours ?? 24;
+  const { t, es } = useT();
   const toggleGroup = (g: FilterGroup) =>
     onChange({ ...value, groups: value.groups.includes(g) ? value.groups.filter((x) => x !== g) : [...value.groups, g] });
-  const lifetime = <span className="text-[12px] font-medium text-gold">Lifetime</span>;
+  const lifetime = <span className="text-[12px] font-medium text-gold">{t("common.lifetime")}</span>;
 
   return (
     <Sheet
       open={open}
       onClose={onClose}
-      title="Filters"
+      title={t("filter.title")}
       footer={
         <div className="grid grid-cols-[auto_1fr] gap-2">
           <Button variant="secondary" size="lg" onClick={() => onChange(DEFAULT_FILTERS)}>
-            Reset
+            {es ? "Restablecer" : "Reset"}
           </Button>
           <Button size="lg" onClick={onClose}>
-            Show incidents
+            {es ? "Aplicar" : "Show incidents"}
           </Button>
         </div>
       }
     >
-      <Label>Categories</Label>
+      <Label>{t("filter.categories")}</Label>
       <div className="flex flex-wrap gap-2">
         <Chip active={value.groups.length === 0} onClick={() => onChange({ ...value, groups: [] })}>
-          All
+          {t("common.all")}
         </Chip>
         {FILTER_GROUPS.map((g) => (
           <Chip key={g.id} active={value.groups.includes(g.id)} onClick={() => toggleGroup(g.id)}>
-            {g.label}
+            {es ? g.labelEs : g.label}
           </Chip>
         ))}
       </div>
 
       <div className="mt-5">
-        <Label aside={maxHours < 24 * 7 ? lifetime : undefined}>Time range</Label>
+        <Label aside={maxHours < 24 * 7 ? lifetime : undefined}>{t("filter.time")}</Label>
         <Segmented
-          label="Time range"
+          label={t("filter.time")}
           value={value.sinceHours}
           onChange={(v) => onChange({ ...value, sinceHours: v })}
-          options={TIME_OPTIONS.map((t) => ({ ...t, locked: t.value > maxHours }))}
+          options={TIME_OPTIONS.map((o) => ({
+            value: o.value,
+            label: o.days ? t("filter.days", { n: o.days }) : t("filter.hours", { n: o.hours ?? 0 }),
+            locked: o.value > maxHours,
+          }))}
         />
       </div>
 
       <div className="mt-5">
-        <Label aside={!premium ? lifetime : undefined}>Minimum severity</Label>
+        <Label aside={!premium ? lifetime : undefined}>{t("filter.severity")}</Label>
         <Segmented
-          label="Minimum severity"
+          label={t("filter.severity")}
           value={value.minSeverity}
           disabled={!premium}
           onChange={(v) => onChange({ ...value, minSeverity: v })}
           options={[
-            { value: "", label: "Any" },
-            { value: "moderate", label: "Moderate" },
-            { value: "high", label: "High" },
-            { value: "critical", label: "Critical" },
+            { value: "", label: t("common.any") },
+            { value: "moderate", label: t("inc.sev.moderate") },
+            { value: "high", label: t("inc.sev.high") },
+            { value: "critical", label: t("inc.sev.critical") },
           ]}
         />
       </div>
 
       <div className="mt-3 divide-y divide-line">
-        <Toggle checked={value.showEnded} onChange={(v) => onChange({ ...value, showEnded: v })} label="Show ended incidents" />
+        <Toggle checked={value.showEnded} onChange={(v) => onChange({ ...value, showEnded: v })} label={t("filter.showEnded")} />
         <Toggle
           checked={value.verifiedOnly}
           onChange={(v) => onChange({ ...value, verifiedOnly: v })}
-          label="Confirmed or official only"
-          description="Hide reports nobody else has confirmed"
+          label={t("filter.confirmedOnly")}
+          description={t("filter.confirmedOnlyBody")}
           disabled={!premium}
           locked={!premium}
         />
       </div>
       {!premium && (
         <p className="mb-1 pt-1 text-[13px] text-faint">
-          Severity and confirmed-only filters are part of{" "}
+          {es ? "Los filtros de gravedad y solo confirmados son parte de " : "Severity and confirmed-only filters are part of "}
           <Link href="/upgrade" transitionTypes={["nav-forward"]} className="font-medium text-gold">
-            Haven Lifetime
+            {t("profile.lifetime")}
           </Link>
           .
         </p>

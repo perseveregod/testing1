@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Briefcase, GraduationCap, Heart, Home, MapPin, Search, Star, X } from "lucide-react";
+import { useT } from "@/lib/client/lang";
 import useSWR from "swr";
 import { fetcher } from "@/lib/client/api";
 import { usePlaces } from "@/lib/client/hooks";
@@ -45,13 +46,15 @@ export function SearchInput({
   value,
   onChange,
   autoFocus,
-  placeholder = "Search an address or place",
+  placeholder,
 }: {
   value: string;
   onChange: (v: string) => void;
   autoFocus?: boolean;
   placeholder?: string;
 }) {
+  const { es } = useT();
+  placeholder ??= es ? "Buscar una dirección o lugar" : "Search an address or place";
   return (
     <label className="flex h-12 items-center gap-2.5 rounded-full bg-surface-2 px-4 ring-brand/60 transition focus-within:ring-2">
       <Search className="size-[18px] text-muted" aria-hidden />
@@ -67,7 +70,7 @@ export function SearchInput({
         className="min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-faint [&::-webkit-search-cancel-button]:hidden"
       />
       {value && (
-        <button onClick={() => onChange("")} aria-label="Clear" className="-mr-1.5 flex size-7 items-center justify-center rounded-full bg-white/10 text-muted">
+        <button onClick={() => onChange("")} aria-label={es ? "Borrar" : "Clear"} className="-mr-1.5 flex size-7 items-center justify-center rounded-full bg-white/10 text-muted">
           <X className="size-3.5" aria-hidden />
         </button>
       )}
@@ -103,6 +106,7 @@ export function SearchSheet({
   const [q, setQ] = useState("");
   const { results, error, searching } = usePlaceSearch(q, near);
   const { places } = usePlaces();
+  const { es } = useT();
 
   const pick = (p: LatLng, label: string) => {
     onPick(p, label);
@@ -111,13 +115,13 @@ export function SearchSheet({
   };
 
   return (
-    <Sheet open={open} onClose={onClose} title="Search">
+    <Sheet open={open} onClose={onClose} title={es ? "Buscar" : "Search"}>
       <SearchInput value={q} onChange={setQ} autoFocus />
       <div className="mt-2 min-h-[200px]">
         {q.trim().length < 2 ? (
           places.length > 0 ? (
             <>
-              <p className="pb-1 pt-3 text-[13px] font-medium text-muted">Saved places</p>
+              <p className="pb-1 pt-3 text-[13px] font-medium text-muted">{es ? "Lugares guardados" : "Saved places"}</p>
               <ul className="divide-y divide-line">
                 {places.map((p) => {
                   const Icon = PLACE_ICONS[p.kind];
@@ -134,16 +138,16 @@ export function SearchSheet({
               </ul>
             </>
           ) : (
-            <p className="py-8 text-center text-[14px] text-faint">Search for a neighborhood, street or landmark.</p>
+            <p className="py-8 text-center text-[14px] text-faint">{es ? "Busque un vecindario, calle o lugar conocido." : "Search for a neighborhood, street or landmark."}</p>
           )
         ) : searching ? (
           <div className="flex justify-center py-8 text-muted">
             <Spinner />
           </div>
         ) : error ? (
-          <p className="py-8 text-center text-[14px] text-faint">Search is unavailable right now.</p>
+          <p className="py-8 text-center text-[14px] text-faint">{es ? "La búsqueda no está disponible ahora." : "Search is unavailable right now."}</p>
         ) : results.length === 0 ? (
-          <p className="py-8 text-center text-[14px] text-faint">No places found for “{q.trim()}”.</p>
+          <p className="py-8 text-center text-[14px] text-faint">{es ? `No se encontraron lugares para “${q.trim()}”.` : `No places found for “${q.trim()}”.`}</p>
         ) : (
           <ul className="divide-y divide-line">
             {results.map((r) => (
@@ -158,7 +162,7 @@ export function SearchSheet({
           </ul>
         )}
       </div>
-      <p className="pb-2 pt-3 text-[11px] text-faint">Search by OpenStreetMap Nominatim</p>
+      <p className="pb-2 pt-3 text-[11px] text-faint">{es ? "Búsqueda por OpenStreetMap Nominatim" : "Search by OpenStreetMap Nominatim"}</p>
     </Sheet>
   );
 }

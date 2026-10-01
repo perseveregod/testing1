@@ -1,14 +1,19 @@
-import { timeAgo, clockTime } from "@/lib/time";
+"use client";
+
+import { clockTime } from "@/lib/time";
+import { useT } from "@/lib/client/lang";
+import type { Key } from "@/lib/i18n";
 import type { IncidentStatus, PublicIncidentUpdate } from "@/lib/types";
 
-const AUTHOR: Record<PublicIncidentUpdate["author"], string> = {
-  you: "You",
-  community: "Someone nearby",
-  source: "Source",
-  system: "Haven",
+const AUTHOR: Record<PublicIncidentUpdate["author"], Key> = {
+  you: "inc.who.you",
+  community: "inc.who.community",
+  source: "inc.who.source",
+  system: "inc.who.system",
 };
 
 export function Timeline({ updates }: { updates: PublicIncidentUpdate[] }) {
+  const { t, timeAgo } = useT();
   // Newest first reads best on a phone.
   const items = [...updates].reverse();
   return (
@@ -19,7 +24,7 @@ export function Timeline({ updates }: { updates: PublicIncidentUpdate[] }) {
           <span className={`relative mt-[7px] size-[11px] shrink-0 rounded-full ${idx === 0 ? "bg-brand" : "bg-surface-3 ring-1 ring-line-strong"}`} aria-hidden />
           <div className="min-w-0 flex-1">
             <p className="text-[13px] text-muted">
-              <span className="font-medium text-text/80">{AUTHOR[u.author]}</span>
+              <span className="font-medium text-text/80">{t(AUTHOR[u.author])}</span>
               <span className="text-faint"> · </span>
               <time dateTime={u.createdAt} title={clockTime(u.createdAt)} className="tnum">
                 {timeAgo(u.createdAt)}
@@ -33,15 +38,17 @@ export function Timeline({ updates }: { updates: PublicIncidentUpdate[] }) {
   );
 }
 
-const STEPS = ["Reported", "Responding", "Contained", "Cleared"] as const;
+const STEP_KEYS: Key[] = ["inc.step.reported", "inc.step.responding", "inc.step.contained", "inc.step.cleared"];
 const STEP_FOR: Record<IncidentStatus, number> = { under_review: 0, active: 1, contained: 2, resolved: 3 };
 
 /** Where the incident is in its life: Reported → Responding → Contained → Cleared. */
 export function StatusStepper({ status, color }: { status: IncidentStatus; color: string }) {
+  const { t } = useT();
+  const STEPS = STEP_KEYS.map((k) => t(k));
   const current = STEP_FOR[status];
   const ended = status === "resolved";
   return (
-    <div role="group" aria-label={`Status: ${STEPS[current]}`}>
+    <div role="group" aria-label={`${t("inc.status")}: ${STEPS[current]}`}>
       <div className="flex items-center">
         {STEPS.map((label, i) => {
           const done = i <= current;

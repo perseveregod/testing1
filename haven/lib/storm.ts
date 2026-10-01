@@ -4,7 +4,8 @@
 
 import type { CategoryId, StormInfo, StormPlaceType, StormState } from "./types";
 
-export type Lang = "en" | "es";
+export type { Lang } from "./i18n";
+import type { Lang } from "./i18n";
 
 export type StormKind = "power" | "flooding" | "place";
 

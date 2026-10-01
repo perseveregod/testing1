@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Smartphone } from "lucide-react";
+import { useT } from "@/lib/client/lang";
 import { useStandalone } from "@/lib/client/push";
 import { Group, Row } from "@/components/ui/Controls";
 import { InstallSheet } from "./InstallSheet";
@@ -21,6 +22,7 @@ export function InstallRow() {
   const standalone = useStandalone();
   const [open, setOpen] = useState(false);
   const [canPrompt, setCanPrompt] = useState(false);
+  const { t } = useT();
   useEffect(() => {
     const t = setTimeout(() => setCanPrompt(Boolean(deferred)), 0);
     return () => clearTimeout(t);
@@ -30,8 +32,8 @@ export function InstallRow() {
     <Group>
       <Row
         icon={<Smartphone className="size-5" />}
-        title="Add Haven to your Home Screen"
-        detail="Full screen, faster, and alerts even when it's closed"
+        title={t("install.title")}
+        detail={t("install.row")}
         onClick={async () => {
           if (deferred) {
             await deferred.prompt();
@@ -42,7 +44,7 @@ export function InstallRow() {
             setOpen(true);
           }
         }}
-        trailing={canPrompt ? <span className="text-[13px] font-semibold text-brand">Install</span> : undefined}
+        trailing={canPrompt ? <span className="text-[13px] font-semibold text-brand">{t("common.install")}</span> : undefined}
       />
       <InstallSheet open={open} onClose={() => setOpen(false)} />
     </Group>

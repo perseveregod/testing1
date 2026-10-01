@@ -5,10 +5,10 @@ import useSWR from "swr";
 import { Check, CircleSlash, Flag, MapPin, MessageSquarePlus, Share2 } from "lucide-react";
 import { apiSend, errorMessage, fetcher } from "@/lib/client/api";
 import { shareIncident } from "@/lib/client/share";
-import { getCategory } from "@/lib/categories";
 import { useAffects } from "@/lib/client/affects";
+import { useT } from "@/lib/client/lang";
 import { formatDistance } from "@/lib/geo";
-import { dateTime, timeAgo } from "@/lib/time";
+import { dateTime } from "@/lib/time";
 import type { IncidentDetail } from "@/lib/types";
 import { useLocation } from "@/components/providers/LocationProvider";
 import { useToast } from "@/components/providers/ToastProvider";
@@ -36,12 +36,13 @@ export function IncidentDetailScreen({ id }: { id: string }) {
   const incident = data?.incident;
   const affectsOf = useAffects();
   const affects = incident ? affectsOf(incident) : null;
+  const { t, es, timeAgo, title, cat } = useT();
 
   async function vote(kind: "confirm" | "ended") {
     setBusy(kind);
     try {
       await apiSend(`/api/incidents/${id}/${kind}`, "POST");
-      toast(kind === "confirm" ? "Thanks. Your neighbors will see it was confirmed." : "Thanks. We'll update the status.", "success");
+      toast(kind === "confirm" ? t("inc.thanksNeighbors") : t("inc.thanksStatus"), "success");
       await mutate();
     } catch (err) {
       toast(errorMessage(err), "error");
@@ -53,8 +54,8 @@ export function IncidentDetailScreen({ id }: { id: string }) {
   async function share() {
     if (!incident) return;
     const r = await shareIncident(incident);
-    if (r === "copied") toast("Link copied", "success");
-    if (r === "failed") toast("Couldn't share this link", "error");
+    if (r === "copied") toast(t("common.linkCopied"), "success");
+    if (r === "failed") toast(t("common.shareFailed"), "error");
   }
 
   if (isLoading && !incident) {
@@ -85,20 +86,21 @@ export function IncidentDetailScreen({ id }: { id: string }) {
         {notFound ? (
           <EmptyState
             icon={<CircleSlash className="size-9" strokeWidth={1.5} aria-hidden />}
-            title="Incident unavailable"
+            title={t("inc.unavailable")}
             body={errorMessage(error)}
-            action={<ButtonLink href="/feed">Back to feed</ButtonLink>}
+            action={<ButtonLink href="/feed">{t("inc.backToFeed")}</ButtonLink>}
           />
         ) : (
-          <ErrorState message={error ? errorMessage(error) : "Couldn't load this incident."} onRetry={() => mutate()} />
+          <ErrorState message={error ? errorMessage(error) : es ? "No se pudo cargar este incidente." : "Couldn't load this incident."} onRetry={() => mutate()} />
         )}
       </main>
     );
   }
 
-  const def = getCategory(incident.category);
+  const { def, label: catLabel } = cat(incident.category);
   const ended = incident.status === "resolved";
   const lastUpdate = incident.updates.at(-1)?.createdAt ?? incident.updatedAt;
+  const heading = title(incident);
 
   return (
     <main className="min-h-dvh pb-nav">
@@ -109,7 +111,7 @@ export function IncidentDetailScreen({ id }: { id: string }) {
           mode="preview"
           center={{ lat: incident.latitude, lng: incident.longitude }}
           color={ended ? "#686d77" : def.color}
-          label={`Map showing the approximate location: ${incident.approximateAddress}`}
+          label={t("inc.mapAlt", { a: incident.approximateAddress })}
           attribution={false}
         />
         <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-bg via-bg/70 to-transparent" />
@@ -117,11 +119,11 @@ export function IncidentDetailScreen({ id }: { id: string }) {
       </div>
 
       <PageHeader
-        title={incident.title}
+        title={heading}
         back
         transparent
         action={
-          <button onClick={share} aria-label="Share" className="press glass inline-flex size-11 items-center justify-center rounded-full">
+          <button onClick={share} aria-label={t("common.share")} className="press glass inline-flex size-11 items-center justify-center rounded-full">
             <Share2 className="size-[18px]" aria-hidden />
           </button>
         }
@@ -133,10 +135,10 @@ export function IncidentDetailScreen({ id }: { id: string }) {
           </div>
           <p className="flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.1em]" style={{ color: ended ? "var(--muted)" : def.color }}>
             {isLive(incident) && <LiveBadge size="md" />}
-            {def.label}
+            {catLabel}
             {incident.isDemo && <DemoTag />}
           </p>
-          <h2 className="mt-2 text-[34px] font-bold leading-[1.05] tracking-[-0.035em]">{incident.title}</h2>
+          <h2 className="mt-2 text-[34px] font-bold leading-[1.05] tracking-[-0.035em]">{heading}</h2>
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
             <StatusPill status={incident.status} />
             <SeverityLabel severity={incident.severity} />
@@ -145,12 +147,14 @@ export function IncidentDetailScreen({ id }: { id: string }) {
           {affects && (
             <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-brand/15 px-3 py-1.5 text-[13.5px] font-semibold text-brand tnum">
               <MapPin className="size-4" aria-hidden />
-              {formatDistance(affects.distanceMi)} from {affects.label}
+              {t("near.from", { d: formatDistance(affects.distanceMi), place: affects.label })}
             </p>
           )}
           {!ended && incident.endedCount > 0 && incident.source.kind === "user" && (
             <p className="mt-2 text-[13px] text-muted tnum">
-              {incident.endedCount} of {incident.endedVotesNeeded} people needed say it&apos;s over
+              {es
+                ? `${incident.endedCount} de ${incident.endedVotesNeeded} personas necesarias dicen que ya terminó`
+                : `${incident.endedCount} of ${incident.endedVotesNeeded} people needed say it's over`}
             </p>
           )}
         </div>
@@ -163,7 +167,7 @@ export function IncidentDetailScreen({ id }: { id: string }) {
 
         {incident.photo && (
           // eslint-disable-next-line @next/next/no-img-element -- stored data URL
-          <img src={incident.photo} alt="Photo from the person who reported this" className="haven-rise mt-6 max-h-80 w-full rounded-[20px] object-cover" />
+          <img src={incident.photo} alt={t("inc.photoAlt")} className="haven-rise mt-6 max-h-80 w-full rounded-[20px] object-cover" />
         )}
 
         {incident.description && (
@@ -173,13 +177,16 @@ export function IncidentDetailScreen({ id }: { id: string }) {
         )}
 
         <dl className="haven-rise mt-6 divide-y divide-line border-t border-line" style={{ animationDelay: "140ms" }}>
-          <Fact label="Location" value={incident.approximateAddress || "Approximate"} />
-          <Fact label="Distance" value={incident.distanceMi != null ? `${formatDistance(incident.distanceMi)} from you` : "Location off"} />
-          <Fact label="Reported" value={dateTime(incident.createdAt)} />
-          <Fact label="Last update" value={timeAgo(lastUpdate)} />
-          <Fact label="Confirmed by" value={incident.confirmationCount === 0 ? "No one yet" : `${incident.confirmationCount} ${incident.confirmationCount === 1 ? "person" : "people"} nearby`} />
+          <Fact label={t("inc.location")} value={incident.approximateAddress || t("inc.approx")} />
+          <Fact label={t("inc.distance")} value={incident.distanceMi != null ? t("inc.fromYou", { d: formatDistance(incident.distanceMi) }) : t("inc.locationOff")} />
+          <Fact label={t("inc.reported")} value={dateTime(incident.createdAt)} />
+          <Fact label={t("inc.lastUpdate")} value={timeAgo(lastUpdate)} />
           <Fact
-            label="Source"
+            label={t("inc.confirmedBy")}
+            value={incident.confirmationCount === 0 ? t("inc.noOneYet") : incident.confirmationCount === 1 ? t("inc.personNearby") : t("inc.peopleNearby", { n: incident.confirmationCount })}
+          />
+          <Fact
+            label={t("inc.source")}
             value={
               <>
                 {incident.source.attribution}
@@ -187,7 +194,7 @@ export function IncidentDetailScreen({ id }: { id: string }) {
                   <>
                     {" "}
                     <a href={incident.source.url} target="_blank" rel="noopener noreferrer" className="text-brand">
-                      View
+                      {es ? "Ver" : "View"}
                     </a>
                   </>
                 )}
@@ -200,30 +207,30 @@ export function IncidentDetailScreen({ id }: { id: string }) {
         <div className="haven-rise mt-6 grid grid-cols-4 gap-2" style={{ animationDelay: "200ms" }}>
           <ActionButton
             icon={<Check className="size-[22px]" strokeWidth={2.2} />}
-            label={incident.viewer.isReporter ? "Yours" : incident.viewer.confirmed ? "You saw it" : "I see it"}
+            label={incident.viewer.isReporter ? t("inc.yours") : incident.viewer.confirmed ? t("inc.youSawIt") : t("inc.iSeeIt")}
             active={incident.viewer.confirmed}
             onClick={() => vote("confirm")}
             disabled={busy !== null || incident.viewer.confirmed || incident.viewer.isReporter || ended}
           />
           <ActionButton
             icon={<CircleSlash className="size-[22px]" strokeWidth={2} />}
-            label={incident.viewer.markedEnded ? "Marked" : "It's over"}
+            label={incident.viewer.markedEnded ? t("inc.marked") : t("inc.itsOver")}
             active={incident.viewer.markedEnded}
             onClick={() => vote("ended")}
             disabled={busy !== null || incident.viewer.markedEnded || ended}
           />
           <ActionButton
             icon={<MessageSquarePlus className="size-[22px]" strokeWidth={2} />}
-            label="Add info"
+            label={t("inc.addInfo")}
             onClick={() => setInfoOpen(true)}
             disabled={ended}
           />
-          <ActionButton icon={<Share2 className="size-[22px]" strokeWidth={2} />} label="Share" onClick={share} />
+          <ActionButton icon={<Share2 className="size-[22px]" strokeWidth={2} />} label={t("common.share")} onClick={share} />
         </div>
-        <p className="mt-3 text-center text-[13px] text-faint">Stay at a safe distance. Don&apos;t approach the scene.</p>
+        <p className="mt-3 text-center text-[13px] text-faint">{es ? "Manténgase a una distancia segura. No se acerque al lugar." : "Stay at a safe distance. Don't approach the scene."}</p>
 
         <section className="mt-8">
-          <h3 className="mb-4 text-[13px] font-medium text-muted">Timeline</h3>
+          <h3 className="mb-4 text-[13px] font-medium text-muted">{t("inc.timeline")}</h3>
           <Timeline updates={incident.updates} />
         </section>
 
@@ -232,9 +239,9 @@ export function IncidentDetailScreen({ id }: { id: string }) {
         </div>
 
         <p className="mt-6 text-center text-[11.5px] text-faint">
-          Map ©{" "}
+          {es ? "Mapa © " : "Map © "}
           <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" className="underline-offset-2 hover:underline">
-            OpenStreetMap contributors
+            {es ? "colaboradores de OpenStreetMap" : "OpenStreetMap contributors"}
           </a>{" "}
           · OpenFreeMap
         </p>
@@ -246,7 +253,7 @@ export function IncidentDetailScreen({ id }: { id: string }) {
             className="mx-auto mt-2 flex min-h-11 items-center gap-2 rounded-full px-3 text-[13.5px] text-faint hover:text-muted disabled:opacity-60"
           >
             <Flag className="size-3.5" aria-hidden />
-            {incident.viewer.flagged ? "You reported a problem" : "Report a problem"}
+            {incident.viewer.flagged ? t("inc.reportedProblem") : t("inc.reportProblem")}
           </button>
         )}
       </div>

@@ -6,6 +6,8 @@ import { categoriesInGroup, type FilterGroup } from "@/lib/categories";
 import { DEFAULT_CENTER } from "@/lib/client/defaults";
 import { activeLabel, distanceFrom, nearYouParams, useIncidents, useViewer, type InitialIncidents } from "@/lib/client/hooks";
 import { errorMessage } from "@/lib/client/api";
+import { useT } from "@/lib/client/lang";
+import type { Key } from "@/lib/i18n";
 import { useLocation } from "@/components/providers/LocationProvider";
 import {
   foldDuplicates,
@@ -24,20 +26,21 @@ import { PullToRefresh } from "@/components/ui/PullToRefresh";
 
 type FeedFilter = "nearby" | "newest" | FilterGroup;
 
-const FILTERS: { id: FeedFilter; label: string }[] = [
-  { id: "nearby", label: "Nearby" },
-  { id: "newest", label: "Newest" },
-  { id: "police", label: "Police" },
-  { id: "fire", label: "Fire" },
-  { id: "medical", label: "Medical" },
-  { id: "traffic", label: "Traffic" },
-  { id: "weather", label: "Weather" },
-  { id: "other", label: "Other" },
+const FILTERS: { id: FeedFilter; label: Key }[] = [
+  { id: "nearby", label: "feed.nearby" },
+  { id: "newest", label: "feed.newest" },
+  { id: "police", label: "map.group.police" },
+  { id: "fire", label: "map.group.fire" },
+  { id: "medical", label: "map.group.medical" },
+  { id: "traffic", label: "map.group.traffic" },
+  { id: "weather", label: "map.group.weather" },
+  { id: "other", label: "map.group.other" },
 ];
 
 export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
   const { position, status, request } = useLocation();
   const { viewer } = useViewer();
+  const { t, es } = useT();
   const [filter, setFilter] = useState<FeedFilter>("nearby");
   // Mount a short list first; the rest comes on request. Keeps the tab instant.
   const [limit, setLimit] = useState(30);
@@ -77,13 +80,13 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
   return (
     <main className="min-h-dvh pb-nav">
       <PageHeader
-        title="Near you"
+        title={t("feed.title")}
         large
         sub={
           <div
             className="no-scrollbar flex gap-2 overflow-x-auto px-5 pb-3 pt-1"
             role="toolbar"
-            aria-label="Feed filters"
+            aria-label={t("feed.filters")}
           >
             {FILTERS.map((f) => (
               <Chip
@@ -91,7 +94,7 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
                 active={filter === f.id}
                 onClick={() => setFilter(f.id)}
               >
-                {f.label}
+                {t(f.label)}
               </Chip>
             ))}
           </div>
@@ -107,11 +110,11 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
             >
               <Navigation className="size-4 shrink-0 text-brand" aria-hidden />
               <span className="truncate text-[13.5px] text-muted">
-                Showing central Houston
+                {t("feed.showingCentral")}
                 {status === "denied" || status === "unavailable" ? (
-                  <span className="text-faint"> · location is off in settings</span>
+                  <span className="text-faint">{t("feed.locationOff")}</span>
                 ) : (
-                  <span className="font-semibold text-brand"> · Use my location</span>
+                  <span className="font-semibold text-brand"> · {t("common.useMyLocation")}</span>
                 )}
               </span>
             </button>
@@ -128,7 +131,8 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
 
           {!isLoading && !error && sorted.length > 0 && (
             <p className="px-0 pb-1 pt-2 text-[13px] text-faint tnum">
-              {activeLabel(activeCount)} · last 24h
+              {activeLabel(activeCount, undefined, es)}
+              {t("feed.last24")}
             </p>
           )}
 
@@ -149,19 +153,15 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
                     aria-hidden
                   />
                 }
-                title="All quiet nearby"
-                body={
-                  isGroup
-                    ? "No incidents in this category in the last 24 hours."
-                    : "Nothing has been reported around here in the last 24 hours."
-                }
+                title={t("feed.quiet")}
+                body={isGroup ? t("feed.quietCategory") : t("feed.quietAll")}
                 action={
                   <ButtonLink
                     href="/"
                     variant="secondary"
                     transitionTypes={["tab"]}
                   >
-                    <MapPinned className="size-4" aria-hidden /> Explore the map
+                    <MapPinned className="size-4" aria-hidden /> {t("feed.explore")}
                   </ButtonLink>
                 }
               />
@@ -177,7 +177,7 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
                   >
                     {showHeader && (
                       <h2 className="-mx-4 bg-transparent px-4 pb-1 pt-5 text-[12.5px] font-semibold uppercase tracking-[0.08em] text-faint">
-                        {section}
+                        {t(section)}
                       </h2>
                     )}
                     <IncidentRow incident={i} distanceMi={distanceFrom(position, i)} />
@@ -191,7 +191,7 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
               onClick={() => setLimit((n) => n + 50)}
               className="press mt-2 flex min-h-12 w-full items-center justify-center rounded-2xl bg-surface text-[14.5px] font-semibold text-brand"
             >
-              Show {Math.min(50, rest.length - limit)} more
+              {t("common.showMore", { n: Math.min(50, rest.length - limit) })}
             </button>
           )}
 
@@ -201,7 +201,7 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
             sorted.length > 0 && (
               <div className="mt-6 flex items-center justify-between gap-3 rounded-2xl bg-surface px-4 py-3.5">
                 <p className="text-[13.5px] leading-snug text-muted">
-                  Showing 24 hours. Lifetime keeps 90 days.
+                  {t("feed.freeNote")}
                 </p>
                 <ButtonLink
                   href="/upgrade"
@@ -210,7 +210,7 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
                   transitionTypes={["nav-forward"]}
                   className="shrink-0 text-gold"
                 >
-                  Learn more
+                  {t("common.learnMore")}
                 </ButtonLink>
               </div>
             )}

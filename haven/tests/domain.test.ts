@@ -91,10 +91,11 @@ describe("feed sections", () => {
     const { timeSection, foldDuplicates } = await import("@/components/incident/IncidentCard");
     const now = new Date(2026, 9, 1, 15, 0).getTime();
     const at = (d: Date, status: "active" | "resolved" = "resolved") => ({ status, createdAt: d.toISOString() });
-    expect(timeSection(at(new Date(2026, 8, 27, 12, 0), "active"), now)).toBe("Live now");
-    expect(timeSection(at(new Date(2026, 9, 1, 9, 0)), now)).toBe("Earlier today");
-    expect(timeSection(at(new Date(2026, 8, 30, 22, 0)), now)).toBe("Yesterday");
-    expect(timeSection(at(new Date(2026, 8, 27, 12, 0)), now)).toBe("Older");
+    // Sections are dictionary keys; the Feed translates them.
+    expect(timeSection(at(new Date(2026, 8, 27, 12, 0), "active"), now)).toBe("feed.liveNow");
+    expect(timeSection(at(new Date(2026, 9, 1, 9, 0)), now)).toBe("feed.earlierToday");
+    expect(timeSection(at(new Date(2026, 8, 30, 22, 0)), now)).toBe("feed.yesterday");
+    expect(timeSection(at(new Date(2026, 8, 27, 12, 0)), now)).toBe("feed.older");
 
     const base = { category: "fire", title: "Structure fire", approximateAddress: "Main St" };
     const folded = foldDuplicates([

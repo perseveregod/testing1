@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { addTransitionType, startTransition } from "react";
 import { ChevronLeft } from "lucide-react";
+import { useT } from "@/lib/client/lang";
 
 /**
  * Native-style header. With `large`, a big title sits in the content and the
@@ -27,6 +28,7 @@ export function PageHeader({
   transparent?: boolean;
 }) {
   const router = useRouter();
+  const { t } = useT();
   const sentinel = useRef<HTMLDivElement>(null);
   const [scrolled, setScrolled] = useState(!large && !transparent);
 
@@ -69,7 +71,7 @@ export function PageHeader({
                   else router.push("/");
                 });
               }}
-              aria-label="Back"
+              aria-label={t("nav.back")}
               className={`press z-10 inline-flex items-center justify-center rounded-full text-text ${transparent && !scrolled ? "glass size-11" : "size-11 hover:bg-surface-2"}`}
             >
               <ChevronLeft

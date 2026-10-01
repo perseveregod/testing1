@@ -6,6 +6,7 @@ import { BellRing, LocateFixed, MapPinned, Navigation, ShieldCheck, Smartphone }
 import { EMERGENCY_NUMBER } from "@/lib/client/defaults";
 import { useLocation } from "@/components/providers/LocationProvider";
 import { AppIconMark } from "@/components/brand/AppIconMark";
+import { useT } from "@/lib/client/lang";
 import { usePush } from "@/lib/client/push";
 import { InstallSheet } from "./InstallSheet";
 
@@ -38,40 +39,15 @@ function subscribe(cb: () => void) {
 }
 
 const STEPS = [
-  {
-    icon: MapPinned,
-    color: "#3d8bff",
-    title: "Know what's happening around you",
-    body: "A live map of Houston fire, EMS and police dispatches, plus what neighbors report. Updated every few minutes.",
-  },
-  {
-    icon: ShieldCheck,
-    color: "#3ddc97",
-    title: "Report what you see, safely",
-    body: "Share from a safe distance. Haven shows only the block, never your exact spot, and removes names and personal details.",
-  },
-  {
-    icon: LocateFixed,
-    color: "#ff9f0a",
-    title: "See what's near you",
-    body: "Allow location to see distances and what's closest. It stays on your device; Haven only uses it to sort and alert.",
-  },
+  { icon: MapPinned, color: "#3d8bff", title: "welcome.1.title", body: "welcome.1.body" },
+  { icon: ShieldCheck, color: "#3ddc97", title: "welcome.2.title", body: "welcome.2.body" },
+  { icon: LocateFixed, color: "#ff9f0a", title: "welcome.3.title", body: "welcome.3.body" },
 ] as const;
 
 // Shown as a fourth screen only when this device can take push notifications
 // (or can, once Haven is on the Home Screen).
-const ALERT_STEP = {
-  icon: BellRing,
-  color: "#ff2d55",
-  title: "Hear about it first",
-  body: "Alerts for incidents near your places, even when Haven is closed. Only what's near you, never a feed of everything.",
-} as const;
-const INSTALL_STEP = {
-  icon: Smartphone,
-  color: "#ff2d55",
-  title: "Put Haven on your Home Screen",
-  body: "Full screen, faster, and the only way iPhone lets a web app notify you. Ten seconds, from the Share button.",
-} as const;
+const ALERT_STEP = { icon: BellRing, color: "#ff2d55", title: "welcome.alert.title", body: "welcome.alert.body" } as const;
+const INSTALL_STEP = { icon: Smartphone, color: "#ff2d55", title: "welcome.install.title", body: "welcome.install.body" } as const;
 
 export function WelcomeFlow() {
   const done = useSyncExternalStore(subscribe, seen, () => true);
@@ -81,6 +57,7 @@ export function WelcomeFlow() {
 
   const push = usePush();
   const [installOpen, setInstallOpen] = useState(false);
+  const { t } = useT();
 
   const finish = useCallback(() => markSeen(), []);
 
@@ -107,7 +84,7 @@ export function WelcomeFlow() {
           <AppIconMark className="size-9" />
           {!last && (
             <button onClick={finish} className="press min-h-11 rounded-full px-3 text-[15px] font-medium text-muted">
-              Skip
+              {t("common.skip")}
             </button>
           )}
         </div>
@@ -120,12 +97,12 @@ export function WelcomeFlow() {
             <Icon className="size-10" strokeWidth={1.8} aria-hidden />
           </span>
           <h1 id="welcome-title" className="mt-7 text-[32px] font-bold leading-[1.1] tracking-[-0.03em]">
-            {s.title}
+            {t(s.title)}
           </h1>
-          <p className="mt-3 text-[17px] leading-[1.5] text-muted">{s.body}</p>
+          <p className="mt-3 text-[17px] leading-[1.5] text-muted">{t(s.body)}</p>
           {locationStep && (
             <p className="mt-6 rounded-[16px] bg-surface px-4 py-3 text-[14px] leading-snug text-muted">
-              Haven doesn&apos;t contact emergency services. If someone is in danger, call {EMERGENCY_NUMBER}.
+              {t("welcome.note", { n: EMERGENCY_NUMBER })}
             </p>
           )}
         </div>
@@ -150,14 +127,14 @@ export function WelcomeFlow() {
                 }}
                 className="press flex min-h-[54px] items-center justify-center gap-2 rounded-2xl bg-brand text-[16px] font-semibold text-white"
               >
-                <Navigation className="size-5" aria-hidden /> Use my location
+                <Navigation className="size-5" aria-hidden /> {t("common.useMyLocation")}
               </button>
             )}
             <button
               onClick={() => (last ? finish() : setStep((n) => n + 1))}
               className="press flex min-h-[54px] items-center justify-center rounded-2xl bg-surface-2 text-[16px] font-semibold"
             >
-              {status === "denied" || status === "unavailable" ? (last ? "Get started" : "Continue") : "Maybe later"}
+              {status === "denied" || status === "unavailable" ? (last ? t("common.getStarted") : t("common.continue")) : t("common.maybeLater")}
             </button>
           </div>
         ) : last && extra === ALERT_STEP ? (
@@ -170,10 +147,10 @@ export function WelcomeFlow() {
               disabled={push.busy}
               className="press flex min-h-[54px] items-center justify-center gap-2 rounded-2xl bg-live text-[16px] font-semibold text-white disabled:opacity-70"
             >
-              <BellRing className="size-5" aria-hidden /> Turn on alerts
+              <BellRing className="size-5" aria-hidden /> {t("welcome.turnOnAlerts")}
             </button>
             <button onClick={finish} className="press flex min-h-[54px] items-center justify-center rounded-2xl bg-surface-2 text-[16px] font-semibold">
-              Not now
+              {t("common.notNow")}
             </button>
           </div>
         ) : last && extra === INSTALL_STEP ? (
@@ -182,10 +159,10 @@ export function WelcomeFlow() {
               onClick={() => setInstallOpen(true)}
               className="press flex min-h-[54px] items-center justify-center gap-2 rounded-2xl bg-text text-[16px] font-semibold text-bg"
             >
-              <Smartphone className="size-5" aria-hidden /> Show me how
+              <Smartphone className="size-5" aria-hidden /> {t("common.showMeHow")}
             </button>
             <button onClick={finish} className="press flex min-h-[54px] items-center justify-center rounded-2xl bg-surface-2 text-[16px] font-semibold">
-              Not now
+              {t("common.notNow")}
             </button>
             <InstallSheet
               open={installOpen}
@@ -200,7 +177,7 @@ export function WelcomeFlow() {
             onClick={() => setStep((n) => n + 1)}
             className="press flex min-h-[54px] items-center justify-center rounded-2xl bg-text text-[16px] font-semibold text-bg"
           >
-            Continue
+            {t("common.continue")}
           </button>
         )}
       </div>

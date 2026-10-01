@@ -6,6 +6,10 @@ export interface CategoryDef {
   id: CategoryId;
   label: string;
   short: string;
+  /** Spanish names; the UI picks by language. */
+  labelEs: string;
+  shortEs: string;
+  hintEs: string;
   /** Marker / accent color. Chosen to stay legible on the dark map. */
   color: string;
   group: FilterGroup;
@@ -23,6 +27,9 @@ export const CATEGORIES: readonly CategoryDef[] = [
     id: "police",
     label: "Police Activity",
     short: "Police",
+    labelEs: "Actividad policial",
+    shortEs: "Policía",
+    hintEs: "Oficiales o patrullas respondiendo, calles cerradas por la policía",
     color: "#6E8BFF",
     group: "police",
     defaultSeverity: "moderate",
@@ -35,6 +42,9 @@ export const CATEGORIES: readonly CategoryDef[] = [
     id: "fire",
     label: "Fire",
     short: "Fire",
+    labelEs: "Incendio",
+    shortEs: "Incendio",
+    hintEs: "Humo, llamas, bomberos en el lugar",
     color: "#FF7A45",
     group: "fire",
     defaultSeverity: "high",
@@ -47,6 +57,9 @@ export const CATEGORIES: readonly CategoryDef[] = [
     id: "medical",
     label: "Medical Emergency",
     short: "Medical",
+    labelEs: "Emergencia médica",
+    shortEs: "Médico",
+    hintEs: "Ambulancia o paramédicos respondiendo",
     color: "#FF5C8A",
     group: "medical",
     defaultSeverity: "moderate",
@@ -59,6 +72,9 @@ export const CATEGORIES: readonly CategoryDef[] = [
     id: "traffic_accident",
     label: "Traffic Accident",
     short: "Crash",
+    labelEs: "Accidente de tráfico",
+    shortEs: "Choque",
+    hintEs: "Choque, carriles bloqueados, vehículos detenidos",
     color: "#FFC145",
     group: "traffic",
     defaultSeverity: "moderate",
@@ -71,6 +87,9 @@ export const CATEGORIES: readonly CategoryDef[] = [
     id: "road_hazard",
     label: "Road Hazard",
     short: "Hazard",
+    labelEs: "Peligro en la vía",
+    shortEs: "Peligro",
+    hintEs: "Escombros, inundación, cables caídos, cierres",
     color: "#E8D44D",
     group: "traffic",
     defaultSeverity: "low",
@@ -84,6 +103,9 @@ export const CATEGORIES: readonly CategoryDef[] = [
     // Named for the behavior, not a vibe: reports describe what someone is doing.
     label: "Break-in or Theft",
     short: "Theft",
+    labelEs: "Robo o allanamiento",
+    shortEs: "Robo",
+    hintEs: "Alguien forzando un carro o una casa, o llevándose algo. Describa qué hace, nunca cómo se ve",
     color: "#B48CFF",
     group: "police",
     defaultSeverity: "low",
@@ -96,6 +118,9 @@ export const CATEGORIES: readonly CategoryDef[] = [
     id: "severe_weather",
     label: "Severe Weather",
     short: "Weather",
+    labelEs: "Clima severo",
+    shortEs: "Clima",
+    hintEs: "Tormentas, inundaciones, calor, vientos fuertes",
     color: "#4FC3F7",
     group: "weather",
     defaultSeverity: "high",
@@ -108,6 +133,9 @@ export const CATEGORIES: readonly CategoryDef[] = [
     id: "public_safety",
     label: "Public Safety",
     short: "Safety",
+    labelEs: "Seguridad pública",
+    shortEs: "Seguridad",
+    hintEs: "Fugas de gas, evacuaciones, apagones, avisos de refugio",
     color: "#3DDC97",
     group: "other",
     defaultSeverity: "moderate",
@@ -120,6 +148,9 @@ export const CATEGORIES: readonly CategoryDef[] = [
     id: "missing_pet",
     label: "Missing Pet",
     short: "Pet",
+    labelEs: "Mascota perdida",
+    shortEs: "Mascota",
+    hintEs: "Perros, gatos y otras mascotas perdidos o encontrados",
     color: "#E58BFF",
     group: "other",
     defaultSeverity: "low",
@@ -134,6 +165,9 @@ export const CATEGORIES: readonly CategoryDef[] = [
     id: "power",
     label: "Power",
     short: "Power",
+    labelEs: "Luz",
+    shortEs: "Luz",
+    hintEs: "Sin luz o ya hay luz en esta cuadra",
     color: "#FFC233",
     group: "storm",
     defaultSeverity: "moderate",
@@ -146,6 +180,9 @@ export const CATEGORIES: readonly CategoryDef[] = [
     id: "flooding",
     label: "Street flooding",
     short: "Flooding",
+    labelEs: "Calle inundada",
+    shortEs: "Inundación",
+    hintEs: "Calle inundada o transitable",
     color: "#FF3B30",
     group: "storm",
     defaultSeverity: "critical",
@@ -158,6 +195,9 @@ export const CATEGORIES: readonly CategoryDef[] = [
     id: "place",
     label: "Open places",
     short: "Place",
+    labelEs: "Lugares abiertos",
+    shortEs: "Lugar",
+    hintEs: "Una gasolinera, tienda o centro de enfriamiento abierto o cerrado",
     color: "#34C759",
     group: "storm",
     defaultSeverity: "low",
@@ -170,6 +210,9 @@ export const CATEGORIES: readonly CategoryDef[] = [
     id: "other",
     label: "Other",
     short: "Other",
+    labelEs: "Otro",
+    shortEs: "Otro",
+    hintEs: "Cualquier otra cosa que la gente cercana deba saber",
     color: "#9AA4B2",
     group: "other",
     defaultSeverity: "low",
@@ -192,13 +235,13 @@ export function isCategoryId(v: unknown): v is CategoryId {
   return typeof v === "string" && BY_ID.has(v as CategoryId);
 }
 
-export const FILTER_GROUPS: { id: FilterGroup; label: string }[] = [
-  { id: "police", label: "Police" },
-  { id: "fire", label: "Fire" },
-  { id: "medical", label: "Medical" },
-  { id: "traffic", label: "Traffic" },
-  { id: "weather", label: "Weather" },
-  { id: "other", label: "Other" },
+export const FILTER_GROUPS: { id: FilterGroup; label: string; labelEs: string }[] = [
+  { id: "police", label: "Police", labelEs: "Policía" },
+  { id: "fire", label: "Fire", labelEs: "Incendios" },
+  { id: "medical", label: "Medical", labelEs: "Médico" },
+  { id: "traffic", label: "Traffic", labelEs: "Tráfico" },
+  { id: "weather", label: "Weather", labelEs: "Clima" },
+  { id: "other", label: "Other", labelEs: "Otros" },
 ];
 
 export function categoriesInGroup(group: FilterGroup): CategoryId[] {

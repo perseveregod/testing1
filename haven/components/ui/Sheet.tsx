@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useT } from "@/lib/client/lang";
 import { createPortal } from "react-dom";
 
 // Bottom sheet with native-feeling motion: slides in, animates out, and can
@@ -90,6 +91,7 @@ export function Sheet({
   const titleId = useId();
   const { mounted, closing } = usePresence(open);
   const { dy, handlers } = useDragDismiss(onClose);
+  const closeLabel = useT().t("common.close");
 
   useEffect(() => {
     if (!open) return;
@@ -126,7 +128,7 @@ export function Sheet({
   return createPortal(
     <div className="fixed inset-0 z-[60] flex items-end justify-center">
       <button
-        aria-label="Close"
+        aria-label={closeLabel}
         tabIndex={-1}
         onClick={onClose}
         className={`absolute inset-0 bg-black/60 backdrop-blur-[2px] ${closing ? "haven-fade-out" : "haven-fade-in"}`}

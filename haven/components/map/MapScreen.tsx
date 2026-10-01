@@ -13,6 +13,8 @@ import {
 import { setStormPrefs, useStormPrefs, useStormReportTick } from "@/lib/client/stormMode";
 import { peekMapFocus, takeMapFocus } from "@/lib/client/mapFocus";
 import { setMapTone } from "@/lib/client/mapTone";
+import { useT } from "@/lib/client/lang";
+import type { Key } from "@/lib/i18n";
 import { STATE_STYLE, strings, type StormKind } from "@/lib/storm";
 import { STORM_CATEGORIES } from "@/lib/categories";
 import { OfficialSourcesSheet } from "@/components/storm/StormBanner";
@@ -74,21 +76,13 @@ function promptWasDismissed(): boolean {
 }
 
 /** One-tap category filters along the top of the map. */
-const QUICK: { id: FilterGroup | null; label: string; color?: string }[] = [
-  { id: null, label: "All" },
-  { id: "police", label: "Police", color: getCategory("police").color },
-  { id: "fire", label: "Fire", color: getCategory("fire").color },
-  { id: "medical", label: "Medical", color: getCategory("medical").color },
-  {
-    id: "traffic",
-    label: "Traffic",
-    color: getCategory("traffic_accident").color,
-  },
-  {
-    id: "weather",
-    label: "Weather",
-    color: getCategory("severe_weather").color,
-  },
+const QUICK: { id: FilterGroup | null; label: Key; color?: string }[] = [
+  { id: null, label: "common.all" },
+  { id: "police", label: "map.group.police", color: getCategory("police").color },
+  { id: "fire", label: "map.group.fire", color: getCategory("fire").color },
+  { id: "medical", label: "map.group.medical", color: getCategory("medical").color },
+  { id: "traffic", label: "map.group.traffic", color: getCategory("traffic_accident").color },
+  { id: "weather", label: "map.group.weather", color: getCategory("severe_weather").color },
 ];
 
 const RADIUS_BUCKETS = [1, 2, 5, 10, 25, 50];
@@ -213,6 +207,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
 
   const storm = useStormPrefs();
   const st = strings(storm.lang);
+  const { t } = useT();
   const [stormFilter, setStormFilter] = useState<StormKind | null>(null);
   // Storm reports open from the tab bar's center button (see requestStormReport).
   const reportTick = useStormReportTick();
@@ -365,7 +360,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
             >
               <Search className="size-[18px] shrink-0 text-muted" aria-hidden />
               <span className={`truncate text-[16px] ${searchLabel ? "text-text" : "text-muted"}`}>
-                {searchLabel ?? "Search Houston"}
+                {searchLabel ?? t("map.search")}
               </span>
             </button>
             <button
@@ -387,7 +382,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
           <div
             className="no-scrollbar pointer-events-auto -mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-2 pt-2.5"
             role="toolbar"
-            aria-label={storm.on ? st.stormMode : "Quick filters"}
+            aria-label={storm.on ? st.stormMode : t("map.quickFilters")}
           >
             {storm.on ? (
               <>
@@ -406,20 +401,20 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
                 })}
                 <Chip onClick={() => setPrepOpen(true)}>
                   <ListChecks className="size-3.5" aria-hidden />
-                  {storm.lang === "es" ? "Prepárese" : "Prepare"}
+                  {t("map.prepare")}
                 </Chip>
                 <a href={`tel:${EMERGENCY_NUMBER}`} className="press inline-flex h-9 shrink-0 items-center rounded-full bg-live px-3.5 text-[13px] font-bold text-white">
                   {EMERGENCY_NUMBER}
                 </a>
-                <Chip onClick={() => setStormPrefs({ lang: storm.lang === "en" ? "es" : "en" })} aria-label={storm.lang === "en" ? "Cambiar a español" : "Switch to English"}>
+                <Chip onClick={() => setStormPrefs({ lang: storm.lang === "en" ? "es" : "en" })} aria-label={t(storm.lang === "en" ? "map.toSpanish" : "map.toEnglish")}>
                   {storm.lang === "en" ? "ES" : "EN"}
                 </Chip>
               </>
             ) : (
               <>
-                <Chip on={filterCount > 0} onClick={() => setFilterOpen(true)} aria-label={`All filters${filterCount ? ` (${filterCount} active)` : ""}`}>
+                <Chip on={filterCount > 0} onClick={() => setFilterOpen(true)} aria-label={`${t("map.allFilters")}${filterCount ? ` (${t("map.filtersActive", { n: filterCount })})` : ""}`}>
                   <SlidersHorizontal className="size-3.5" aria-hidden />
-                  {filterCount > 0 ? `Filters · ${filterCount}` : "Filters"}
+                  {filterCount > 0 ? `${t("map.filters")} · ${filterCount}` : t("map.filters")}
                   <ChevronDown className="size-3.5 opacity-60" aria-hidden />
                 </Chip>
                 {QUICK.map((q) => {
@@ -427,7 +422,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
                   return (
                     <Chip key={q.label} on={on} onClick={() => setFilters((f) => ({ ...f, groups: q.id === null ? [] : [q.id] }))}>
                       {q.color && <span className="size-2 rounded-full" style={{ background: q.color }} aria-hidden />}
-                      {q.label}
+                      {t(q.label)}
                     </Chip>
                   );
                 })}
@@ -460,11 +455,11 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
         >
           <div className="mx-auto flex max-w-lg justify-end px-4 pb-3">
             <div className="pointer-events-auto flex flex-col items-end gap-2.5">
-              <MapControl label="Map style" onClick={() => setLayersOpen(true)} className="panel rounded-full">
+              <MapControl label={t("map.style")} onClick={() => setLayersOpen(true)} className="panel rounded-full">
                 <Layers className="size-[18px]" aria-hidden />
               </MapControl>
               {Math.abs(camera.bearing - (camera.pitch > 5 ? BEARING_3D : 0)) > 2 && (
-                <MapControl label="Point the map north" onClick={() => mapRef.current?.resetNorth()} className="panel haven-pop rounded-full">
+                <MapControl label={t("map.north")} onClick={() => mapRef.current?.resetNorth()} className="panel haven-pop rounded-full">
                   <Navigation2
                     className="size-[16px] fill-live text-live transition-transform duration-150"
                     style={{ transform: `rotate(${-camera.bearing}deg)` }}
@@ -473,7 +468,7 @@ export function MapScreen({ initial }: { initial?: InitialIncidents | null }) {
                 </MapControl>
               )}
               <MapControl
-                label={position ? "Center on my location" : "Use my location"}
+                label={position ? t("map.center") : t("common.useMyLocation")}
                 onClick={locate}
                 className="panel rounded-full"
               >

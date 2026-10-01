@@ -1,10 +1,12 @@
+"use client";
+
 import Link from "next/link";
-import { getCategory } from "@/lib/categories";
 import { formatDistance } from "@/lib/geo";
-import { timeAgo } from "@/lib/time";
+import type { Key } from "@/lib/i18n";
 import type { PublicIncident } from "@/lib/types";
 import { isLive, LiveBadge, OriginBadge } from "./Badges";
 import { useAffects } from "@/lib/client/affects";
+import { useT } from "@/lib/client/lang";
 import { CategoryIcon } from "./CategoryIcon";
 
 /** Official dispatch feeds (city 911 data, weather) read as compact two-line rows. */
@@ -17,6 +19,7 @@ export function isDispatch(i: PublicIncident): boolean {
  * the full source note is one tap away on the incident page.
  */
 export function DispatchRow({ incident, distanceMi }: { incident: PublicIncident; distanceMi: number | null }) {
+  const { t, timeAgo, title } = useT();
   const ended = incident.status === "resolved";
   const live = isLive(incident);
   return (
@@ -30,11 +33,11 @@ export function DispatchRow({ incident, distanceMi }: { incident: PublicIncident
       <div className="min-w-0 flex-1">
         <p className={`flex min-w-0 items-center gap-1.5 text-[15px] font-semibold tracking-[-0.01em] ${ended ? "text-muted" : ""}`}>
           {live && <LiveBadge />}
-          <span className="truncate">{incident.title}</span>
+          <span className="truncate">{title(incident)}</span>
         </p>
         <p className="truncate text-[13px] text-muted">
-          {ended && <span className="text-faint">Ended · </span>}
-          {incident.approximateAddress || "Approximate location"}
+          {ended && <span className="text-faint">{t("inc.ended")} · </span>}
+          {incident.approximateAddress || t("inc.approx")}
           {distanceMi != null && <span className="text-faint tnum"> · {formatDistance(distanceMi)}</span>}
         </p>
       </div>
@@ -43,15 +46,15 @@ export function DispatchRow({ incident, distanceMi }: { incident: PublicIncident
   );
 }
 
-/** Feed sections: what's still going on, then what has ended. */
-export function timeSection(i: Pick<PublicIncident, "status" | "createdAt">, now = Date.now()): string {
-  if (i.status !== "resolved") return "Live now";
+/** Feed sections: what's still going on, then what has ended. Returns a dictionary key. */
+export function timeSection(i: Pick<PublicIncident, "status" | "createdAt">, now = Date.now()): Key {
+  if (i.status !== "resolved") return "feed.liveNow";
   const d = new Date(i.createdAt);
   const today = new Date(now);
-  if (d.toDateString() === today.toDateString()) return "Earlier today";
+  if (d.toDateString() === today.toDateString()) return "feed.earlierToday";
   const y = new Date(now - 86_400_000);
-  if (d.toDateString() === y.toDateString()) return "Yesterday";
-  return "Older";
+  if (d.toDateString() === y.toDateString()) return "feed.yesterday";
+  return "feed.older";
 }
 
 /**
@@ -78,7 +81,8 @@ export function foldDuplicates(items: PublicIncident[]): PublicIncident[] {
 
 /** One incident as a list row: glyph, title, place, and a two-line preview. */
 export function IncidentRow({ incident, distanceMi }: { incident: PublicIncident; distanceMi: number | null }) {
-  const def = getCategory(incident.category);
+  const { t, timeAgo, title, cat } = useT();
+  const { def, short } = cat(incident.category);
   const affects = useAffects()(incident);
   const ended = incident.status === "resolved";
   const active = incident.status === "active";
@@ -101,27 +105,27 @@ export function IncidentRow({ incident, distanceMi }: { incident: PublicIncident
       <div className="relative pt-0.5">
         <CategoryIcon category={incident.category} muted={ended} />
         {active && incident.severity !== "low" && (
-          <span className="absolute -right-0.5 top-0 size-2.5 rounded-full bg-danger ring-[2.5px] ring-bg" aria-label="Active" />
+          <span className="absolute -right-0.5 top-0 size-2.5 rounded-full bg-danger ring-[2.5px] ring-bg" aria-label={t("inc.active")} />
         )}
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-3">
           <h3 className={`min-w-0 flex-1 truncate text-[16.5px] font-bold tracking-[-0.02em] ${ended ? "text-muted" : ""}`}>
-            {incident.title}
+            {title(incident)}
           </h3>
           <span className="shrink-0 text-[13px] text-faint tnum">{timeAgo(incident.createdAt)}</span>
         </div>
         {/* WHERE and WHAT KIND, then live / ended state, on one predictable line. */}
         <p className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[13.5px] text-muted">
           {live && <LiveBadge />}
-          {ended && <span className="shrink-0 text-faint">Ended ·</span>}
+          {ended && <span className="shrink-0 text-faint">{t("inc.ended")} ·</span>}
           <span className="truncate">
-            <span style={{ color: ended ? undefined : def.color }}>{def.short}</span>
+            <span style={{ color: ended ? undefined : def.color }}>{short}</span>
             <span className="text-faint"> · </span>
-            {incident.approximateAddress || "Approximate location"}
+            {incident.approximateAddress || t("inc.approx")}
           </span>
           {affects ? (
-            <span className="shrink-0 font-semibold text-brand tnum">· {formatDistance(affects.distanceMi)} from {affects.label}</span>
+            <span className="shrink-0 font-semibold text-brand tnum">· {t("near.from", { d: formatDistance(affects.distanceMi), place: affects.label })}</span>
           ) : (
             distanceMi != null && <span className="shrink-0 text-faint tnum">· {formatDistance(distanceMi)}</span>
           )}
@@ -136,7 +140,7 @@ export function IncidentRow({ incident, distanceMi }: { incident: PublicIncident
           {!incident.isDemo && <OriginBadge incident={incident} />}
           {incident.confirmationCount > 0 && (
             <span className="tnum">
-              {incident.confirmationCount} {incident.confirmationCount === 1 ? "person" : "people"} saw this
+              {incident.confirmationCount === 1 ? t("inc.saw1") : t("inc.saw", { n: incident.confirmationCount })}
             </span>
           )}
         </div>
@@ -157,7 +161,8 @@ export function pickTopIncident(items: PublicIncident[]): PublicIncident | null 
 
 /** Big "happening now" card pinned above the feed. */
 export function TopIncidentCard({ incident, distanceMi }: { incident: PublicIncident; distanceMi: number | null }) {
-  const def = getCategory(incident.category);
+  const { t, timeAgo, title, cat } = useT();
+  const { def, short } = cat(incident.category);
   return (
     <Link
       href={`/incidents/${incident.id}`}
@@ -172,16 +177,16 @@ export function TopIncidentCard({ incident, distanceMi }: { incident: PublicInci
       />
       <div className="relative flex items-center gap-2 text-[11.5px] font-bold uppercase tracking-[0.1em] text-muted">
         <LiveBadge size="md" />
-        <span>Happening now</span>
+        <span>{t("feed.happeningNow")}</span>
       </div>
       <div className="relative mt-3 flex gap-3.5">
         <CategoryIcon category={incident.category} size="lg" animated />
         <div className="min-w-0 flex-1">
-          <h3 className="text-[21px] font-extrabold leading-[1.15] tracking-[-0.03em]">{incident.title}</h3>
+          <h3 className="text-[21px] font-extrabold leading-[1.15] tracking-[-0.03em]">{title(incident)}</h3>
           <p className="mt-1 truncate text-[13.5px] text-muted">
-            <span style={{ color: def.color }}>{def.short}</span>
+            <span style={{ color: def.color }}>{short}</span>
             <span className="text-faint"> · </span>
-            {incident.approximateAddress || "Approximate location"}
+            {incident.approximateAddress || t("inc.approx")}
             {distanceMi != null && <span className="text-faint tnum"> · {formatDistance(distanceMi)}</span>}
             <span className="text-faint tnum"> · {timeAgo(incident.createdAt)}</span>
           </p>

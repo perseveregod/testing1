@@ -11,11 +11,11 @@ import {
 } from "lucide-react";
 import { getCategory, FILTER_GROUPS } from "@/lib/categories";
 import { DEFAULT_CENTER } from "@/lib/client/defaults";
-import { activeLabel, distanceFrom, NEAR_RADIUS_MI, useNearYou, type InitialIncidents } from "@/lib/client/hooks";
+import { distanceFrom, NEAR_RADIUS_MI, useNearYou, type InitialIncidents } from "@/lib/client/hooks";
+import { useT } from "@/lib/client/lang";
 import { formatRemaining, useClock, useSafeWalk } from "@/lib/client/safewalk";
 import { RESOURCE_AREA, RESOURCES } from "@/lib/resources";
 import { formatDistance } from "@/lib/geo";
-import { timeAgo } from "@/lib/time";
 import type { PublicIncident } from "@/lib/types";
 import { useLocation } from "@/components/providers/LocationProvider";
 import { isLive, LiveBadge } from "@/components/incident/Badges";
@@ -42,6 +42,7 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
   const walk = useSafeWalk()?.walk ?? null;
   const now = useClock(walk != null);
   const overdue = walk != null && now > 0 && now > walk.endsAt;
+  const { t, es } = useT();
 
   const briefing = useMemo(() => {
     // Same number as the Map and Feed: everything still active, pets included.
@@ -68,7 +69,7 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
 
   return (
     <main className="min-h-dvh pb-nav">
-      <PageHeader title="Safety" large />
+      <PageHeader title={t("safety.title")} large />
       <PullToRefresh onRefresh={refresh}>
         <div className="relative mx-auto max-w-lg px-4">
           {/* 1. Act now */}
@@ -96,14 +97,14 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
               </span>
               <div className="min-w-0 flex-1">
                 <p className="text-[18px] font-bold tracking-[-0.02em]">
-                  {walk ? (overdue ? "Check-in missed" : "Safe Walk in progress") : "Safe Walk"}
+                  {walk ? (overdue ? t("safety.walkMissed") : t("safety.walkOn")) : t("safety.walk")}
                 </p>
                 <p className={`mt-0.5 text-[13.5px] leading-snug ${overdue ? "text-white/90" : "text-muted"}`}>
                   {walk
                     ? overdue
-                      ? "Tap to say you're OK or alert your contacts."
-                      : `${formatRemaining(walk.endsAt - now)} until your check-in`
-                    : "Walking alone? Set a check-in timer and let someone you trust know."}
+                      ? t("safety.walkMissedBody")
+                      : t("safety.walkUntil", { t: formatRemaining(walk.endsAt - now) })
+                    : t("safety.walkBody")}
                 </p>
               </div>
               <ChevronRight className={`size-5 shrink-0 ${overdue ? "text-white/80" : "text-faint"}`} aria-hidden />
@@ -122,9 +123,9 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
           <section className="mt-8" aria-labelledby="briefing">
             <div className="mb-2.5 flex items-baseline justify-between px-1">
               <h2 id="briefing" className="text-[13px] font-semibold text-muted">
-                Nearby right now
+                {t("safety.nearby")}
               </h2>
-              <span className="text-[12.5px] text-faint tnum">{NEAR_RADIUS_MI} mi · 24 h</span>
+              <span className="text-[12.5px] text-faint tnum">{t("safety.window", { n: NEAR_RADIUS_MI })}</span>
             </div>
             {briefing.allDemo && <DemoNotice className="mb-2.5 mt-0" />}
             {isLoading ? (
@@ -137,21 +138,19 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
                   <ShieldCheck className="size-6" aria-hidden />
                 </span>
                 <div>
-                  <p className="text-[15.5px] font-semibold">All quiet within 5 miles</p>
-                  <p className="mt-0.5 text-[13.5px] leading-snug text-muted">
-                    Nothing active in the last 24 hours. Official feeds and neighbor reports are checked continuously.
-                  </p>
+                  <p className="text-[15.5px] font-semibold">{t("safety.quiet")}</p>
+                  <p className="mt-0.5 text-[13.5px] leading-snug text-muted">{t("safety.quietBody")}</p>
                 </div>
               </div>
             ) : (
               <div className="rounded-card bg-surface px-4 pt-4">
                 <p className="text-[15px] leading-snug">
                   <span className="text-[22px] font-bold tracking-[-0.02em] tnum">{briefing.active}</span>{" "}
-                  <span className="text-muted">{activeLabel(briefing.active).replace(/^\d+ /, "")}</span>
+                  <span className="text-muted">{t("safety.activeWithin", { n: NEAR_RADIUS_MI })}</span>
                 </p>
                 {briefing.byGroup.length > 0 && (
                   <p className="mt-1.5 text-[13px] text-muted tnum">
-                    {briefing.byGroup.map((g) => `${g.label} ${g.count}`).join(" · ")}
+                    {briefing.byGroup.map((g) => `${es ? g.labelEs : g.label} ${g.count}`).join(" · ")}
                   </p>
                 )}
                 {briefing.top.length > 0 && (
@@ -166,7 +165,7 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
                   transitionTypes={["tab"]}
                   className="-mx-4 flex min-h-12 items-center justify-center border-t border-line text-[14px] font-semibold text-brand active:opacity-60"
                 >
-                  See everything nearby
+                  {t("safety.seeAll")}
                 </Link>
               </div>
             )}
@@ -176,10 +175,10 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
           <section className="mt-8" aria-labelledby="pets">
             <div className="mb-2.5 flex items-baseline justify-between px-1">
               <h2 id="pets" className="text-[13px] font-semibold text-muted">
-                Missing pets nearby
+                {t("safety.pets")}
               </h2>
               <Link href="/report" transitionTypes={["nav-forward"]} className="text-[13px] font-medium text-brand">
-                Post a lost or found pet
+                {t("safety.postPet")}
               </Link>
             </div>
             {briefing.pets.length > 0 ? (
@@ -192,7 +191,7 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
               !isLoading && (
                 <div className="flex items-center gap-3 rounded-card bg-surface px-4 py-3">
                   <PawPrint className="size-5 shrink-0 text-faint" aria-hidden />
-                  <p className="text-[14px] leading-snug text-muted">No missing pets reported within 5 miles.</p>
+                  <p className="text-[14px] leading-snug text-muted">{t("safety.noPets")}</p>
                 </div>
               )
             )}
@@ -202,7 +201,7 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
           <section className="mt-8" aria-labelledby="resources">
             <div className="mb-2.5 flex items-baseline justify-between px-1">
               <h2 id="resources" className="text-[13px] font-semibold text-muted">
-                Official resources
+                {t("safety.resources")}
               </h2>
               <span className="text-[12.5px] text-faint">{RESOURCE_AREA}</span>
             </div>
@@ -229,7 +228,7 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
                             {r.label ? (
                               <span className="shrink-0 text-[13.5px] font-semibold text-brand tnum">{r.label}</span>
                             ) : (
-                              <ExternalLink className="size-4 shrink-0 text-faint" aria-label="Opens another site" />
+                              <ExternalLink className="size-4 shrink-0 text-faint" aria-label={t("common.opensSite")} />
                             )}
                           </a>
                         </li>
@@ -239,10 +238,7 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
                 </div>
               ))}
             </div>
-            <p className="mt-2 px-1 text-[12.5px] leading-relaxed text-faint">
-              Haven links to these agencies and does not re-host their data. Missing-person reports go through the
-              official bulletins, never Haven, to protect people who may not want to be found.
-            </p>
+            <p className="mt-2 px-1 text-[12.5px] leading-relaxed text-faint">{t("safety.resourcesNote")}</p>
           </section>
         </div>
       </PullToRefresh>
@@ -251,7 +247,8 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
 }
 
 function BriefRow({ incident, distanceMi }: { incident: PublicIncident; distanceMi: number | null }) {
-  const def = getCategory(incident.category);
+  const { timeAgo, title, cat } = useT();
+  const { def, short } = cat(incident.category);
   return (
     <li>
       <Link
@@ -262,11 +259,11 @@ function BriefRow({ incident, distanceMi }: { incident: PublicIncident; distance
       >
         <CategoryIcon category={incident.category} size="md" />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[15px] font-semibold">{incident.title}</p>
+          <p className="truncate text-[15px] font-semibold">{title(incident)}</p>
           <p className="mt-0.5 flex items-center gap-1.5 text-[12.5px] text-muted">
             {isLive(incident) && <LiveBadge />}
             <span className="truncate">
-              <span style={{ color: def.color }}>{def.short}</span> · {incident.approximateAddress}
+              <span style={{ color: def.color }}>{short}</span> · {incident.approximateAddress}
               {distanceMi != null && <span className="tnum"> · {formatDistance(distanceMi)}</span>}
               <span className="tnum"> · {timeAgo(incident.createdAt)}</span>
             </span>

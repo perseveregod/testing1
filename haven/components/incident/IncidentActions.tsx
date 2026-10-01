@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { apiSend, errorMessage } from "@/lib/client/api";
+import { useT } from "@/lib/client/lang";
 import { MAX_UPDATE } from "@/lib/moderation";
 import { useToast } from "@/components/providers/ToastProvider";
 import { Button } from "@/components/ui/Button";
@@ -19,6 +20,7 @@ export function AddInfoSheet({
   onDone: () => void;
 }) {
   const toast = useToast();
+  const { t, es } = useT();
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -26,7 +28,7 @@ export function AddInfoSheet({
     setBusy(true);
     try {
       const r = await apiSend<{ redacted: boolean }>(`/api/incidents/${incidentId}/updates`, "POST", { body: text });
-      toast(r.redacted ? "Update added. Personal details were removed." : "Update added. Thank you.", "success");
+      toast(r.redacted ? t("inc.updateRedacted") : t("inc.updateAdded"), "success");
       setText("");
       onDone();
       onClose();
@@ -41,26 +43,27 @@ export function AddInfoSheet({
     <Sheet
       open={open}
       onClose={onClose}
-      title="Add information"
+      title={t("inc.addInformation")}
       footer={
         <Button block size="lg" onClick={submit} loading={busy} disabled={!text.trim()}>
-          Post update
+          {es ? "Publicar actualización" : "Post update"}
         </Button>
       }
     >
       <p className="mb-3 text-[14px] leading-relaxed text-muted">
-        Share what you can see from a safe distance, like road closures or whether crews have left. Don&apos;t include
-        names, faces or personal details.
+        {es
+          ? "Comparta lo que pueda ver desde una distancia segura, como calles cerradas o si las unidades ya se fueron. No incluya nombres, caras ni datos personales."
+          : "Share what you can see from a safe distance, like road closures or whether crews have left. Don't include names, faces or personal details."}
       </p>
       <label className="sr-only" htmlFor="info">
-        Update
+        {es ? "Actualización" : "Update"}
       </label>
       <textarea
         id="info"
         value={text}
         onChange={(e) => setText(e.target.value.slice(0, MAX_UPDATE))}
         rows={4}
-        placeholder="e.g. Two lanes now open, traffic moving slowly"
+        placeholder={t("inc.updatePlaceholder")}
         className="w-full resize-none rounded-2xl bg-surface-2 p-4 text-[16px] leading-relaxed outline-none ring-brand/60 transition placeholder:text-faint focus:ring-2"
       />
       <p className="mt-1.5 text-right text-[12px] text-faint tnum">
@@ -71,11 +74,11 @@ export function AddInfoSheet({
 }
 
 const FLAG_REASONS = [
-  { id: "false", label: "This didn't happen / is misleading" },
-  { id: "duplicate", label: "Duplicate of another incident" },
-  { id: "personal_info", label: "Contains personal information" },
-  { id: "offensive", label: "Offensive, harassing or discriminatory" },
-  { id: "other", label: "Something else" },
+  { id: "false", en: "This didn't happen / is misleading", es: "Esto no pasó / es engañoso" },
+  { id: "duplicate", en: "Duplicate of another incident", es: "Duplicado de otro incidente" },
+  { id: "personal_info", en: "Contains personal information", es: "Contiene información personal" },
+  { id: "offensive", en: "Offensive, harassing or discriminatory", es: "Ofensivo, acosador o discriminatorio" },
+  { id: "other", en: "Something else", es: "Otra cosa" },
 ] as const;
 
 export function FlagSheet({
@@ -90,13 +93,14 @@ export function FlagSheet({
   onDone: () => void;
 }) {
   const toast = useToast();
+  const { t, es } = useT();
   const [busy, setBusy] = useState<string | null>(null);
 
   async function flag(reason: string) {
     setBusy(reason);
     try {
       await apiSend(`/api/incidents/${incidentId}/flag`, "POST", { reason });
-      toast("Thanks. We'll review this report.", "success");
+      toast(es ? "Gracias. Revisaremos este reporte." : "Thanks. We'll review this report.", "success");
       onDone();
       onClose();
     } catch (err) {
@@ -107,8 +111,10 @@ export function FlagSheet({
   }
 
   return (
-    <Sheet open={open} onClose={onClose} title="Report a problem">
-      <p className="mb-3 text-[14px] text-muted">Community reports that several people flag are hidden while they&apos;re reviewed.</p>
+    <Sheet open={open} onClose={onClose} title={t("inc.reportProblem")}>
+      <p className="mb-3 text-[14px] text-muted">
+        {es ? "Los reportes de la comunidad que varias personas marcan se ocultan mientras se revisan." : "Community reports that several people flag are hidden while they're reviewed."}
+      </p>
       <ul className="divide-y divide-line overflow-hidden rounded-2xl bg-surface-2 pb-0">
         {FLAG_REASONS.map((r) => (
           <li key={r.id}>
@@ -117,8 +123,8 @@ export function FlagSheet({
               disabled={busy !== null}
               className="flex min-h-[52px] w-full items-center px-4 py-3 text-left text-[15.5px] transition active:bg-surface-3 disabled:opacity-60"
             >
-              <span className="flex-1">{r.label}</span>
-              {busy === r.id && <span className="text-[13px] text-muted">Sending…</span>}
+              <span className="flex-1">{es ? r.es : r.en}</span>
+              {busy === r.id && <span className="text-[13px] text-muted">{t("inc.sending")}</span>}
             </button>
           </li>
         ))}

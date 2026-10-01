@@ -1,8 +1,11 @@
-// Storm Mode on/off and its language (English / Spanish), remembered on this
-// device. Read with useSyncExternalStore so every screen agrees instantly.
+// Storm Mode on/off, remembered on this device. Its language is the app's
+// language (lib/client/lang.ts); `lang` is kept on the returned object so the
+// storm screens read one value. Read with useSyncExternalStore so every screen
+// agrees instantly.
 
 import { useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/storm";
+import { setLang, useLang } from "./lang";
 
 const KEY = "haven.storm.v1";
 
@@ -11,28 +14,20 @@ interface StormPrefs {
   lang: Lang;
 }
 
-let cached: StormPrefs | null = null;
+let cached: boolean | null = null;
 const listeners = new Set<() => void>();
 
-function defaults(): StormPrefs {
-  const es = typeof navigator !== "undefined" && /^es\b/i.test(navigator.language || "");
-  return { on: false, lang: es ? "es" : "en" };
-}
-
-function read(): StormPrefs {
-  if (cached) return cached;
+function read(): boolean {
+  if (cached != null) return cached;
   try {
     const raw = localStorage.getItem(KEY);
-    const v = raw ? (JSON.parse(raw) as Partial<StormPrefs>) : {};
-    const d = defaults();
-    cached = { on: v.on === true, lang: v.lang === "es" || v.lang === "en" ? v.lang : d.lang };
+    const v = raw ? (JSON.parse(raw) as { on?: unknown }) : {};
+    cached = v.on === true;
   } catch {
-    cached = defaults();
+    cached = false;
   }
   return cached;
 }
-
-const SERVER: StormPrefs = { on: false, lang: "en" };
 
 function subscribe(cb: () => void) {
   listeners.add(cb);
@@ -40,17 +35,22 @@ function subscribe(cb: () => void) {
 }
 
 export function useStormPrefs(): StormPrefs {
-  return useSyncExternalStore(subscribe, read, () => SERVER);
+  const on = useSyncExternalStore(subscribe, read, () => false);
+  const lang = useLang();
+  return { on, lang };
 }
 
 export function setStormPrefs(patch: Partial<StormPrefs>) {
-  cached = { ...read(), ...patch };
-  try {
-    localStorage.setItem(KEY, JSON.stringify(cached));
-  } catch {
-    // Storage blocked: lasts for this visit.
+  if (patch.lang) setLang(patch.lang);
+  if (patch.on != null) {
+    cached = patch.on;
+    try {
+      localStorage.setItem(KEY, JSON.stringify({ on: cached }));
+    } catch {
+      // Storage blocked: lasts for this visit.
+    }
+    listeners.forEach((l) => l());
   }
-  listeners.forEach((l) => l());
 }
 
 /**

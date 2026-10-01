@@ -1,4 +1,7 @@
+"use client";
+
 import { CircleAlert, RefreshCw } from "lucide-react";
+import { useT } from "@/lib/client/lang";
 
 export function Spinner({ className = "size-6" }: { className?: string }) {
   return (
@@ -49,6 +52,7 @@ export function EmptyState({
 }
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  const { t } = useT();
   return (
     <div role="alert" className="haven-rise flex flex-col items-center px-8 py-12 text-center">
       <CircleAlert className="mb-3 size-7 text-faint" strokeWidth={1.75} aria-hidden />
@@ -58,7 +62,7 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
           onClick={onRetry}
           className="press mt-5 inline-flex min-h-11 items-center gap-2 rounded-full bg-surface-3 px-4 text-[14px] font-semibold"
         >
-          <RefreshCw className="size-4" aria-hidden /> Try again
+          <RefreshCw className="size-4" aria-hidden /> {t("common.tryAgain")}
         </button>
       )}
     </div>

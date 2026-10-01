@@ -8,6 +8,8 @@ import { EVERYDAY_CATEGORIES, categoriesInGroup, getCategory } from "@/lib/categ
 import { apiSend, ApiClientError, errorMessage, fetcher } from "@/lib/client/api";
 import { DEFAULT_CENTER } from "@/lib/client/defaults";
 import { useIncidents } from "@/lib/client/hooks";
+import { useT } from "@/lib/client/lang";
+import type { Key } from "@/lib/i18n";
 import type { LatLng } from "@/lib/geo";
 import { MAX_DESCRIPTION } from "@/lib/moderation";
 import type { CategoryId } from "@/lib/types";
@@ -19,11 +21,11 @@ import { MiniMap } from "@/components/map/MiniMap";
 import { Button, ButtonLink } from "@/components/ui/Button";
 
 type Step = 1 | 2 | 3 | 4 | 5;
-const STEP_TITLES: Record<Exclude<Step, 5>, string> = {
-  1: "What's happening?",
-  2: "Where is it?",
-  3: "Add details",
-  4: "Review",
+const STEP_TITLES: Record<Exclude<Step, 5>, Key> = {
+  1: "report.step1",
+  2: "report.step2",
+  3: "report.step3",
+  4: "report.step4",
 };
 
 interface Result {
@@ -41,6 +43,7 @@ function newRequestId() {
 export function ReportFlow() {
   const router = useRouter();
   const toast = useToast();
+  const { t } = useT();
   const { position, request, status } = useLocation();
   const [step, setStep] = useState<Step>(1);
   const [category, setCategory] = useState<CategoryId | null>(null);
@@ -98,14 +101,14 @@ export function ReportFlow() {
         <header className="glass-bar sticky top-0 z-20" style={{ paddingTop: "var(--safe-top)" }}>
           <div className="mx-auto flex h-12 max-w-lg items-center px-2">
             {step > 1 ? (
-              <button onClick={back} aria-label="Previous step" className="press inline-flex size-11 items-center justify-center rounded-full hover:bg-surface-2">
+              <button onClick={back} aria-label={t("report.prev")} className="press inline-flex size-11 items-center justify-center rounded-full hover:bg-surface-2">
                 <ChevronLeft className="size-[26px]" strokeWidth={2.2} aria-hidden />
               </button>
             ) : (
               <span className="size-11" />
             )}
-            <p className="flex-1 text-center text-[13px] font-medium text-muted tnum">Step {step} of 4</p>
-            <button onClick={close} aria-label="Cancel report" className="press inline-flex size-11 items-center justify-center rounded-full hover:bg-surface-2">
+            <p className="flex-1 text-center text-[13px] font-medium text-muted tnum">{t("report.stepOf", { n: step })}</p>
+            <button onClick={close} aria-label={t("report.cancel")} className="press inline-flex size-11 items-center justify-center rounded-full hover:bg-surface-2">
               <X className="size-[22px]" aria-hidden />
             </button>
           </div>
@@ -114,7 +117,7 @@ export function ReportFlow() {
               <div className="h-full rounded-full bg-text transition-[width] duration-500 ease-[var(--ease-out)]" style={{ width: `${(step / 4) * 100}%` }} />
             </div>
           </div>
-          <h1 className="mx-auto max-w-lg px-5 pb-3 pt-4 text-[26px] font-bold tracking-[-0.025em]">{STEP_TITLES[step as keyof typeof STEP_TITLES]}</h1>
+          <h1 className="mx-auto max-w-lg px-5 pb-3 pt-4 text-[26px] font-bold tracking-[-0.025em]">{t(STEP_TITLES[step as keyof typeof STEP_TITLES])}</h1>
         </header>
       )}
 
@@ -171,6 +174,7 @@ function StickyFooter({ children }: { children: React.ReactNode }) {
 }
 
 function StepCategory({ value, onPick }: { value: CategoryId | null; onPick: (c: CategoryId) => void }) {
+  const { t, cat } = useT();
   return (
     <div className="haven-rise flex flex-1 flex-col">
       <div className="grid grid-cols-2 gap-2.5">
@@ -185,11 +189,11 @@ function StepCategory({ value, onPick }: { value: CategoryId | null; onPick: (c:
             }`}
           >
             <CategoryIcon category={c.id} size="lg" animated />
-            <span className="min-w-0 text-[15px] font-semibold leading-tight tracking-[-0.01em]">{c.label}</span>
+            <span className="min-w-0 text-[15px] font-semibold leading-tight tracking-[-0.01em]">{cat(c.id).label}</span>
           </button>
         ))}
       </div>
-      <p className="mt-5 text-center text-[13px] leading-relaxed text-faint">Report only what you can see from a safe place.</p>
+      <p className="mt-5 text-center text-[13px] leading-relaxed text-faint">{t("report.safeOnly")}</p>
       <div className="mt-auto pb-6 pt-6">
         <EmergencyNote compact />
       </div>
@@ -216,6 +220,7 @@ function StepLocation({
   onNext: () => void;
   hasPosition: boolean;
 }) {
+  const { t } = useT();
   const p = point ?? start;
   const key = `/api/geocode/reverse?lat=${p.lat.toFixed(3)}&lng=${p.lng.toFixed(3)}`;
   const { data, isLoading } = useSWR<{ label: string }>(key, fetcher, { revalidateOnFocus: false, keepPreviousData: true });
@@ -229,25 +234,25 @@ function StepLocation({
         color={getCategory(category).color}
         onChange={onChange}
         className="h-[min(50dvh,440px)]"
-        label="Map to choose the incident location. Drag to move the pin."
+        label={t("report.mapLabel")}
       />
       <div className="mt-4 flex items-center gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-[12.5px] text-muted">Approximate location</p>
-          <p className="truncate text-[17px] font-semibold tracking-[-0.015em]">{isLoading && !data ? "Finding street…" : data?.label || "Near the pin"}</p>
+          <p className="text-[12.5px] text-muted">{t("report.approx")}</p>
+          <p className="truncate text-[17px] font-semibold tracking-[-0.015em]">{isLoading && !data ? t("report.finding") : data?.label || t("report.nearPin")}</p>
         </div>
         <button
           onClick={onUseMyLocation}
-          aria-label={hasPosition ? "Use my location" : "Enable location"}
+          aria-label={hasPosition ? t("common.useMyLocation") : t("report.enableLocation")}
           className="press flex size-11 shrink-0 items-center justify-center rounded-full bg-surface-2 text-brand"
         >
           <LocateFixed className="size-5" aria-hidden />
         </button>
       </div>
-      <p className="mt-2 text-[12.5px] leading-snug text-faint">Rounded to about 100 m. Your exact position is never shared.</p>
+      <p className="mt-2 text-[12.5px] leading-snug text-faint">{t("report.rounded")}</p>
       <StickyFooter>
         <Button size="lg" block onClick={onNext}>
-          Confirm location
+          {t("report.confirmLocation")}
         </Button>
       </StickyFooter>
     </div>
@@ -255,11 +260,12 @@ function StepLocation({
 }
 
 function StepDetails({ category, value, onChange, onNext }: { category: CategoryId; value: string; onChange: (v: string) => void; onNext: () => void }) {
-  const def = getCategory(category);
+  const { t, cat } = useT();
+  const { hint } = cat(category);
   return (
     <div className="haven-rise flex flex-1 flex-col">
       <label htmlFor="desc" className="sr-only">
-        Describe what you see
+        {t("report.describe")}
       </label>
       <textarea
         id="desc"
@@ -267,7 +273,7 @@ function StepDetails({ category, value, onChange, onNext }: { category: Category
         rows={5}
         value={value}
         onChange={(e) => onChange(e.target.value.slice(0, MAX_DESCRIPTION))}
-        placeholder={`${def.hint}…`}
+        placeholder={`${hint}…`}
         className="w-full resize-none rounded-card bg-surface p-4 text-[17px] leading-relaxed outline-none ring-brand/60 transition placeholder:text-faint focus:ring-2"
       />
       <p className="mt-1.5 text-right text-[12px] text-faint tnum">
@@ -275,18 +281,18 @@ function StepDetails({ category, value, onChange, onNext }: { category: Category
       </p>
       <ul className="mt-3 space-y-2 text-[13.5px] leading-snug text-muted">
         <li className="flex gap-2.5">
-          <Check className="mt-0.5 size-4 shrink-0 text-ok" aria-hidden /> What, where, how many vehicles or crews
+          <Check className="mt-0.5 size-4 shrink-0 text-ok" aria-hidden /> {t("report.tip1")}
         </li>
         <li className="flex gap-2.5">
-          <X className="mt-0.5 size-4 shrink-0 text-danger" aria-hidden /> Names, faces, plates, phone numbers, addresses
+          <X className="mt-0.5 size-4 shrink-0 text-danger" aria-hidden /> {t("report.tip2")}
         </li>
         <li className="flex gap-2.5">
-          <X className="mt-0.5 size-4 shrink-0 text-danger" aria-hidden /> Describing anyone by race or ethnicity
+          <X className="mt-0.5 size-4 shrink-0 text-danger" aria-hidden /> {t("report.tip3")}
         </li>
       </ul>
       <StickyFooter>
         <Button block size="lg" onClick={onNext}>
-          {value.trim() ? "Continue" : "Skip"}
+          {value.trim() ? t("common.continue") : t("common.skip")}
         </Button>
       </StickyFooter>
     </div>
@@ -308,6 +314,7 @@ function StepReview({
   onEdit: (s: Step) => void;
   onSubmit: () => void;
 }) {
+  const { t, cat } = useT();
   const def = getCategory(category);
   const { data: geo } = useSWR<{ label: string }>(`/api/geocode/reverse?lat=${point.lat.toFixed(3)}&lng=${point.lng.toFixed(3)}`, fetcher, {
     revalidateOnFocus: false,
@@ -325,36 +332,32 @@ function StepReview({
   return (
     <div className="haven-rise flex flex-1 flex-col">
       <div className="divide-y divide-line rounded-card bg-surface px-4">
-        <ReviewRow label="Category" onEdit={() => onEdit(1)}>
+        <ReviewRow label={t("report.category")} onEdit={() => onEdit(1)}>
           <span className="flex items-center gap-2.5">
             <CategoryIcon category={category} size="sm" />
-            {def.label}
+            {cat(category).label}
           </span>
         </ReviewRow>
-        <ReviewRow label="Location" onEdit={() => onEdit(2)}>
-          {geo?.label || "Near the pin you placed"}
+        <ReviewRow label={t("report.location")} onEdit={() => onEdit(2)}>
+          {geo?.label || t("report.nearPinPlaced")}
         </ReviewRow>
-        <ReviewRow label="Details" onEdit={() => onEdit(3)}>
-          {description.trim() ? <span className="line-clamp-4 break-words">{description.trim()}</span> : <span className="text-muted">None</span>}
+        <ReviewRow label={t("report.details")} onEdit={() => onEdit(3)}>
+          {description.trim() ? <span className="line-clamp-4 break-words">{description.trim()}</span> : <span className="text-muted">{t("common.none")}</span>}
         </ReviewRow>
       </div>
 
       {similar && (
         <div className="mt-3 flex gap-3 rounded-2xl bg-warn/[0.08] px-4 py-3.5">
           <Layers className="mt-0.5 size-[18px] shrink-0 text-warn" aria-hidden />
-          <p className="text-[14px] leading-snug text-text/90">
-            A similar report is already nearby. Yours will be added to it as a confirmation instead of creating a duplicate.
-          </p>
+          <p className="text-[14px] leading-snug text-text/90">{t("report.similar")}</p>
         </div>
       )}
 
-      <p className="mt-4 px-1 text-[13px] leading-relaxed text-faint">
-        Reports are anonymous to other people. Personal details are removed automatically. False reports can be flagged and hidden.
-      </p>
+      <p className="mt-4 px-1 text-[13px] leading-relaxed text-faint">{t("report.anon")}</p>
 
       <StickyFooter>
         <Button block size="lg" onClick={onSubmit} loading={submitting}>
-          Submit report
+          {t("report.submit")}
         </Button>
       </StickyFooter>
     </div>
@@ -362,6 +365,7 @@ function StepReview({
 }
 
 function ReviewRow({ label, onEdit, children }: { label: string; onEdit: () => void; children: React.ReactNode }) {
+  const { t } = useT();
   return (
     <div className="flex items-start gap-3 py-3.5">
       <div className="min-w-0 flex-1">
@@ -369,31 +373,28 @@ function ReviewRow({ label, onEdit, children }: { label: string; onEdit: () => v
         <div className="mt-0.5 text-[15.5px] tracking-[-0.01em]">{children}</div>
       </div>
       <button onClick={onEdit} className="-mr-2 min-h-11 rounded-full px-3 text-[14px] font-medium text-brand">
-        Edit
+        {t("common.edit")}
       </button>
     </div>
   );
 }
 
 function StepDone({ result }: { result: Result }) {
+  const { t } = useT();
   return (
     <div className="haven-rise flex flex-1 flex-col items-center justify-center text-center" style={{ paddingTop: "var(--safe-top)" }}>
       <div className="haven-pop flex size-[72px] items-center justify-center rounded-full bg-ok/15" style={{ animationDelay: "120ms" }}>
         <Check className="size-9 text-ok" strokeWidth={2.5} aria-hidden />
       </div>
-      <h1 className="mt-6 text-[26px] font-bold tracking-[-0.025em]">{result.merged ? "Added to an existing report" : "Report shared"}</h1>
-      <p className="mt-2 max-w-[300px] text-[15px] leading-relaxed text-muted">
-        {result.merged
-          ? "Someone already reported this. Yours counts as a confirmation and helps others trust it."
-          : "People nearby can now see it. You can add updates or mark it as ended from the incident page."}
-      </p>
-      {result.redacted && <p className="mt-4 max-w-xs text-[13px] text-faint">We removed some personal details from your description.</p>}
+      <h1 className="mt-6 text-[26px] font-bold tracking-[-0.025em]">{result.merged ? t("report.merged") : t("report.shared")}</h1>
+      <p className="mt-2 max-w-[300px] text-[15px] leading-relaxed text-muted">{result.merged ? t("report.mergedBody") : t("report.sharedBody")}</p>
+      {result.redacted && <p className="mt-4 max-w-xs text-[13px] text-faint">{t("report.redacted")}</p>}
       <div className="mt-10 w-full space-y-2" style={{ paddingBottom: "calc(var(--safe-bottom) + 16px)" }}>
         <ButtonLink href={`/incidents/${result.incidentId}`} block size="lg">
-          View incident
+          {t("report.view")}
         </ButtonLink>
         <ButtonLink href="/" variant="ghost" block size="lg">
-          Back to map
+          {t("report.backToMap")}
         </ButtonLink>
       </div>
     </div>

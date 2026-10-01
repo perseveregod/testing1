@@ -5,8 +5,8 @@ import Link from "next/link";
 import { ChevronRight, ChevronUp } from "lucide-react";
 import { distanceFrom, NEAR_RADIUS_MI } from "@/lib/client/hooks";
 import { useAffects } from "@/lib/client/affects";
+import { useT } from "@/lib/client/lang";
 import { formatDistance, type LatLng } from "@/lib/geo";
-import { timeAgo } from "@/lib/time";
 import type { Lang } from "@/lib/storm";
 import type { PublicIncident } from "@/lib/types";
 import { CategoryIcon } from "@/components/incident/CategoryIcon";
@@ -45,35 +45,31 @@ export function NearbyPeek({
 }) {
   const [open, setOpen] = useState(false);
   const affectsOf = useAffects();
+  const { t, timeAgo, title: titleOf } = useT();
   const active = items.filter((i) => i.status !== "resolved" && i.category !== "missing_pet");
   const sorted = position
     ? [...active].sort((a, b) => (distanceFrom(position, a) ?? 0) - (distanceFrom(position, b) ?? 0))
     : [...active].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const rows = open ? sorted.slice(0, 5) : [];
-  const es = storm?.lang === "es";
 
   if (loading && items.length === 0) return null;
 
   const title = storm
     ? activeCount === 0
-      ? es
-        ? "Sin reportes de tormenta"
-        : "No storm reports yet"
-      : es
-        ? `${activeCount} ${activeCount === 1 ? "reporte" : "reportes"} de tormenta`
-        : `${activeCount} storm ${activeCount === 1 ? "report" : "reports"}`
-    : `${activeCount} active ${activeCount === 1 ? "incident" : "incidents"}`;
+      ? t("near.stormNone")
+      : activeCount === 1
+        ? t("near.stormCount1")
+        : t("near.stormCount", { n: activeCount })
+    : activeCount === 1
+      ? t("near.active1")
+      : t("near.active", { n: activeCount });
   const where = storm
     ? activeCount === 0
-      ? es
-        ? "Toque ⚡ para reportar luz, inundación o un lugar abierto"
-        : "Tap ⚡ to report power, flooding or an open place"
-      : es
-        ? "Últimas 6 h"
-        : "Last 6 hours"
+      ? t("near.stormHint")
+      : t("near.stormWindow")
     : position
-      ? `Within ${NEAR_RADIUS_MI} mi of you`
-      : `Within ${NEAR_RADIUS_MI} mi of central Houston`;
+      ? t("near.withinYou", { n: NEAR_RADIUS_MI })
+      : t("near.withinCenter", { n: NEAR_RADIUS_MI });
 
   return (
     <section aria-label={title} className="panel pointer-events-auto overflow-hidden rounded-[22px]">
@@ -86,7 +82,7 @@ export function NearbyPeek({
         <span className="absolute left-1/2 top-1.5 h-1 w-8 -translate-x-1/2 rounded-full bg-text/20" aria-hidden />
         {error ? (
           <span className="text-[14px] text-danger" onClick={onRetry} role="button">
-            Couldn&apos;t load incidents · Retry
+            {t("near.loadError")}
           </span>
         ) : (
           <>
@@ -99,7 +95,7 @@ export function NearbyPeek({
                 {title}
                 {allDemo && (
                   <span className="rounded-[4px] bg-text/[0.08] px-1.5 py-px text-[10px] font-bold uppercase tracking-[0.06em] text-muted">
-                    Demo
+                    {t("common.demo")}
                   </span>
                 )}
               </span>
@@ -116,7 +112,7 @@ export function NearbyPeek({
                       }}
                       className="font-semibold text-brand"
                     >
-                      Locate me
+                      {t("common.locateMe")}
                     </span>
                   </>
                 )}
@@ -143,10 +139,10 @@ export function NearbyPeek({
                   >
                     <CategoryIcon category={i.category} size="sm" animated={live} />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[14.5px] font-semibold tracking-[-0.01em]">{i.title}</span>
+                      <span className="block truncate text-[14.5px] font-semibold tracking-[-0.01em]">{titleOf(i)}</span>
                       <span className="block truncate text-[12.5px] text-muted tnum">
-                        {live && <span className="mr-1.5 font-bold text-live">LIVE</span>}
-                        {a ? <span className="font-semibold text-brand">{formatDistance(a.distanceMi)} from {a.label} · </span> : d != null && `${formatDistance(d)} · `}
+                        {live && <span className="mr-1.5 font-bold uppercase text-live">{t("common.live")}</span>}
+                        {a ? <span className="font-semibold text-brand">{t("near.from", { d: formatDistance(a.distanceMi), place: a.label })} · </span> : d != null && `${formatDistance(d)} · `}
                         {now > 0 ? timeAgo(i.createdAt, now) : ""}
                       </span>
                     </span>
@@ -162,7 +158,7 @@ export function NearbyPeek({
               transitionTypes={["tab"]}
               className="flex min-h-11 items-center justify-center border-t border-line text-[13.5px] font-semibold text-brand"
             >
-              See everything nearby
+              {t("near.seeAll")}
             </Link>
           )}
         </>

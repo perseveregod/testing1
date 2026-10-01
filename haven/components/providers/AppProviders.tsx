@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { SWRConfig } from "swr";
 import { apiSend, fetcher } from "@/lib/client/api";
 import { useAlertPrefs, useNotifications } from "@/lib/client/hooks";
+import { LangSync } from "@/lib/client/lang";
 import { LocationProvider, useLocation } from "./LocationProvider";
 import { ToastProvider } from "./ToastProvider";
 import { SafeWalkWatcher } from "@/components/safety/SafeWalkWatcher";
@@ -20,6 +21,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
           <NotificationWatcher />
           <SafeWalkWatcher />
           <EmailLinkHandler />
+          <LangSync />
         </LocationProvider>
       </ToastProvider>
     </SWRConfig>
