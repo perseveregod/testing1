@@ -221,3 +221,25 @@ describe("lifetime value", () => {
     expect((await areaInsights(P, 3, viewer(a))).days).toBe(7);
   });
 });
+
+describe("demo incident ids", () => {
+  it("are the same on every server instance", async () => {
+    const { stableIncidentId } = await import("@/server/services/ingest");
+    const a = stableIncidentId("demo", "demo-3");
+    expect(a).toBe(stableIncidentId("demo", "demo-3"));
+    expect(a).not.toBe(stableIncidentId("demo", "demo-4"));
+    expect(a).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-a[0-9a-f]{3}-[0-9a-f]{12}$/);
+  });
+
+  it("let a fresh store find a demo incident listed by another", async () => {
+    await ingestAll(true);
+    const c = config.sources.demoCenter;
+    const { items } = await listIncidents(listQuerySchema.parse({ lat: String(c.lat), lng: String(c.lng), radiusMi: "10" }), null);
+    const id = items[0].id;
+    // Simulate a second Vercel instance with its own empty store.
+    store = new LocalStore(null);
+    setStoreForTests(store);
+    await ingestAll(true);
+    expect((await getIncidentDetail(id, null, null)).id).toBe(id);
+  });
+});

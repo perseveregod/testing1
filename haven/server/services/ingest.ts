@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import type { IncidentRecord } from "@/lib/types";
 import { config } from "../config";
 import { ADAPTERS } from "../sources/registry";
@@ -23,6 +23,32 @@ export interface IngestResult {
 }
 
 let running: Promise<IngestResult[]> | null = null;
+
+/**
+ * Demo incidents get IDs derived from their source and external ID, so every
+ * server instance (each Vercel function has its own in-memory store) hands out
+ * the same ID for the same incident and links keep working across instances.
+ */
+export function stableIncidentId(sourceId: string, externalId: string): string {
+  const h = createHash("sha256").update(`${sourceId}:${externalId}`).digest("hex");
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-5${h.slice(13, 16)}-a${h.slice(17, 20)}-${h.slice(20, 32)}`;
+}
+
+/**
+ * Make sure this instance has data before answering. The first request waits;
+ * later ones refresh in the background (a no-op when nothing is due).
+ */
+export async function ensureIngested(): Promise<void> {
+  const ingest = ingestAll().catch((err) => console.warn("[haven] ingest failed", err));
+  if (!globalThis.__havenIngestedOnce) {
+    await ingest;
+    globalThis.__havenIngestedOnce = true;
+  }
+}
+
+declare global {
+  var __havenIngestedOnce: boolean | undefined;
+}
 
 export function enabledAdapters(): SourceAdapter[] {
   const on = new Set(config.sources.enabled);
@@ -84,7 +110,7 @@ async function ingestOne(adapter: SourceAdapter, now: Date): Promise<IngestResul
     const existing = adapter.rolling ? null : await store.getIncidentByExternalId(sourceId, item.externalId);
     if (!existing) {
       const rec: IncidentRecord = {
-        id: randomUUID(),
+        id: adapter.rolling ? stableIncidentId(sourceId, item.externalId) : randomUUID(),
         category: item.category,
         title: item.title,
         description: item.description,
