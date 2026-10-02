@@ -68,7 +68,7 @@ export function SearchInput({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         aria-label={placeholder}
-        className="min-w-0 flex-1 bg-transparent text-[16px] outline-none focus-visible:outline-none placeholder:text-faint [&::-webkit-search-cancel-button]:hidden"
+        className="min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-faint [&::-webkit-search-cancel-button]:hidden"
       />
       {value && (
         <button onClick={() => onChange("")} aria-label={es ? "Borrar" : "Clear"} className="-mr-1.5 flex size-7 items-center justify-center rounded-full bg-white/10 text-muted">
@@ -98,11 +98,14 @@ export function SearchSheet({
   onClose,
   near,
   onPick,
+  title,
 }: {
   open: boolean;
   onClose: () => void;
   near: LatLng | null;
   onPick: (p: LatLng, label: string) => void;
+  /** Sheet heading; defaults to "Search". */
+  title?: string;
 }) {
   const [q, setQ] = useState("");
   const { results, error, searching } = usePlaceSearch(q, near);
@@ -130,7 +133,7 @@ export function SearchSheet({
   };
 
   return (
-    <Sheet open={open} onClose={onClose} title={es ? "Buscar" : "Search"}>
+    <Sheet open={open} onClose={onClose} title={title ?? (es ? "Buscar" : "Search")}>
       <SearchInput value={q} onChange={setQ} autoFocus />
       <div className="mt-2 min-h-[200px]">
         {q.trim().length < 2 ? (

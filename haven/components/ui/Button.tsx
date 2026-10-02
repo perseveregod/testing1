@@ -12,7 +12,7 @@ const VARIANTS: Record<Variant, string> = {
   ghost: "bg-transparent text-text hover:bg-surface-2",
   danger: "bg-danger/12 text-danger hover:bg-danger/20",
   gold: "bg-gold text-[#241a05] hover:brightness-105",
-  accent: "bg-brand text-brand-ink hover:brightness-105",
+  accent: "bg-brand-strong text-brand-ink hover:brightness-105",
 };
 
 // Every size keeps a ≥44px touch target.

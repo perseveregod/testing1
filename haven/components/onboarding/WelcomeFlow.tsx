@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useState, useSyncExternalStore } from "react";
-import { usePathname } from "next/navigation";
-import { BellRing, LocateFixed, MapPinned, Navigation, ShieldCheck, Smartphone } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { BellRing, Building2, LocateFixed, MapPinned, Navigation, ShieldCheck, Smartphone } from "lucide-react";
 import { EMERGENCY_NUMBER } from "@/lib/client/defaults";
-import { useLocation } from "@/components/providers/LocationProvider";
+import { chooseArea, useLocation } from "@/components/providers/LocationProvider";
+import { SearchSheet } from "@/components/map/SearchSheet";
+import { DEFAULT_CENTER } from "@/lib/client/defaults";
 import { AppIconMark } from "@/components/brand/AppIconMark";
 import { useT } from "@/lib/client/lang";
 import { usePush } from "@/lib/client/push";
@@ -64,7 +66,9 @@ function WelcomeSteps() {
   const { request, status } = useLocation();
 
   const push = usePush();
+  const router = useRouter();
   const [installOpen, setInstallOpen] = useState(false);
+  const [areaOpen, setAreaOpen] = useState(false);
   const { t } = useT();
 
   const finish = useCallback(() => markSeen(), []);
@@ -152,17 +156,35 @@ function WelcomeSteps() {
                   if (last) finish();
                   else setStep((n) => n + 1);
                 }}
-                className="press flex min-h-[54px] items-center justify-center gap-2 rounded-card bg-brand text-[16px] font-semibold text-white"
+                className="press flex min-h-[54px] items-center justify-center gap-2 rounded-card bg-brand-strong text-[16px] font-semibold text-white"
               >
                 <Navigation className="size-5" aria-hidden /> {t("common.useMyLocation")}
               </button>
             )}
+            {/* No GPS needed: a neighborhood from the built-in list works offline too. */}
+            <button
+              onClick={() => setAreaOpen(true)}
+              className="press flex min-h-[54px] items-center justify-center gap-2 rounded-card bg-surface-2 text-[16px] font-semibold"
+            >
+              <Building2 className="size-5" aria-hidden /> {t("area.chooseHood")}
+            </button>
             <button
               onClick={() => (last ? finish() : setStep((n) => n + 1))}
-              className="press flex min-h-[54px] items-center justify-center rounded-card bg-surface-2 text-[16px] font-semibold"
+              className="press flex min-h-11 items-center justify-center rounded-card text-[15px] font-medium text-muted"
             >
               {status === "denied" || status === "unavailable" ? (last ? t("common.getStarted") : t("common.continue")) : t("common.maybeLater")}
             </button>
+            <SearchSheet
+              open={areaOpen}
+              onClose={() => setAreaOpen(false)}
+              near={DEFAULT_CENTER}
+              title={t("area.chooseHood")}
+              onPick={(p) => {
+                chooseArea(p);
+                if (last) finish();
+                else setStep((n) => n + 1);
+              }}
+            />
           </div>
         ) : last && extra === ALERT_STEP ? (
           <div className="grid gap-2.5">
@@ -170,9 +192,12 @@ function WelcomeSteps() {
               onClick={async () => {
                 await push.enable();
                 finish();
+                // Permission alone isn't delivery: Alerts shows what is left
+                // (an area to watch, a test that arrives).
+                router.push("/alerts");
               }}
               disabled={push.busy}
-              className="press flex min-h-[54px] items-center justify-center gap-2 rounded-card bg-brand text-[16px] font-semibold text-white disabled:opacity-70"
+              className="press flex min-h-[54px] items-center justify-center gap-2 rounded-card bg-brand-strong text-[16px] font-semibold text-white disabled:opacity-70"
             >
               <BellRing className="size-5" aria-hidden /> {t("welcome.turnOnAlerts")}
             </button>

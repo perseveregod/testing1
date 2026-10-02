@@ -59,7 +59,6 @@ function savedMode(): MapMode {
   }
 }
 
-const PROMPT_KEY = "haven.locationPromptDismissed";
 const OPENED_KEY = "haven.opened.v1";
 const COLD_AFTER_MS = 15 * 60_000;
 
@@ -78,14 +77,6 @@ function coldOpen(): boolean {
     coldOpenAnswer = true;
   }
   return coldOpenAnswer;
-}
-
-function promptWasDismissed(): boolean {
-  try {
-    return typeof window !== "undefined" && localStorage.getItem(PROMPT_KEY) === "1";
-  } catch {
-    return false;
-  }
 }
 
 /** One-tap category filters along the top of the map. */
@@ -128,7 +119,7 @@ function Chip({
     <button
       type="button"
       aria-pressed={on}
-      className={`press inline-flex h-[34px] shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold ${
+      className={`press hit-44 inline-flex h-[34px] shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold ${
         on ? "bg-text text-bg" : tint ? "" : "panel text-text"
       } ${className}`}
       style={tint ? { background: tint, color: "#1b1300" } : undefined}
@@ -200,7 +191,6 @@ export function MapScreen({ initial, active = true }: { initial?: InitialInciden
   }, [layerPrefs.cameras, camData, camCenter]);
   const [filters, setFilters] = useState<MapFilters>(DEFAULT_FILTERS);
   const [searchLabel, setSearchLabel] = useState<string | null>(() => peekMapFocus()?.label ?? null);
-  const [promptDismissed] = useState(promptWasDismissed);
   const [mode, setMode] = useState<MapMode>(savedMode);
   const [layersOpen, setLayersOpen] = useState(false);
   const [camera, setCamera] = useState<Camera>({
@@ -357,19 +347,21 @@ export function MapScreen({ initial, active = true }: { initial?: InitialInciden
   const activeCount = items.filter((i) => i.status !== "resolved").length;
   const allDemo = items.length > 0 && items.every((i) => i.isDemo);
 
+  // An area picked by hand (here, in the Nearby list or in the welcome) moves
+  // the map there. With a live position the locate button does that instead.
+  const shownArea = useRef<LatLng | null>(null);
+  useEffect(() => {
+    if (position || !lastPosition) return;
+    const prev = shownArea.current;
+    shownArea.current = lastPosition;
+    if (prev && distanceMiles(prev, lastPosition) < 0.05) return;
+    mapRef.current?.flyTo(lastPosition, 13);
+  }, [position, lastPosition]);
+
   const locate = useCallback(() => {
     if (position) mapRef.current?.flyTo(position, 15);
     else request();
   }, [position, request]);
-
-  const showPrompt =
-    !storm.on &&
-    !selected &&
-    !position &&
-    !promptDismissed &&
-    // Only offer when the browser can still ask. When it's blocked, the locate
-    // button and the welcome screens explain it; no nagging card on the map.
-    status === "prompt";
 
   const loading = isLoading || (isValidating && !items.length);
 
@@ -441,7 +433,7 @@ export function MapScreen({ initial, active = true }: { initial?: InitialInciden
                 setSelectedId(null);
                 setStormPrefs({ on: !storm.on });
               }}
-              className={`press flex size-9 shrink-0 items-center justify-center rounded-full transition-colors duration-200 ${
+              className={`press hit-44 flex size-9 shrink-0 items-center justify-center rounded-full transition-colors duration-200 ${
                 storm.on ? "bg-[#ffc233] text-[#1b1300]" : "text-muted hover:text-text"
               }`}
             >
@@ -473,7 +465,7 @@ export function MapScreen({ initial, active = true }: { initial?: InitialInciden
                   <ListChecks className="size-3.5" aria-hidden />
                   {t("map.prepare")}
                 </Chip>
-                <a href={`tel:${EMERGENCY_NUMBER}`} className="press inline-flex h-[34px] shrink-0 items-center rounded-full bg-danger px-3.5 text-[13px] font-bold text-white">
+                <a href={`tel:${EMERGENCY_NUMBER}`} className="press hit-44 inline-flex h-[34px] shrink-0 items-center rounded-full bg-danger px-3.5 text-[13px] font-bold text-white">
                   {EMERGENCY_NUMBER}
                 </a>
               </>
@@ -506,7 +498,7 @@ export function MapScreen({ initial, active = true }: { initial?: InitialInciden
                 }}
                 className="panel haven-rise inline-flex min-h-10 max-w-full items-center gap-2 rounded-full py-1 pl-3 pr-3.5 text-[13px] font-medium"
               >
-                <span className="rounded-full bg-brand px-1.5 py-0.5 text-[11px] font-bold text-white">{t("map.newNearby")}</span>
+                <span className="rounded-full bg-brand-strong px-1.5 py-0.5 text-[11px] font-bold text-white">{t("map.newNearby")}</span>
                 <span className="truncate">{incidentTitle(arrival, lang)}</span>
                 {distanceFrom(lastPosition, arrival) != null && (
                   <span className="shrink-0 text-muted tnum">{formatDistance(distanceFrom(lastPosition, arrival))}</span>
@@ -595,13 +587,14 @@ export function MapScreen({ initial, active = true }: { initial?: InitialInciden
                 items={storm.on ? items : near.items}
                 activeCount={storm.on ? activeCount : lit == null ? near.activeCount : Math.round((near.activeCount * lit) / Math.max(1, activeCount))}
                 loading={storm.on ? loading : near.isLoading}
-                error={storm.on ? (error ? errorMessage(error) : null) : near.error ? errorMessage(near.error) : null}
+                // Only when there is nothing to show: a failed refresh keeps the last count.
+                error={storm.on ? (error && items.length === 0 ? errorMessage(error) : null) : near.error && near.items.length === 0 ? errorMessage(near.error) : null}
                 onRetry={() => (storm.on ? mutate() : near.mutate())}
                 allDemo={storm.on ? allDemo : near.items.length > 0 && near.items.every((i) => i.isDemo)}
                 position={position}
+                center={nearCenter}
                 now={now}
                 onPick={setSelectedId}
-                onLocate={showPrompt ? request : null}
                 storm={storm.on ? { lang: storm.lang } : null}
               />
             </div>

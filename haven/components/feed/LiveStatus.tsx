@@ -56,7 +56,7 @@ export function NewItemsPill({ count, onClick }: { count: number; onClick: () =>
       <button
         type="button"
         onClick={onClick}
-        className="press pointer-events-auto pill-in flex min-h-10 items-center gap-1.5 rounded-full bg-brand px-4 text-[14px] font-semibold text-white shadow-lg shadow-black/30"
+        className="press pointer-events-auto pill-in flex min-h-11 items-center gap-1.5 rounded-full bg-brand-strong px-4 text-[14px] font-semibold text-white shadow-lg shadow-black/30"
       >
         <ArrowUp className="size-4" strokeWidth={2.4} aria-hidden />
         {count === 1 ? t("feed.newOne") : t("feed.newMany", { n: count })}

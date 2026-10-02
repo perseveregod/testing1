@@ -8,6 +8,9 @@ import { apiSend, fetcher } from "@/lib/client/api";
 import { useNotifications, useViewer } from "@/lib/client/hooks";
 import { setLang, sourceText, useT } from "@/lib/client/lang";
 import { FEATURES } from "@/lib/features";
+import type { Readiness } from "@/lib/alertReadiness";
+import { useAlertReadiness } from "@/lib/client/readiness";
+import type { Key } from "@/lib/i18n";
 import type { DataSource, PublicIncident } from "@/lib/types";
 import { useToast } from "@/components/providers/ToastProvider";
 import { CategoryIcon } from "@/components/incident/CategoryIcon";
@@ -22,9 +25,18 @@ import { SignInSheet } from "./SignInSheet";
 import { HowItWorksSheet } from "./HowItWorksSheet";
 import { Skyline } from "@/components/houston/Skyline";
 
+const READY_LABEL: Record<Readiness, Key> = {
+  off: "ready.off",
+  setup_needed: "ready.setup",
+  inbox_only: "ready.inbox",
+  push_untested: "ready.untested",
+  push_ready: "ready.push",
+};
+
 export function ProfileScreen() {
   const { viewer, mutate } = useViewer();
   const { unread } = useNotifications();
+  const readiness = useAlertReadiness();
   const toast = useToast();
   const { t, lang } = useT();
   const [signIn, setSignIn] = useState(false);
@@ -97,7 +109,16 @@ export function ProfileScreen() {
           <Row
             icon={<Bell className="size-5" />}
             title={t("profile.alerts")}
-            detail={unread > 0 ? t("profile.unread", { n: unread }) : t("profile.alertsBody")}
+            // Says whether alerts can reach this device, not just that the page exists.
+            detail={
+              unread > 0 ? (
+                t("profile.unread", { n: unread })
+              ) : readiness.loaded ? (
+                <span className={readiness.state === "push_ready" ? "text-ok" : readiness.state === "off" ? "" : "text-warn"}>{t(READY_LABEL[readiness.state])}</span>
+              ) : (
+                t("profile.alertsBody")
+              )
+            }
             trailing={
               unread > 0 ? (
                 <span className="min-w-[22px] rounded-full bg-danger px-1.5 text-center text-[12px] font-bold leading-[22px] text-white tnum">{unread > 9 ? "9+" : unread}</span>

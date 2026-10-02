@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { getCategory, FILTER_GROUPS } from "@/lib/categories";
 import { DEFAULT_CENTER } from "@/lib/client/defaults";
+import { AlertsLink } from "@/components/alerts/AlertsLink";
 import { distanceFrom, NEAR_RADIUS_MI, useHydrated, useNearYou, type InitialIncidents } from "@/lib/client/hooks";
 import { useT } from "@/lib/client/lang";
 import { neighborhoodFor, streetAddress } from "@/lib/houston";
@@ -73,7 +74,7 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
 
   return (
     <main className="min-h-dvh pb-nav">
-      <PageHeader title={t("safety.title")} large />
+      <PageHeader title={t("safety.title")} large action={<AlertsLink />} />
       <PullToRefresh onRefresh={refresh}>
         <div className="relative mx-auto max-w-lg px-4">
           {/* 1. Act now */}

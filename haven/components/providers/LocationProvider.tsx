@@ -39,6 +39,22 @@ function rememberLast(p: LatLng) {
   lastListeners.forEach((l) => l());
 }
 
+/**
+ * Pick an area by hand (a neighborhood or an address) instead of using GPS.
+ * It takes the place of "where this person last was" on this device, so every
+ * screen shows that part of town. A live GPS fix, when there is one, wins.
+ */
+export function chooseArea(p: LatLng) {
+  const rounded = approximate(p, 3);
+  lastStored = rounded;
+  try {
+    localStorage.setItem(LAST_KEY, JSON.stringify(rounded));
+  } catch {
+    // Storage blocked: the choice lasts for this visit.
+  }
+  lastListeners.forEach((l) => l());
+}
+
 /** The remembered position, read directly (for code that runs once, outside render). */
 export function lastKnownPosition(): LatLng | null {
   return typeof window === "undefined" ? null : readLast();

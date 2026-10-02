@@ -19,6 +19,8 @@
   --faint: #8792a4;
   --brand: #4a90ff;
   --brand-ink: #ffffff;
+  /* Behind white text: the lighter brand blue is only 3.1:1 with white, this is 4.7:1. */
+  --brand-strong: #2f6fe0;
   /* Signal red for anything happening right now: LIVE badges, the report button. */
   --live: #ff3355;
   --danger: #ff5f57;
@@ -59,6 +61,7 @@
   --color-faint: var(--faint);
   --color-brand: var(--brand);
   --color-brand-ink: var(--brand-ink);
+  --color-brand-strong: var(--brand-strong);
   --color-danger: var(--danger);
   --color-warn: var(--warn);
   --color-ok: var(--ok);
@@ -105,7 +108,9 @@ body {
   background: rgba(61, 139, 255, 0.35);
 }
 
-:focus-visible {
+/* Fields marked outline-none draw their own ring (focus:ring-2, or a
+   focus-within ring on their wrapper); without the exception they got both. */
+:focus-visible:not(.outline-none) {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
 }
@@ -123,7 +128,8 @@ body {
   --line-strong: rgba(0, 0, 0, 0.14);
   --text: #111318;
   --muted: #5d6370;
-  --faint: #6b7280;
+  /* 4.75:1 on the light panels (was 4.2:1). */
+  --faint: #626978;
   /* Tailwind utilities read the --color-* tokens, which resolve at :root,
      so they have to be re-pointed here as well. */
   --color-bg: var(--bg);
@@ -838,7 +844,8 @@ body {
   align-items: center;
   gap: 5px;
   border-radius: 5px;
-  background: var(--live);
+  /* Small white text: the signal red is 3.6:1 with white, this is 4.7:1. */
+  background: #e11d48;
   color: #fff;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -894,6 +901,25 @@ body {
 .maplibregl-ctrl-attrib-button {
   filter: none;
   opacity: 0.6;
+}
+/* The 24px "i" keeps its size but can be hit across 44px. */
+.maplibregl-ctrl-attrib-button::after {
+  content: "";
+  position: absolute;
+  inset: -10px;
+}
+/* Keeps a compact control compact while giving it a 44px touch area. */
+.hit-44 {
+  position: relative;
+}
+.hit-44::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
 }
 [data-tone="dark"] .maplibregl-ctrl-attrib-button {
   filter: invert(1);

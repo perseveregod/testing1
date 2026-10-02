@@ -13,6 +13,7 @@ import { LocationProvider, useLocation } from "./LocationProvider";
 import { ToastProvider } from "./ToastProvider";
 import { SafeWalkWatcher } from "@/components/safety/SafeWalkWatcher";
 import { EmailLinkHandler } from "./EmailLinkHandler";
+import { OfflineNotice } from "@/components/OfflineNotice";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
@@ -24,6 +25,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
           <NotificationWatcher />
           <SafeWalkWatcher />
           <EmailLinkHandler />
+          <OfflineNotice />
           <LangSync />
           <CameraAlertWatcher />
           <CameraAlertBanner />

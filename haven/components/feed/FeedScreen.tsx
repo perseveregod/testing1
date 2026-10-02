@@ -25,6 +25,8 @@ import { DemoNotice } from "@/components/incident/DemoNotice";
 import { PageHeader } from "@/components/nav/PageHeader";
 import { LiveStatus, NewItemsPill } from "@/components/feed/LiveStatus";
 import { ButtonLink } from "@/components/ui/Button";
+import { AlertsLink } from "@/components/alerts/AlertsLink";
+import { AreaActions } from "@/components/location/AreaActions";
 import { Chip } from "@/components/ui/Controls";
 import { EmptyState, ErrorState, RowSkeleton } from "@/components/ui/States";
 import { PullToRefresh } from "@/components/ui/PullToRefresh";
@@ -43,7 +45,7 @@ const FILTERS: { id: FeedFilter; label: Key }[] = [
 ];
 
 export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
-  const { position, lastPosition, status, request } = useLocation();
+  const { position, lastPosition } = useLocation();
   const { t } = useT();
   const now = useClock(true, 30_000);
   const fresh = useFeedFreshness(now);
@@ -62,10 +64,15 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
 
   // Same query (and cache entry) as the map's count, so the tab opens with
   // data already in hand; distance ordering happens here, not on the server.
-  const { items, error, isLoading, mutate } = useIncidents(
+  const { items, error: loadError, isLoading, mutate } = useIncidents(
     nearYouParams(center, { categories: isGroup ? categoriesInGroup(filter) : undefined }),
     initial,
   );
+  // A refresh that fails must not wipe what is already on screen: the last
+  // list stays, with a line saying it couldn't be updated. Only an empty
+  // screen turns into the error state.
+  const error = loadError && items.length === 0 ? loadError : null;
+  const refreshFailed = Boolean(loadError) && items.length > 0;
   // Rows that came in since the last answer glow briefly; while scrolled
   // down, a pill counts them until the person is back at the top.
   // "0.4 mi from Home": one lookup for the whole list.
@@ -99,8 +106,11 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
   return (
     <main className="min-h-dvh pb-nav">
       <PageHeader
-        title={t("feed.title")}
+        // "Near you" only when it is: with no live position this is a chosen
+        // or remembered area (or central Houston), and the row below says which.
+        title={position ? t("feed.title") : t("feed.titleArea")}
         large
+        action={<AlertsLink />}
         sub={
           <div
             className="no-scrollbar flex gap-2 overflow-x-auto px-5 pb-3 pt-1"
@@ -129,20 +139,22 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
             </p>
           )}
           {!position && (
+            <div className="mb-2 mt-1">
+              <p className="flex min-h-8 items-center gap-2 text-[13px] text-muted">
+                <MapPinned className="size-4 shrink-0 text-muted" aria-hidden />
+                <span className="truncate">{hood ? t("near.hoodWithin", { hood, n: 5 }) : t("feed.showingCentral")}</span>
+              </p>
+              <AreaActions />
+            </div>
+          )}
+
+          {refreshFailed && (
             <button
-              onClick={request}
-              disabled={status === "denied" || status === "unavailable"}
-              className="press mb-1 mt-1 flex min-h-11 w-full items-center gap-2 text-left disabled:opacity-100"
+              type="button"
+              onClick={() => mutate()}
+              className="mb-1 flex min-h-11 w-full items-center gap-2 rounded-control bg-warn/10 px-3 text-left text-[13px] font-medium text-warn"
             >
-              <Navigation className="size-4 shrink-0 text-brand" aria-hidden />
-              <span className="truncate text-[13px] text-muted">
-                {hood ? t("near.hoodWithin", { hood, n: 5 }) : t("feed.showingCentral")}
-                {status === "denied" || status === "unavailable" ? (
-                  <span className="text-faint">{t("feed.locationOff")}</span>
-                ) : (
-                  <span className="font-semibold text-brand"> · {t("common.useMyLocation")}</span>
-                )}
-              </span>
+              {t("feed.refreshFailed")}
             </button>
           )}
 

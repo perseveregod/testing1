@@ -12,6 +12,7 @@ import type { Lang } from "@/lib/storm";
 import type { PublicIncident } from "@/lib/types";
 import { CategoryIcon } from "@/components/incident/CategoryIcon";
 import { DemoTag, isLive, LiveBadge } from "@/components/incident/Badges";
+import { AreaActions } from "@/components/location/AreaActions";
 
 /**
  * The map's bottom sheet, docked above the tab bar. Collapsed it is one row:
@@ -25,9 +26,9 @@ export function NearbyPeek({
   onRetry,
   allDemo,
   position,
+  center,
   now,
   onPick,
-  onLocate,
   storm,
 }: {
   items: PublicIncident[];
@@ -39,8 +40,8 @@ export function NearbyPeek({
   position: LatLng | null;
   now: number;
   onPick: (id: string) => void;
-  /** When set, the sheet offers "Locate me" instead of naming the default area. */
-  onLocate?: (() => void) | null;
+  /** Where the count is measured from when there is no live position: the last or chosen area. */
+  center: LatLng | null;
   /** Storm Mode: the count is storm reports from the last 6 hours. */
   storm?: { lang: Lang } | null;
 }) {
@@ -77,27 +78,33 @@ export function NearbyPeek({
           // in the title's "within 5 mi" everywhere else).
           return fresh.checkedAt != null ? hood : t("near.hoodWithin", { hood, n: NEAR_RADIUS_MI });
         })()
-      : t("near.withinCenter", { n: NEAR_RADIUS_MI });
-
-  const offerLocate = !storm && Boolean(onLocate) && !position;
+      : // No live position: name the area the count is really measured from.
+        (() => {
+          const hood = center ? neighborhoodFor(center) : null;
+          if (!hood) return t("near.withinCenter", { n: NEAR_RADIUS_MI });
+          return fresh.checkedAt != null ? hood : t("near.hoodWithin", { hood, n: NEAR_RADIUS_MI });
+        })();
 
   return (
     <section aria-label={title} className="panel pointer-events-auto overflow-hidden rounded-card">
+      {error ? (
+        // A real button: the row below is disabled while there is nothing to open.
+        <button type="button" onClick={onRetry} className="flex min-h-[60px] w-full items-center px-4 text-left text-[14px] font-medium text-danger">
+          {t("near.loadError")}
+        </button>
+      ) : (
       <button
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        disabled={Boolean(error) || active.length === 0}
+        disabled={active.length === 0}
         className="relative flex min-h-[60px] w-full items-center gap-3 px-4 pb-2.5 pt-3.5 text-left"
       >
         <span className="absolute left-1/2 top-1.5 h-1 w-8 -translate-x-1/2 rounded-full bg-text/20" aria-hidden />
-        {error ? (
-          <span className="text-[14px] text-danger" onClick={onRetry} role="button">
-            {t("near.loadError")}
-          </span>
-        ) : (
+        {(
           <>
+            {/* Grey, not green, at zero: an empty list is not an all-clear. */}
             <span
-              className={`size-2.5 shrink-0 rounded-full ${activeCount > 0 ? (storm ? "bg-[#ffc233]" : "bg-live") : "bg-ok"}`}
+              className={`size-2.5 shrink-0 rounded-full ${activeCount > 0 ? (storm ? "bg-[#ffc233]" : "bg-live") : "bg-faint"}`}
               aria-hidden
             />
             <span className="min-w-0 flex-1">
@@ -108,27 +115,13 @@ export function NearbyPeek({
               <span className="mt-0.5 flex min-w-0 items-baseline gap-1.5 text-[13px] leading-tight text-muted">
                 <span className="min-w-0 truncate">
                   {where}
-                  {/* The freshness stamp gives way to "Locate me": that link is
-                      the only way to turn location on from the map. */}
-                  {!storm && !offerLocate && fresh.checkedAt != null && now > 0 && (
+                  {!storm && fresh.checkedAt != null && now > 0 && (
                     <span className={fresh.stale ? "text-warn" : "text-faint"}>
                       {" · "}
                       {t(fresh.stale ? "fresh.shortStale" : "fresh.short", { t: timeAgo(new Date(fresh.checkedAt).toISOString(), now) })}
                     </span>
                   )}
                 </span>
-                {offerLocate && (
-                  <span
-                    role="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onLocate?.();
-                    }}
-                    className="shrink-0 font-semibold text-brand"
-                  >
-                    {t("common.locateMe")}
-                  </span>
-                )}
               </span>
             </span>
             {active.length > 0 && (
@@ -137,6 +130,9 @@ export function NearbyPeek({
           </>
         )}
       </button>
+      )}
+      {/* No live position: offer both ways to say where "nearby" is. */}
+      {!storm && !open && <AreaActions className="px-4 pb-3" />}
       {open && (
         <>
           <ul className="border-t border-line px-2 pb-1 pt-1">

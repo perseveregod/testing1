@@ -19,8 +19,11 @@ async function handle<T>(res: Response): Promise<T> {
     // Non-JSON error page (e.g. a proxy). Fall through to a generic message.
   }
   if (!res.ok) {
-    const b = (body ?? {}) as { error?: string; code?: string };
-    throw new ApiClientError(b.error ?? `Request failed (${res.status})`, res.status, b.code ?? "error");
+    const b = (body ?? {}) as { error?: unknown; code?: unknown };
+    // Only a plain message is ever shown; anything else (a proxy's error
+    // object, an HTML page) gets a generic line instead of "[object Object]".
+    const message = typeof b.error === "string" && b.error ? b.error : `Something went wrong (${res.status}). Please try again.`;
+    throw new ApiClientError(message, res.status, typeof b.code === "string" ? b.code : "error");
   }
   return body as T;
 }
