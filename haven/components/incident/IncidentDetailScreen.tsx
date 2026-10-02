@@ -6,7 +6,8 @@ import { Check, CircleSlash, Flag, MapPin, MessageSquarePlus, Share2 } from "luc
 import { apiSend, errorMessage, fetcher } from "@/lib/client/api";
 import { shareIncident } from "@/lib/client/share";
 import { useAffects } from "@/lib/client/affects";
-import { sourceText, useT } from "@/lib/client/lang";
+import { useClock } from "@/lib/client/safewalk";
+import { useT } from "@/lib/client/lang";
 import { formatDistance } from "@/lib/geo";
 import { neighborhoodLabel, streetAddress } from "@/lib/houston";
 import { dateTime } from "@/lib/time";
@@ -18,7 +19,8 @@ import { MiniMap } from "@/components/map/MiniMap";
 import { PageHeader } from "@/components/nav/PageHeader";
 import { ActionButton, ButtonLink } from "@/components/ui/Button";
 import { EmptyState, ErrorState, Skeleton } from "@/components/ui/States";
-import { DemoTag, isLive, LiveBadge, SeverityLabel, StatusPill } from "./Badges";
+import { isLive, LiveBadge, OriginBadge, SeverityLabel, StatusPill } from "./Badges";
+import { Provenance } from "./Provenance";
 import { CategoryIcon } from "./CategoryIcon";
 import { AddInfoSheet, FlagSheet } from "./IncidentActions";
 import { StatusStepper, Timeline } from "./Timeline";
@@ -37,7 +39,9 @@ export function IncidentDetailScreen({ id }: { id: string }) {
   const incident = data?.incident;
   const affectsOf = useAffects();
   const affects = incident ? affectsOf(incident) : null;
-  const { t, es, lang, timeAgo, title, cat } = useT();
+  const { t, es, timeAgo, title, cat } = useT();
+  // Ticks once a minute, for "checked 3 min ago".
+  const now = useClock(true, 60_000);
 
   async function vote(kind: "confirm" | "ended") {
     setBusy(kind);
@@ -141,7 +145,8 @@ export function IncidentDetailScreen({ id }: { id: string }) {
             {isLive(incident) && <LiveBadge size="md" />}
             {/* The kind, unless the title already is the kind (a neighbor's report). */}
             {catLabel.toLowerCase() !== heading.toLowerCase() && catLabel}
-            {incident.isDemo && <DemoTag />}
+            {/* Official source, community report or demo: said before the headline. */}
+            <OriginBadge incident={incident} size="md" />
           </p>
           <h2 className="mt-2 text-[32px] font-bold leading-[1.05] tracking-[-0.035em]">{heading}</h2>
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
@@ -166,7 +171,7 @@ export function IncidentDetailScreen({ id }: { id: string }) {
 
         {incident.status !== "under_review" && !incident.storm && (
           <div className="mt-6 rounded-card bg-surface px-4 pb-3 pt-4">
-            <StatusStepper status={incident.status} color={def.color} community={incident.source.kind === "user"} />
+            <StatusStepper status={incident.status} color={def.color} />
           </div>
         )}
 
@@ -181,6 +186,8 @@ export function IncidentDetailScreen({ id }: { id: string }) {
           </p>
         )}
 
+        <Provenance incident={incident} now={now} className="mt-7" />
+
         <dl className="mt-6 divide-y divide-line border-t border-line">
           <Fact label={t("inc.location")} value={street || t("inc.approx")} />
           <Fact label={t("inc.distance")} value={incident.distanceMi != null ? t("inc.fromYou", { d: formatDistance(incident.distanceMi) }) : t("inc.locationOff")} />
@@ -189,23 +196,6 @@ export function IncidentDetailScreen({ id }: { id: string }) {
           <Fact
             label={t("inc.confirmedBy")}
             value={incident.confirmationCount === 0 ? t("inc.noOneYet") : incident.confirmationCount === 1 ? t("inc.personNearby") : t("inc.peopleNearby", { n: incident.confirmationCount })}
-          />
-          <Fact
-            label={t("inc.source")}
-            value={
-              <>
-                {sourceText(incident.source, lang).attribution}
-                {incident.source.url && (
-                  <>
-                    {" "}
-                    <a href={incident.source.url} target="_blank" rel="noopener noreferrer" className="text-brand">
-                      {es ? "Ver" : "View"}
-                    </a>
-                  </>
-                )}
-              </>
-            }
-            wrap
           />
         </dl>
 

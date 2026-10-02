@@ -38,22 +38,19 @@ export function Timeline({ updates }: { updates: PublicIncidentUpdate[] }) {
   );
 }
 
-const STEP_KEYS: Key[] = ["inc.step.reported", "inc.step.responding", "inc.step.contained", "inc.step.cleared"];
-const STEP_FOR: Record<IncidentStatus, number> = { under_review: 0, active: 1, contained: 2, resolved: 3 };
-// A neighbor's report says nothing about who is responding: reported, still
-// going on, over.
-const COMMUNITY_KEYS: Key[] = ["inc.step.reported", "inc.active", "inc.ended"];
-const COMMUNITY_FOR: Record<IncidentStatus, number> = { under_review: 0, active: 1, contained: 1, resolved: 2 };
+// Only stages the data can actually reach. No feed tells Haven that crews are
+// "responding" or that a scene is "cleared": an incident is reported, still
+// listed or open, and then over. "Contained" appears only when a source says so.
+const KEYS: Key[] = ["inc.step.reported", "inc.active", "inc.ended"];
+const STEP_FOR: Record<IncidentStatus, number> = { under_review: 0, active: 1, contained: 1, resolved: 2 };
+const CONTAINED_KEYS: Key[] = ["inc.step.reported", "inc.active", "inc.step.contained", "inc.ended"];
 
-/**
- * Where the incident is in its life. Official dispatches: Reported →
- * Responding → Contained → Cleared. Community reports: Reported → Active →
- * Ended.
- */
-export function StatusStepper({ status, color, community = false }: { status: IncidentStatus; color: string; community?: boolean }) {
+/** Where the incident is in its life: Reported → Active → Ended. */
+export function StatusStepper({ status, color }: { status: IncidentStatus; color: string }) {
   const { t, es } = useT();
-  const STEPS = (community ? COMMUNITY_KEYS : STEP_KEYS).map((k) => t(k));
-  const current = (community ? COMMUNITY_FOR : STEP_FOR)[status];
+  const contained = status === "contained";
+  const STEPS = (contained ? CONTAINED_KEYS : KEYS).map((k) => t(k));
+  const current = contained ? 2 : STEP_FOR[status];
   const ended = status === "resolved";
   return (
     <div role="group" aria-label={`${t("inc.status")}: ${STEPS[current]}`}>

@@ -16,7 +16,7 @@ export const USER_SOURCE: PublicSource = {
 };
 
 const ALL: Map<string, PublicSource> = new Map(
-  [USER_SOURCE, ...ADAPTERS.map((a) => a.meta)].map((s) => [s.id, s]),
+  [USER_SOURCE, ...ADAPTERS.map((a): PublicSource => ({ ...a.meta, severityBy: a.ratesSeverity ? "source" : "haven" }))].map((s) => [s.id, s]),
 );
 
 export function publicSource(id: string): PublicSource {

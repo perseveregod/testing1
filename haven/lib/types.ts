@@ -95,7 +95,27 @@ export interface PublicSource {
   kind: SourceKind;
   attribution: string;
   url?: string;
+  /** Whose severity this is: the source's own rating, or Haven's estimate from the report. */
+  severityBy?: "source" | "haven";
 }
+
+/**
+ * Why an incident has the status it has, so the app can say it in plain words
+ * instead of leaving "Active" and "Ended" to be guessed at.
+ */
+export type StatusBasis =
+  /** An official feed still listed it as active the last time Haven checked. */
+  | "source_listed"
+  /** The official feed stopped listing it, or said it ended. */
+  | "source_ended"
+  /** A person reported it and nobody has marked it over. */
+  | "community_open"
+  /** People nearby marked it over. */
+  | "community_ended"
+  /** No activity for a while: Haven assumes it is over. Nobody confirmed that. */
+  | "aged_out"
+  /** Hidden while flagged problems are reviewed. */
+  | "review";
 
 export interface PublicIncident {
   id: string;
@@ -108,6 +128,7 @@ export interface PublicIncident {
   severity: Severity;
   /** Effective status: stale active incidents read as resolved. */
   status: IncidentStatus;
+  statusBasis: StatusBasis;
   source: PublicSource;
   createdAt: string;
   updatedAt: string;

@@ -43,6 +43,11 @@ export interface FetchResult {
 export interface SourceAdapter {
   meta: Omit<DataSource, "enabled" | "lastSyncedAt">;
   /**
+   * True when the source rates severity itself (weather alerts). Otherwise the
+   * severity people see is Haven's estimate, and the app says so.
+   */
+  ratesSeverity?: boolean;
+  /**
    * When true, fetch() returns every currently-active item, so anything from
    * this source missing from the result has ended and gets resolved.
    */

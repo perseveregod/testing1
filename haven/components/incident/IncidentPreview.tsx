@@ -6,7 +6,9 @@ import { fetcher } from "@/lib/client/api";
 import { dateTime } from "@/lib/time";
 import type { IncidentDetail } from "@/lib/types";
 import { StatusStepper, Timeline } from "./Timeline";
-import { sourceText, useT } from "@/lib/client/lang";
+import { useT } from "@/lib/client/lang";
+import { useClock } from "@/lib/client/safewalk";
+import { Provenance } from "./Provenance";
 import { STATE_STYLE, strings as stormStrings } from "@/lib/storm";
 import { Check, ChevronDown, ChevronRight, ChevronUp, Share2, X } from "lucide-react";
 import { apiSend, errorMessage } from "@/lib/client/api";
@@ -70,6 +72,8 @@ function PreviewCard({
   // Full details load only once the sheet is expanded.
   const { data: detail } = useSWR<{ incident: IncidentDetail }>(expanded ? `/api/incidents/${incident.id}` : null, fetcher);
   const { t, lang, timeAgo, title, cat } = useT();
+  // Ticks once a minute, for "checked 3 min ago".
+  const now = useClock(true, 60_000);
   const { def, label: catLabel } = cat(incident.category);
   const ended = incident.status === "resolved";
   const storm = incident.storm;
@@ -198,7 +202,7 @@ function PreviewCard({
           <div className="mt-5 border-t border-line pt-4">
             {incident.status !== "under_review" && (
               <div className="rounded-card bg-surface px-4 pb-3 pt-4">
-                <StatusStepper status={incident.status} color={def.color} community={incident.source.kind === "user"} />
+                <StatusStepper status={incident.status} color={def.color} />
               </div>
             )}
             <dl className="mt-4 divide-y divide-line text-[14px]">
@@ -207,10 +211,11 @@ function PreviewCard({
                 <dd className="tnum">{dateTime(incident.createdAt)}</dd>
               </div>
               <div className="flex gap-4 py-2.5">
-                <dt className="w-24 shrink-0 text-muted">{t("inc.source")}</dt>
-                <dd className="min-w-0 text-muted">{sourceText(incident.source, lang).attribution}</dd>
+                <dt className="w-24 shrink-0 text-muted">{t("inc.lastUpdate")}</dt>
+                <dd className="tnum">{timeAgo(detail?.incident.updates.at(-1)?.createdAt ?? incident.updatedAt)}</dd>
               </div>
             </dl>
+            <Provenance incident={incident} now={now} className="mt-4" />
             <h3 className="mb-3 mt-5 text-[13px] font-medium text-muted">{t("inc.timeline")}</h3>
             {detail ? <Timeline updates={detail.incident.updates} /> : <p className="text-[13px] text-faint">{t("common.loading")}</p>}
             <ButtonLink href={`/incidents/${incident.id}`} transitionTypes={["nav-forward"]} variant="ghost" size="sm" className="mt-4">

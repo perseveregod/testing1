@@ -7,7 +7,7 @@ import {
   ExternalLink,
   Footprints,
   PawPrint,
-  ShieldCheck,
+  ListX,
 } from "lucide-react";
 import { getCategory, FILTER_GROUPS } from "@/lib/categories";
 import { DEFAULT_CENTER } from "@/lib/client/defaults";
@@ -131,8 +131,9 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
               </div>
             ) : briefing.active === 0 ? (
               <div className="flex items-center gap-3.5 rounded-card bg-surface p-4">
-                <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-ok/15 text-ok">
-                  <ShieldCheck className="size-6" aria-hidden />
+                {/* Neutral on purpose: an empty list is not an all-clear. */}
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-surface-3 text-muted">
+                  <ListX className="size-6" aria-hidden />
                 </span>
                 <div>
                   <p className="text-[15px] font-semibold">{t("safety.quiet")}</p>

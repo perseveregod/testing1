@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { MapPinned, Navigation, ShieldCheck } from "lucide-react";
+import { ListX, MapPinned, Navigation } from "lucide-react";
 import { categoriesInGroup, type FilterGroup } from "@/lib/categories";
 import { DEFAULT_CENTER } from "@/lib/client/defaults";
 import { distanceFrom, nearYouParams, useFeedFreshness, useHydrated, useIncidents, type InitialIncidents } from "@/lib/client/hooks";
@@ -155,7 +155,8 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
 
           {!isLoading && !error && allDemo && <DemoNotice />}
 
-          {!isLoading && !error && sorted.length > 0 && (
+          {/* Shown for an empty list too: "nothing listed" only means something next to when the feeds were last checked. */}
+          {!isLoading && !error && (
             <LiveStatus activeCount={activeCount} checkedAt={fresh.checkedAt} stale={fresh.stale} now={now} />
           )}
 
@@ -170,7 +171,7 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
             ) : sorted.length === 0 ? (
               <EmptyState
                 icon={
-                  <ShieldCheck
+                  <ListX
                     className="size-9"
                     strokeWidth={1.5}
                     aria-hidden

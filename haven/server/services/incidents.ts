@@ -3,6 +3,7 @@ import { categoriesInGroup, getCategory, isStormCategory, SEVERITY_RANK } from "
 import { isValidStorm, STORM_HIDE_HOURS, stormSeverity, stormTitle } from "@/lib/storm";
 import { approximate, distanceMeters, distanceMiles, METERS_PER_MILE } from "@/lib/geo";
 import { moderateText } from "@/lib/moderation";
+import { LISTED_BACKSTOP_HOURS } from "@/lib/incidentBasis";
 import { estimateSeverity, maxSeverity } from "@/lib/severity";
 import type {
   StormPlaceType,
@@ -13,13 +14,14 @@ import type {
   IncidentStatus,
   PublicIncident,
   PublicIncidentUpdate,
+  StatusBasis,
   Viewer,
 } from "@/lib/types";
 import type { ListQuery } from "@/lib/validation";
 import { config } from "../config";
 import { describeLocation } from "../geocode";
 import { ApiError, rateLimit } from "../http";
-import { publicSource, USER_SOURCE } from "../sources/registry";
+import { getAdapter, publicSource, USER_SOURCE } from "../sources/registry";
 import { getStore, type Store } from "../store";
 import type { UserRecord } from "../store/types";
 import { dispatchAlerts } from "./alerts";
@@ -30,11 +32,32 @@ const HOUR = 3_600_000;
 const ESCALATE_CONFIRMATIONS = 3;
 const ESCALATABLE: CategoryId[] = ["fire", "public_safety", "severe_weather"];
 
+// A feed that publishes its own active list ends its incidents itself (they
+// drop off the list). Those are never timed out early: only after a day, as a
+// backstop in case the feed stopped being read.
+
+/** Hours without activity after which Haven assumes an incident is over. */
+export function quietHours(rec: Pick<IncidentRecord, "category" | "sourceId">): number {
+  const hours = getCategory(rec.category).staleAfterHours;
+  return getAdapter(rec.sourceId)?.authoritativeActiveSet ? Math.max(hours, LISTED_BACKSTOP_HOURS) : hours;
+}
+
 /** Active incidents with no activity for a while read as ended. */
 export function effectiveStatus(rec: IncidentRecord, now = Date.now()): IncidentStatus {
   if (rec.status !== "active" && rec.status !== "contained") return rec.status;
-  const staleMs = getCategory(rec.category).staleAfterHours * HOUR;
-  return now - new Date(rec.updatedAt).getTime() > staleMs ? "resolved" : rec.status;
+  return now - new Date(rec.updatedAt).getTime() > quietHours(rec) * HOUR ? "resolved" : rec.status;
+}
+
+/** Why the status is what it is (see StatusBasis). */
+export function statusBasis(rec: IncidentRecord, now = Date.now()): StatusBasis {
+  const status = effectiveStatus(rec, now);
+  if (status === "under_review") return "review";
+  const community = rec.sourceId === USER_SOURCE.id;
+  if (status === "resolved") {
+    if (rec.status !== "resolved") return "aged_out";
+    return community ? "community_ended" : "source_ended";
+  }
+  return community ? "community_open" : "source_listed";
 }
 
 export function toPublic(rec: IncidentRecord, from?: { lat: number; lng: number } | null): PublicIncident {
@@ -49,6 +72,7 @@ export function toPublic(rec: IncidentRecord, from?: { lat: number; lng: number 
     approximateAddress: rec.approximateAddress,
     severity: rec.severity,
     status: effectiveStatus(rec),
+    statusBasis: statusBasis(rec),
     source,
     createdAt: rec.createdAt,
     updatedAt: rec.updatedAt,

@@ -54,6 +54,8 @@ export const nwsAlertsAdapter: SourceAdapter = {
     attribution: "NOAA National Weather Service (api.weather.gov)",
     url: "https://www.weather.gov/alerts",
   },
+  // The Weather Service rates each alert itself.
+  ratesSeverity: true,
   authoritativeActiveSet: true,
   notify: true,
   async fetch(ctx) {
