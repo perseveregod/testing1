@@ -6,6 +6,13 @@ import { usePathname } from "next/navigation";
 import { MapScreen } from "@/components/map/MapScreen";
 import { MAP_STYLE_URL } from "@/lib/client/defaults";
 
+// Opening on the map tab: start downloading the map library with the page
+// instead of after hydration (it is the biggest file the map needs, and the
+// map component's own import then finds it already there).
+if (typeof window !== "undefined" && window.location.pathname === "/") {
+  void import("maplibre-gl").catch(() => {});
+}
+
 /**
  * The map is mounted once, under every tab, and stays alive while you browse
  * the others: switching back is instant and the camera is where you left it.

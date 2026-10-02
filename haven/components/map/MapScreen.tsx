@@ -23,7 +23,7 @@ import { StormReportSheet } from "@/components/storm/StormReportSheet";
 import { DEFAULT_CENTER, EMERGENCY_NUMBER } from "@/lib/client/defaults";
 import { errorMessage } from "@/lib/client/api";
 import { useArrivals } from "@/lib/client/arrivals";
-import { distanceFrom, incidentsUrl, useHydrated, useIncidents, useNearYou, useViewer, type IncidentParams, type InitialIncidents } from "@/lib/client/hooks";
+import { distanceFrom, incidentsUrl, NEAR_RADIUS_MI, nearYouParams, useHydrated, useIncidents, useNearYou, useViewer, type IncidentParams, type InitialIncidents } from "@/lib/client/hooks";
 import { distanceMiles, formatDistance, type LatLng } from "@/lib/geo";
 import { lastKnownPosition, useLocation } from "@/components/providers/LocationProvider";
 import { IncidentPreview } from "@/components/incident/IncidentPreview";
@@ -248,7 +248,17 @@ export function MapScreen({ initial, active = true }: { initial?: InitialInciden
   // uses. Where the person last was stands in for the live fix, so the count
   // and the first pins are already their part of town, straight from the
   // copy kept on this device.
-  const near = useNearYou(hydrated ? (lastPosition ?? DEFAULT_CENTER) : null, initial);
+  const nearCenter = hydrated ? (lastPosition ?? DEFAULT_CENTER) : null;
+  const near = useNearYou(nearCenter, initial);
+  const nearParams = useMemo(() => nearYouParams(nearCenter), [nearCenter]);
+  const coveredByNear =
+    area != null &&
+    nearCenter != null &&
+    activeFilterCount(filters) === 0 &&
+    // The viewport's circle (bucketed 15% over what's on screen) fits inside
+    // the near-you one when the two centers are this close.
+    area.radiusMi <= NEAR_RADIUS_MI &&
+    distanceMiles(area.center, nearCenter) <= 0.5;
   const viewportParams: IncidentParams = storm.on
     ? {
         // Storm Mode: only power / flooding / place reports from the last 6 hours.
@@ -258,13 +268,18 @@ export function MapScreen({ initial, active = true }: { initial?: InitialInciden
         sinceHours: 6,
         includeResolved: false,
       }
-    : {
-        // Nothing until the map reports a viewport: the "near you" answer
-        // covers the first frame (it's a superset of what's in view).
-        center: area?.center ?? null,
-        radiusMi: area?.radiusMi ?? 5,
-        ...filterParams(filters, viewer),
-      };
+    : coveredByNear
+      ? // The view sits inside the "near you" circle with no filters on: that
+        // answer already has every pin in view, so ask the same question and
+        // the two share one download (and one copy on the device).
+        nearParams
+      : {
+          // Nothing until the map reports a viewport: the "near you" answer
+          // covers the first frame (it's a superset of what's in view).
+          center: area?.center ?? null,
+          radiusMi: area?.radiusMi ?? 5,
+          ...filterParams(filters, viewer),
+        };
   const viewportQuery = useIncidents(viewportParams, storm.on ? null : initial);
   const { isLoading, isValidating, error, mutate } = viewportQuery;
   const fromNear = !storm.on && !area;
