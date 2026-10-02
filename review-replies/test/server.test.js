@@ -11,6 +11,7 @@ process.env.STRIPE_SECRET_KEY = "sk_test_dummy";
 process.env.STRIPE_PRICE_ID = "price_dummy";
 process.env.STRIPE_WEBHOOK_SECRET = "whsec_dummy";
 process.env.OWNER_EMAIL = "boss@shop.co";
+process.env.TRUST_PROXY = "1"; // so each test client below counts as a separate visitor for rate limits
 const Stripe = require("stripe");
 const { server } = require("../server");
 
@@ -18,12 +19,14 @@ let base;
 test.before(() => new Promise((r) => server.listen(0, () => { base = `http://localhost:${server.address().port}`; r(); })));
 test.after(() => { server.close(); fs.rmSync(dir, { recursive: true, force: true }); });
 
+let visitors = 0;
 function client() {
   let cookie = "";
+  const address = `10.0.0.${++visitors}`;
   return async (method, p, body, headers = {}) => {
     const res = await fetch(base + p, {
       method,
-      headers: { ...(body !== undefined ? { "Content-Type": "application/json" } : {}), ...(cookie ? { cookie } : {}), ...headers },
+      headers: { ...(body !== undefined ? { "Content-Type": "application/json" } : {}), ...(cookie ? { cookie } : {}), "x-forwarded-for": address, ...headers },
       body: body === undefined ? undefined : typeof body === "string" ? body : JSON.stringify(body),
     });
     const set = res.headers.get("set-cookie");
@@ -208,4 +211,38 @@ test("visits are counted by source, and only the owner sees the numbers", async 
   assert.strictEqual(stats.accounts.find((a) => a.email === "new@shop.co").source, "email");
   assert.strictEqual(stats.totals.accounts, stats.accounts.length);
   assert.strictEqual((await fetch(base + "/owner")).status, 200);
+});
+
+test("the owner can hand out a one-time password reset link", async () => {
+  const forgetful = client();
+  await forgetful("POST", "/api/signup", { email: "forgot@shop.co", password: "oldpassword1", agreeToTerms: true });
+  // Only the owner can create a link.
+  assert.strictEqual((await forgetful("POST", "/api/owner/reset-link", { email: "forgot@shop.co" })).status, 404);
+  assert.strictEqual((await client()("POST", "/api/owner/reset-link", { email: "forgot@shop.co" })).status, 401);
+
+  const boss = client();
+  assert.strictEqual((await boss("POST", "/api/login", { email: "boss@shop.co", password: "password123" })).status, 200);
+  assert.strictEqual((await boss("POST", "/api/owner/reset-link", { email: "nobody@shop.co" })).status, 404);
+  const first = await boss("POST", "/api/owner/reset-link", { email: "Forgot@shop.co" });
+  assert.strictEqual(first.status, 200);
+  assert.match(first.body.url, /\/reset#[\w-]{40,}$/);
+  // A newer link replaces the older one.
+  const second = await boss("POST", "/api/owner/reset-link", { email: "forgot@shop.co" });
+  const token = (u) => u.split("#")[1];
+
+  const visitor = client();
+  assert.strictEqual((await visitor("POST", "/api/reset-password", { token: "made-up", password: "newpassword1" })).status, 400);
+  assert.strictEqual((await visitor("POST", "/api/reset-password", { token: token(first.body.url), password: "newpassword1" })).status, 400);
+  assert.strictEqual((await visitor("POST", "/api/reset-password", { token: token(second.body.url), password: "short" })).status, 400);
+  const done = await visitor("POST", "/api/reset-password", { token: token(second.body.url), password: "newpassword1" });
+  assert.strictEqual(done.status, 200);
+  assert.strictEqual(done.body.email, "forgot@shop.co");
+  assert.strictEqual((await visitor("GET", "/api/me")).status, 200, "the reset logs them in");
+
+  // The link works once, the old password is dead, and other devices are logged out.
+  assert.strictEqual((await client()("POST", "/api/reset-password", { token: token(second.body.url), password: "another12345" })).status, 400);
+  assert.strictEqual((await client()("POST", "/api/login", { email: "forgot@shop.co", password: "oldpassword1" })).status, 401);
+  assert.strictEqual((await client()("POST", "/api/login", { email: "forgot@shop.co", password: "newpassword1" })).status, 200);
+  assert.strictEqual((await forgetful("GET", "/api/me")).status, 401);
+  assert.strictEqual((await fetch(base + "/reset")).status, 200);
 });

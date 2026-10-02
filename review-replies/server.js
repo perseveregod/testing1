@@ -63,6 +63,7 @@ class Limiter {
 }
 const demoLimiter = new Limiter(3, 24 * 60 * 60 * 1000);
 const authLimiter = new Limiter(20, 15 * 60 * 1000);
+const resetLimiter = new Limiter(10, 15 * 60 * 1000);
 
 const escapeHtml = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const fillTemplate = (html, extra = {}) => html.replace(/\{\{(\w+)\}\}/g, (m, k) => (k in extra ? escapeHtml(extra[k]) : k in SITE ? escapeHtml(SITE[k]) : m));
@@ -211,8 +212,32 @@ async function api(req, res, pathname) {
     return send(res, 200, await me(user), await startSession(res, user.id));
   }
 
+  // Finishes a password reset started from a one-time link (see /api/owner/reset-link).
+  if (m === "POST" && pathname === "/api/reset-password") {
+    if (!resetLimiter.take(ip(req))) return send(res, 429, { error: "Too many attempts. Wait a few minutes and try again." });
+    const body = await json(req);
+    const p = auth.validatePassword(body.password);
+    if (p.error) return send(res, 400, { error: p.error });
+    const account = await store.resetUser(auth.tokenHash(body.token ?? ""));
+    if (!account) return send(res, 400, { error: "This reset link has expired or was already used. Ask for a new one." });
+    await store.setPassword(account.id, auth.hashPassword(p.password));
+    return send(res, 200, await me(account), await startSession(res, account.id));
+  }
+
   const user = await currentUser(req);
   if (!user) return send(res, 401, { error: "Log in to continue." });
+
+  // The owner creates a reset link and passes it to the account holder who asked for it.
+  if (m === "POST" && pathname === "/api/owner/reset-link") {
+    if (!isOwner(user)) return send(res, 404, { error: "Not found" });
+    const body = await json(req);
+    const account = await store.userByEmail(String(body.email ?? "").trim());
+    if (!account) return send(res, 404, { error: "No account uses that email." });
+    const token = auth.newToken();
+    await store.createReset(auth.tokenHash(token), account.id, auth.RESET_TTL_MS);
+    // The token rides in the # part of the link, which browsers never send to a server or log.
+    return send(res, 200, { url: `${PUBLIC_URL}/reset#${token}`, email: account.email, minutes: auth.RESET_TTL_MS / 60_000 });
+  }
 
   if (m === "POST" && pathname === "/api/logout") {
     await store.deleteSession(auth.readCookie(req));
@@ -377,7 +402,7 @@ async function webhook(req, res) {
 // ----- static files -----
 
 const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png" };
-const PAGES = { "/": "index.html", "/app": "app.html", "/owner": "owner.html", "/terms": "terms.html", "/privacy": "privacy.html", "/refunds": "refunds.html" };
+const PAGES = { "/": "index.html", "/app": "app.html", "/owner": "owner.html", "/reset": "reset.html", "/terms": "terms.html", "/privacy": "privacy.html", "/refunds": "refunds.html" };
 const COUNTED = { "/": "home", "/app": "app" };
 
 // Works out where a page visit came from and counts it, unless it's a bot, a

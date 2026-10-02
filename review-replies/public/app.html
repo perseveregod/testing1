@@ -84,6 +84,7 @@
       <button class="btn" id="authGo" type="submit">Create free account</button>
       <p class="msg" id="authMsg" role="status"></p>
       <p class="small" id="authNote" style="opacity:.85">Free for 15 replies a month. No card needed.</p>
+      <p class="small" id="forgotNote" style="opacity:.85" hidden>Forgot your password? Email <a href="mailto:{{CONTACT_EMAIL}}">{{CONTACT_EMAIL}}</a> from the address on your account and we'll send a reset link.</p>
     </form>
   </section>
 
@@ -206,6 +207,7 @@
     $("authGo").textContent = m === "signup" ? "Create free account" : "Log in";
     $("password").autocomplete = m === "signup" ? "new-password" : "current-password";
     $("authNote").hidden = m !== "signup";
+    $("forgotNote").hidden = m !== "login";
     $("consentRow").hidden = m !== "signup";
     $("authMsg").textContent = "";
   }

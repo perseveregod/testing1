@@ -29,7 +29,7 @@ With no keys set, it runs in demo mode: replies come from a simple template and 
 | `STRIPE_WEBHOOK_SECRET` | Payments | From the webhook endpoint you add in Stripe (`whsec_...`). |
 | `PUBLIC_URL` | Production | Your site's address, e.g. `https://replydesk.com`. Used for Stripe redirects. Cookies are marked Secure when it starts with `https://`. |
 | `TRUST_PROXY` | Production | Set to `1` behind Render, Railway or Fly so rate limits see real visitor IPs. |
-| `OWNER_EMAIL` | Optional | The account with this email gets the private `/owner` page: visits by source, demo replies, sign-ups and accounts. Create that account before setting it. Unset, the page is off. |
+| `OWNER_EMAIL` | Optional | The account with this email gets the private `/owner` page: visits by source, demo replies, sign-ups and accounts, plus a button that creates a one-time password reset link for anyone locked out. Create that account before setting it. Unset, the page is off. |
 | `DB_FILE` | Optional | SQLite file path. Defaults to `data/replydesk.db`. Put it on a persistent disk. Ignored when `TURSO_DATABASE_URL` is set. |
 | `TURSO_DATABASE_URL` | Recommended on free hosting | Hosted Turso database (`libsql://…`). Data survives restarts and redeploys with no disk. |
 | `TURSO_AUTH_TOKEN` | With Turso | Database token from Turso. Keep it secret. |

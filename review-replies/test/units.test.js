@@ -134,3 +134,17 @@ test("stats summary: one row per day newest first, sources ranked by visits", ()
   assert.strictEqual(dayKey(new Date("2026-10-02T03:30:00Z")), "2026-10-01"); // still Oct 1 in Houston
   assert.deepStrictEqual(lastDays(2, new Date("2026-10-02T18:00:00Z")), days);
 });
+
+test("reset links expire and are stored only as a hash", async () => {
+  const s = makeStore(open(":memory:"));
+  const id = await s.createUser("a@b.co", auth.hashPassword("password123"));
+  const token = auth.newToken();
+  assert.notStrictEqual(auth.tokenHash(token), token);
+  await s.createReset(auth.tokenHash(token), id, -1000); // already expired
+  assert.strictEqual(await s.resetUser(auth.tokenHash(token)), undefined);
+  await s.createReset(auth.tokenHash(token), id, 60_000);
+  assert.strictEqual((await s.resetUser(auth.tokenHash(token))).email, "a@b.co");
+  assert.strictEqual(await s.resetUser(token), undefined, "the raw token is not what's stored");
+  assert.ok(auth.validatePassword("short").error);
+  assert.strictEqual(auth.validatePassword("long enough").password, "long enough");
+});

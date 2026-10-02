@@ -22,6 +22,9 @@
   /* The ribbon artwork runs behind this page, so tables and notes get a solid backing. */
   .owner-main .data-table { background: var(--surface); border-radius: 16px; padding: 4px 8px; width: fit-content; max-width: 100%; }
   .owner-main .muted { color: var(--ink); opacity: .8; }
+  .reset-out { margin-top: 16px; padding: 16px 18px; max-width: 720px; background: var(--surface); }
+  .reset-row { display: flex; gap: 8px; margin-top: 8px; }
+  .reset-row input { flex: 1; min-width: 0; font-size: 14px; }
 </style>
 </head>
 <body>
@@ -45,7 +48,16 @@
       <table class="data-table" id="sources"></table>
 
       <h2>Accounts</h2>
+      <p class="muted small">Someone locked out? Create a reset link and send it to the email on their account. It works once and lasts an hour.</p>
       <table class="data-table" id="accounts"></table>
+      <div class="card reset-out" id="resetOut" hidden>
+        <p id="resetFor"></p>
+        <div class="reset-row">
+          <input id="resetUrl" readonly aria-label="Reset link">
+          <button class="btn small" type="button" id="resetCopy">Copy link</button>
+        </div>
+        <p class="msg" id="resetMsg" role="status"></p>
+      </div>
     </div>
   </main>
 </div>
@@ -66,6 +78,7 @@
       const tr = document.createElement("tr");
       for (const [, value, num] of columns) {
         const v = value(r);
+        if (v instanceof Node) { const td = document.createElement("td"); td.append(v); tr.append(td); continue; }
         tr.append(el("td", String(v), (num ? "num" : "") + (num && !Number(v) ? " zero" : "")));
       }
       tbody.append(tr);
@@ -81,6 +94,40 @@
   const dayLabel = (d) => new Date(d + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
   const dateLabel = (ms) => new Date(Number(ms)).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
   const sum = (rows, k) => rows.reduce((n, r) => n + r[k], 0);
+
+  function resetButton(email) {
+    const b = el("button", "Create reset link", "btn ghost small");
+    b.type = "button";
+    b.onclick = async () => {
+      b.disabled = true;
+      $("resetOut").hidden = false;
+      $("resetUrl").value = "";
+      $("resetMsg").className = "msg";
+      $("resetMsg").textContent = "";
+      try {
+        const link = await RD.api("/api/owner/reset-link", { method: "POST", body: { email } });
+        $("resetFor").textContent = `Reset link for ${link.email}. Good for ${link.minutes} minutes, and it works once.`;
+        $("resetUrl").value = link.url;
+        $("resetUrl").select();
+      } catch (err) {
+        $("resetFor").textContent = `Couldn't create a link for ${email}.`;
+        $("resetMsg").className = "msg err";
+        $("resetMsg").textContent = err.message;
+      } finally {
+        b.disabled = false;
+      }
+    };
+    return b;
+  }
+  $("resetCopy").onclick = async () => {
+    try {
+      await navigator.clipboard.writeText($("resetUrl").value);
+      $("resetMsg").textContent = "Copied. Send it only to the email on that account.";
+    } catch {
+      $("resetUrl").select();
+      $("resetMsg").textContent = "Select the link and copy it.";
+    }
+  };
 
   RD.api("/api/owner/stats").then((s) => {
     $("status").hidden = true;
@@ -109,6 +156,7 @@
       ["Came from", (r) => r.source || "not recorded"],
       ["Replies this month", (r) => r.replies_this_month || 0, true],
       ["Reviews saved", (r) => r.reviews || 0, true],
+      ["Locked out?", (r) => resetButton(r.email)],
     ], s.accounts, "No accounts yet.");
   }).catch((err) => {
     const s = $("status");

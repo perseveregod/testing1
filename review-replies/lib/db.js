@@ -46,6 +46,11 @@ CREATE TABLE IF NOT EXISTS usage (
   count INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (user_id, month)
 );
+CREATE TABLE IF NOT EXISTS password_resets (
+  token_hash TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  expires_at INTEGER NOT NULL
+);
 CREATE TABLE IF NOT EXISTS events (
   day TEXT NOT NULL,
   kind TEXT NOT NULL,
@@ -115,11 +120,30 @@ function makeStore(db) {
                 WHERE sessions.token = ? AND sessions.expires_at > ?`, token, Date.now()),
     deleteSession: (token) => run("DELETE FROM sessions WHERE token = ?", token),
 
+    // One-time password reset links. A new link for a user replaces any older one.
+    async createReset(tokenHash, userId, ttlMs) {
+      await batch([
+        ["DELETE FROM password_resets WHERE user_id = ? OR expires_at < ?", userId, Date.now()],
+        ["INSERT INTO password_resets (token_hash, user_id, expires_at) VALUES (?, ?, ?)", tokenHash, userId, Date.now() + ttlMs],
+      ]);
+    },
+    resetUser: (tokenHash) => get(`SELECT users.* FROM password_resets JOIN users ON users.id = password_resets.user_id
+                WHERE password_resets.token_hash = ? AND password_resets.expires_at > ?`, tokenHash, Date.now()),
+    // Sets the new password, uses up the link, and logs the account out everywhere.
+    async setPassword(userId, passwordHash) {
+      await batch([
+        ["UPDATE users SET password_hash = ? WHERE id = ?", passwordHash, userId],
+        ["DELETE FROM password_resets WHERE user_id = ?", userId],
+        ["DELETE FROM sessions WHERE user_id = ?", userId],
+      ]);
+    },
+
     // Permanently removes the user and everything they own. Child rows are
     // deleted explicitly because a hosted database may not enforce cascades.
     async deleteUser(id) {
       await batch([
         ["DELETE FROM sessions WHERE user_id = ?", id],
+        ["DELETE FROM password_resets WHERE user_id = ?", id],
         ["DELETE FROM businesses WHERE user_id = ?", id],
         ["DELETE FROM reviews WHERE user_id = ?", id],
         ["DELETE FROM usage WHERE user_id = ?", id],

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<title>Set a new password · ReplyDesk</title>
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#f5f5f7">
+<link rel="stylesheet" href="/style.css">
+<style>
+  .auth { max-width: 400px; margin: 48px auto; }
+  .auth h1 { font-size: 30px; margin: 20px 0 6px; }
+  .auth .lede { margin-bottom: 20px; }
+</style>
+</head>
+<body>
+<div class="ribbons" aria-hidden="true"><img src="/ribbons.svg" alt=""></div>
+<div class="wrap">
+  <section class="auth">
+    <a class="logo" href="/"><i>★</i>ReplyDesk</a>
+    <h1>Set a new password</h1>
+    <p class="lede" id="lede">Choose a new password for your ReplyDesk account. You'll be logged in right after.</p>
+    <form class="fields" id="form">
+      <div class="field"><label for="password">New password</label><input id="password" type="password" autocomplete="new-password" minlength="8" maxlength="200" required></div>
+      <label class="check"><input type="checkbox" id="show"> <span>Show password</span></label>
+      <button class="btn" id="go" type="submit">Save new password</button>
+      <p class="msg" id="msg" role="status"></p>
+    </form>
+  </section>
+</div>
+<script src="/common.js"></script>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  // The one-time token is the part of the link after "#".
+  const token = location.hash.slice(1);
+
+  if (!token) {
+    $("form").hidden = true;
+    $("lede").textContent = "This reset link is incomplete. Ask for a new one and open it exactly as sent.";
+    return;
+  }
+
+  $("show").onchange = () => { $("password").type = $("show").checked ? "text" : "password"; };
+
+  $("form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    $("go").disabled = true;
+    $("msg").className = "msg";
+    $("msg").textContent = "";
+    try {
+      await RD.api("/api/reset-password", { method: "POST", body: { token, password: $("password").value } });
+      $("msg").className = "msg ok";
+      $("msg").textContent = "Password saved. Opening your account…";
+      location.replace("/app");
+    } catch (err) {
+      $("msg").className = "msg err";
+      $("msg").textContent = err.message;
+      $("go").disabled = false;
+    }
+  });
+})();
+</script>
+</body>
+</html>
