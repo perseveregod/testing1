@@ -345,6 +345,10 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
         // Always visible (not collapsed) so the OpenStreetMap / OpenFreeMap credit is shown per license.
         attributionControl: { compact: true },
         fadeDuration: 0,
+        // 3x phones would draw 2.25x the pixels of 2x for no visible gain on a
+        // tilted map with buildings; this is the difference between a pan that
+        // stutters and one that doesn't.
+        pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
       });
       map.current = m;
 
@@ -467,7 +471,12 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
         setTimeout(done, 900);
         emitViewport();
       });
+      // While a gesture is in flight the pins' animations and glows pause
+      // (see .map-moving in globals.css): the GPU should only be moving the
+      // map, not repainting a few dozen animated markers on top of it.
+      m.on("movestart", () => container.current?.classList.add("map-moving"));
       m.on("moveend", () => {
+        container.current?.classList.remove("map-moving");
         syncMarkers();
         emitViewport();
         onCamera.current?.({ bearing: m.getBearing(), pitch: m.getPitch() });
@@ -586,7 +595,9 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
     if (!ready || !lightsMode || !m) return;
     let raf = 0;
     const tick = (t: number) => {
-      pulseLights(m, t);
+      // Restyling a layer every frame is fine while the map is still; during
+      // a gesture it would compete with the pan itself.
+      if (!m.isMoving()) pulseLights(m, t);
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);

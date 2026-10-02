@@ -184,6 +184,14 @@ body {
   border: 0.5px solid rgba(255, 255, 255, 0.12);
   box-shadow: 0 10px 28px -12px rgba(0, 0, 0, 0.6);
 }
+/* The tab bar floats over the map on every tab, so it must not blur: a
+   backdrop blur over a moving WebGL canvas is re-blurred every frame. Nearly
+   opaque instead, with the same hairline and shadow as the glass. */
+@utility nav-bar {
+  background: rgba(14, 18, 26, 0.94);
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 28px -12px rgba(0, 0, 0, 0.6);
+}
 /* Floating panel over the map: the surface color, slightly see-through. */
 @utility panel {
   /* No backdrop blur: a dozen blurred layers over a moving WebGL map is the
@@ -397,6 +405,13 @@ body {
    compositing WebGL under it would only cost frames. */
 .map-host[data-active="false"] {
   visibility: hidden;
+}
+/* Mid-gesture: pins keep their current frame; glows and pulses wait. */
+.map-moving .haven-marker,
+.map-moving .haven-marker * {
+  animation-play-state: paused !important;
+  filter: none !important;
+  transition: none !important;
 }
 .page-root {
   position: relative;
@@ -832,7 +847,6 @@ body {
   line-height: 1.3 !important;
   border-radius: 6px 0 0 0;
   padding: 1px 6px !important;
-  backdrop-filter: blur(6px);
 }
 .maplibregl-ctrl-attrib a {
   color: var(--muted) !important;

@@ -387,7 +387,7 @@ function hash01(str: string): number {
 export function activityGeoJson(incidents: PublicIncident[]): GeoJSON.FeatureCollection {
   const features: GeoJSON.Feature[] = [];
   for (const i of incidents) {
-    const n = Math.min(14, 3 + (i.confirmationCount ?? 0));
+    const n = Math.min(8, 2 + (i.confirmationCount ?? 0));
     for (let k = 0; k < n; k++) {
       const seed = `${i.id}:${k}`;
       const a = hash01(seed) * Math.PI * 2;

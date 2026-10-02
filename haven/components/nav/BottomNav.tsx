@@ -39,7 +39,7 @@ export function BottomNav() {
         style={{ paddingBottom: "calc(var(--safe-bottom) + var(--nav-gap))" }}
         data-tone={onMap ? tone : "dark"}
       >
-        <ul className={`glass pointer-events-auto mx-auto grid h-[var(--nav-h)] max-w-lg rounded-full px-1.5 ${TABS.length === 6 ? "grid-cols-6" : "grid-cols-5"}`}>
+        <ul className={`nav-bar pointer-events-auto mx-auto grid h-[var(--nav-h)] max-w-lg rounded-full px-1.5 ${TABS.length === 6 ? "grid-cols-6" : "grid-cols-5"}`}>
           {TABS.map((tab) => {
             const active = tab.href === "/" ? path === "/" : path.startsWith(tab.href);
             const Icon = tab.icon;
