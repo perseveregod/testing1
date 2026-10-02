@@ -100,7 +100,9 @@ function WelcomeSteps() {
         </div>
 
         {/* Scrolls on short phones instead of pushing the buttons off screen. */}
-        <div key={step} className="haven-rise -mx-1 flex min-h-0 flex-1 flex-col overflow-y-auto px-1 py-3 [&>*]:shrink-0 [&>:first-child]:mt-auto [&>:last-child]:mb-auto">
+        <div key={step} className="haven-rise -mx-1 flex min-h-0 flex-1 flex-col overflow-y-auto px-1 pb-6 pt-3 [&>*]:shrink-0 [&>:first-child]:mt-auto [&>:last-child]:mb-auto"
+          // Fades the last few pixels so text that continues below reads as scrollable, not cut off.
+          style={{ maskImage: "linear-gradient(to bottom, black calc(100% - 22px), transparent)", WebkitMaskImage: "linear-gradient(to bottom, black calc(100% - 22px), transparent)" }}>
           <span
             className={`flex items-center justify-center rounded-card ${locationStep ? "size-14 [@media(max-height:700px)]:hidden" : "size-20"}`}
             style={{ background: `color-mix(in srgb, ${s.color} 18%, transparent)`, color: s.color }}
