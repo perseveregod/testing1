@@ -91,3 +91,46 @@ test("writeReply retries without the fallback beta if it's rejected", async () =
   const authFail = { beta: { messages: { create: async () => { throw Object.assign(new Error("invalid x-api-key"), { status: 401 }); } } } };
   await assert.rejects(replies.writeReply(authFail, {}, { body: "x", rating: 5, reviewer: "" }), (e) => e.status === 401);
 });
+
+test("visit sources: a ref tag wins, known sites are grouped, our own pages are internal", () => {
+  const stats = require("../lib/stats");
+  assert.strictEqual(stats.sourceOf({ ref: "Email" }), "email");
+  assert.strictEqual(stats.sourceOf({ ref: "<script>x", referer: "https://l.instagram.com/" }), "scriptx");
+  assert.strictEqual(stats.sourceOf({ referer: "https://l.instagram.com/?u=x" }), "instagram");
+  assert.strictEqual(stats.sourceOf({ referer: "https://m.facebook.com/" }), "facebook");
+  assert.strictEqual(stats.sourceOf({ referer: "https://nextdoor.com/page/x" }), "nextdoor");
+  assert.strictEqual(stats.sourceOf({ referer: "https://www.google.com/" }), "google");
+  assert.strictEqual(stats.sourceOf({ referer: "https://mail.google.com/" }), "email");
+  assert.strictEqual(stats.sourceOf({ referer: "https://www.yelp.com/biz/x" }), "yelp.com");
+  assert.strictEqual(stats.sourceOf({ referer: "https://replydesk.test/", host: "replydesk.test" }), "internal");
+  assert.strictEqual(stats.sourceOf({ referer: "not a url" }), "direct");
+  assert.strictEqual(stats.sourceOf({}), "direct");
+});
+
+test("bots and our own keep-awake ping are not visitors", () => {
+  const { isBot } = require("../lib/stats");
+  for (const ua of ["", undefined, "node", "replydesk-keepawake", "facebookexternalhit/1.1", "Googlebot/2.1", "curl/8.4.0", "UptimeRobot/2.0"]) {
+    assert.strictEqual(isBot(ua), true, String(ua));
+  }
+  assert.strictEqual(isBot("Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Instagram 350.0"), false);
+  assert.strictEqual(isBot("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140.0 Safari/537.36"), false);
+});
+
+test("stats summary: one row per day newest first, sources ranked by visits", () => {
+  const { summarize, dayKey, lastDays } = require("../lib/stats");
+  const days = ["2026-10-01", "2026-10-02"];
+  const out = summarize([
+    { day: "2026-10-01", kind: "home", source: "direct", count: 2 },
+    { day: "2026-10-02", kind: "home", source: "email", count: 5 },
+    { day: "2026-10-02", kind: "demo", source: "email", count: 1 },
+    { day: "2026-10-02", kind: "signup", source: "email", count: 1 },
+    { day: "2026-10-02", kind: "mystery", source: "email", count: 9 },
+  ], days);
+  assert.deepStrictEqual(out.days, [
+    { day: "2026-10-02", home: 5, app: 0, demo: 1, signup: 1 },
+    { day: "2026-10-01", home: 2, app: 0, demo: 0, signup: 0 },
+  ]);
+  assert.deepStrictEqual(out.sources.map((s) => s.source), ["email", "direct"]);
+  assert.strictEqual(dayKey(new Date("2026-10-02T03:30:00Z")), "2026-10-01"); // still Oct 1 in Houston
+  assert.deepStrictEqual(lastDays(2, new Date("2026-10-02T18:00:00Z")), days);
+});

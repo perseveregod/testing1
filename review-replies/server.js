@@ -7,6 +7,7 @@ const { open, makeStore } = require("./lib/db");
 const auth = require("./lib/auth");
 const replies = require("./lib/replies");
 const { reviewsFromCsv } = require("./lib/csv");
+const stats = require("./lib/stats");
 
 const PORT = Number(process.env.PORT) || 3000;
 const DB_FILE = process.env.DB_FILE || path.join(__dirname, "data", "replydesk.db");
@@ -16,6 +17,10 @@ const PUBLIC_URL = (process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL ||
 const SECURE_COOKIES = PUBLIC_URL.startsWith("https://");
 const TRUST_PROXY = process.env.TRUST_PROXY === "1";
 const PUBLIC_DIR = path.join(__dirname, "public");
+// The account with this email sees the private /owner page (visits, sign-ups, usage).
+// Leave it unset and the owner page stays off for everyone.
+const OWNER_EMAIL = String(process.env.OWNER_EMAIL || "").trim().toLowerCase();
+const isOwner = (user) => Boolean(OWNER_EMAIL && user && String(user.email).toLowerCase() === OWNER_EMAIL);
 
 // Legal details shown on the Terms, Privacy and Refund pages and in the footer.
 const TERMS_VERSION = "2026-10-01";
@@ -60,7 +65,12 @@ const demoLimiter = new Limiter(3, 24 * 60 * 60 * 1000);
 const authLimiter = new Limiter(20, 15 * 60 * 1000);
 
 const escapeHtml = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-const fillTemplate = (html) => html.replace(/\{\{(\w+)\}\}/g, (m, k) => (k in SITE ? escapeHtml(SITE[k]) : m));
+const fillTemplate = (html, extra = {}) => html.replace(/\{\{(\w+)\}\}/g, (m, k) => (k in extra ? escapeHtml(extra[k]) : k in SITE ? escapeHtml(SITE[k]) : m));
+
+// Adds one to an anonymous daily counter. Never lets a counting problem break a page.
+function count(kind, source) {
+  store.countEvent(stats.dayKey(), kind, source).catch((err) => console.error(`count ${kind} failed: ${err.message}`));
+}
 
 function securityHeaders(res) {
   res.setHeader("Content-Security-Policy", [
@@ -136,6 +146,7 @@ async function me(user) {
     billingEnabled: Boolean(stripe),
     hasSubscription: Boolean(user.stripe_customer_id),
     demo: !ai,
+    owner: isOwner(user),
   };
 }
 
@@ -171,6 +182,7 @@ async function api(req, res, pathname) {
     }
     try {
       const reply = await generate({ name: String(body.businessName ?? ""), tone: body.tone }, r.review);
+      count("demo", stats.cleanRef(body.ref) || "direct");
       return send(res, 200, { reply });
     } catch (err) {
       return replyError(res, err);
@@ -187,7 +199,9 @@ async function api(req, res, pathname) {
         return send(res, 400, { error: "Please agree to the Terms of Service and Privacy Policy to create an account." });
       }
       if (await store.userByEmail(c.email)) return send(res, 409, { error: "That email already has an account. Log in instead." });
-      const id = await store.createUser(c.email, auth.hashPassword(c.password), TERMS_VERSION);
+      const source = stats.cleanRef(body.ref) || "direct";
+      const id = await store.createUser(c.email, auth.hashPassword(c.password), TERMS_VERSION, source);
+      count("signup", source);
       return send(res, 201, await me(await store.userById(id)), await startSession(res, id));
     }
     const user = await store.userByEmail(c.email);
@@ -205,6 +219,17 @@ async function api(req, res, pathname) {
     return send(res, 200, { ok: true }, { "Set-Cookie": auth.sessionCookie("", { secure: SECURE_COOKIES, maxAgeMs: 0 }) });
   }
   if (m === "GET" && pathname === "/api/me") return send(res, 200, await me(user));
+
+  if (m === "GET" && pathname === "/api/owner/stats") {
+    if (!isOwner(user)) return send(res, 404, { error: "Not found" });
+    const days = stats.lastDays(14);
+    const accounts = await store.accounts();
+    return send(res, 200, {
+      ...stats.summarize(await store.eventsSince(days[0]), days),
+      accounts,
+      totals: { accounts: accounts.length, paying: accounts.filter((a) => a.plan === "pro").length },
+    });
+  }
 
   if (m === "GET" && pathname === "/api/account/export") {
     return send(res, 200, await store.exportData(user.id), {
@@ -352,9 +377,23 @@ async function webhook(req, res) {
 // ----- static files -----
 
 const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png" };
-const PAGES = { "/": "index.html", "/app": "app.html", "/terms": "terms.html", "/privacy": "privacy.html", "/refunds": "refunds.html" };
+const PAGES = { "/": "index.html", "/app": "app.html", "/owner": "owner.html", "/terms": "terms.html", "/privacy": "privacy.html", "/refunds": "refunds.html" };
+const COUNTED = { "/": "home", "/app": "app" };
 
-function serveStatic(res, pathname) {
+// Works out where a page visit came from and counts it, unless it's a bot, a
+// click from our own pages back to the home page, or the owner looking around.
+async function visitSource(req, pathname, query) {
+  const source = stats.sourceOf({ ref: query.get("ref"), referer: req.headers.referer, host: req.headers.host });
+  const shown = source === "internal" ? "direct" : source;
+  const kind = COUNTED[pathname];
+  if (!kind || stats.isBot(req.headers["user-agent"])) return shown;
+  if (kind === "home" && source === "internal") return shown;
+  if (OWNER_EMAIL && auth.readCookie(req) && isOwner(await currentUser(req).catch(() => null))) return shown;
+  count(kind, shown);
+  return shown;
+}
+
+function serveStatic(res, pathname, vars = {}) {
   const rel = PAGES[pathname] || decodeURIComponent(pathname).replace(/^\/+/, "");
   const file = path.normalize(path.join(PUBLIC_DIR, rel));
   if (!file.startsWith(PUBLIC_DIR + path.sep)) return send(res, 404, { error: "Not found" });
@@ -365,16 +404,16 @@ function serveStatic(res, pathname) {
     }
     const ext = path.extname(file);
     res.writeHead(200, { "Content-Type": MIME[ext] || "application/octet-stream" });
-    res.end(ext === ".html" ? fillTemplate(data.toString("utf8")) : data);
+    res.end(ext === ".html" ? fillTemplate(data.toString("utf8"), vars) : data);
   });
 }
 
 const server = http.createServer(async (req, res) => {
-  const { pathname } = new URL(req.url, "http://localhost");
+  const { pathname, searchParams } = new URL(req.url, "http://localhost");
   securityHeaders(res);
   try {
     if (pathname.startsWith("/api/")) return await api(req, res, pathname);
-    if (req.method === "GET") return serveStatic(res, pathname);
+    if (req.method === "GET") return serveStatic(res, pathname, { SOURCE: await visitSource(req, pathname, searchParams) });
     send(res, 405, { error: "Method not allowed" });
   } catch (err) {
     if (err.status) return send(res, err.status, { error: err.message });
@@ -389,6 +428,7 @@ if (require.main === module) {
     if (!ai) console.log("No ANTHROPIC_API_KEY: replies use a canned demo template.");
     if (!stripe) console.log("No STRIPE_SECRET_KEY/STRIPE_PRICE_ID: upgrade button is disabled.");
     if (stripe && !WEBHOOK_SECRET) console.log("WARNING: STRIPE_WEBHOOK_SECRET is not set, so paid upgrades will never activate.");
+    if (!OWNER_EMAIL) console.log("No OWNER_EMAIL: the private /owner page is off.");
     if (SITE_DEFAULTS) console.log("WARNING: set COMPANY_NAME, CONTACT_EMAIL and GOVERNING_LAW before launch. The legal pages show placeholders until you do.");
 
     // Render's free plan sleeps the service after about 15 idle minutes, and the
@@ -397,7 +437,7 @@ if (require.main === module) {
     if (process.env.RENDER_EXTERNAL_URL && process.env.KEEP_AWAKE !== "off") {
       const self = process.env.RENDER_EXTERNAL_URL.replace(/\/$/, "");
       setInterval(() => {
-        fetch(`${self}/`, { signal: AbortSignal.timeout(30_000) })
+        fetch(`${self}/`, { signal: AbortSignal.timeout(30_000), headers: { "User-Agent": "replydesk-keepawake" } })
           .then((r) => console.log(`Keep-awake ping: HTTP ${r.status}`))
           .catch((err) => console.log(`Keep-awake ping failed: ${err.message}`));
       }, 10 * 60 * 1000).unref();

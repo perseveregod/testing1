@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Owner page · ReplyDesk</title>
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#f5f5f7">
+<link rel="stylesheet" href="/style.css">
+<style>
+  .owner-main { padding-block: 24px 64px; }
+  .owner-main h1 { font-size: clamp(28px, 4vw, 40px); margin-bottom: 6px; }
+  .owner-main h2 { font-size: 20px; margin: 36px 0 4px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 24px; }
+  .tile { padding: 16px 18px; }
+  .tile b { display: block; font-size: 30px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .tile span { color: var(--muted); font-size: 14px; }
+  .data-table td.num, .data-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .data-table td { white-space: nowrap; }
+  .data-table .zero { color: var(--muted); }
+  /* The ribbon artwork runs behind this page, so tables and notes get a solid backing. */
+  .owner-main .data-table { background: var(--surface); border-radius: 16px; padding: 4px 8px; width: fit-content; max-width: 100%; }
+  .owner-main .muted { color: var(--ink); opacity: .8; }
+</style>
+</head>
+<body>
+<div class="ribbons" aria-hidden="true"><img src="/ribbons.svg" alt=""></div>
+<div class="wrap">
+  <nav class="nav"><a class="logo" href="/"><i>★</i>ReplyDesk</a><span class="spacer"></span><a class="btn ghost small" href="/app">Open app</a></nav>
+  <main class="owner-main">
+    <p class="eyebrow">Owner page</p>
+    <h1>How ReplyDesk is doing</h1>
+    <p class="muted" id="status" role="status">Loading…</p>
+
+    <div id="content" hidden>
+      <div class="tiles" id="tiles"></div>
+
+      <h2>Last 14 days</h2>
+      <p class="muted small">Today is first. Bots, link previews and your own visits while logged in aren't counted.</p>
+      <table class="data-table" id="days"></table>
+
+      <h2>Where visitors came from</h2>
+      <p class="muted small">Same 14 days. A link ending in <code>?ref=email</code> shows up here as "email".</p>
+      <table class="data-table" id="sources"></table>
+
+      <h2>Accounts</h2>
+      <table class="data-table" id="accounts"></table>
+    </div>
+  </main>
+</div>
+<script src="/common.js"></script>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, text, cls) => { const e = document.createElement(tag); e.textContent = text; if (cls) e.className = cls; return e; };
+
+  // columns: [heading, value(row), isNumber]
+  function table(target, columns, rows, empty) {
+    target.replaceChildren();
+    const head = document.createElement("tr");
+    for (const [h, , num] of columns) head.append(el("th", h, num ? "num" : ""));
+    const thead = document.createElement("thead"); thead.append(head);
+    const tbody = document.createElement("tbody");
+    for (const r of rows) {
+      const tr = document.createElement("tr");
+      for (const [, value, num] of columns) {
+        const v = value(r);
+        tr.append(el("td", String(v), (num ? "num" : "") + (num && !Number(v) ? " zero" : "")));
+      }
+      tbody.append(tr);
+    }
+    if (!rows.length) {
+      const tr = document.createElement("tr");
+      const td = el("td", empty, "zero"); td.colSpan = columns.length;
+      tr.append(td); tbody.append(tr);
+    }
+    target.append(thead, tbody);
+  }
+
+  const dayLabel = (d) => new Date(d + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+  const dateLabel = (ms) => new Date(Number(ms)).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  const sum = (rows, k) => rows.reduce((n, r) => n + r[k], 0);
+
+  RD.api("/api/owner/stats").then((s) => {
+    $("status").hidden = true;
+    $("content").hidden = false;
+
+    const tiles = [
+      [s.totals.accounts, "accounts"],
+      [s.totals.paying, "paying"],
+      [sum(s.days, "home"), "home page visits, 14 days"],
+      [sum(s.days, "demo"), "demo replies, 14 days"],
+      [sum(s.days, "signup"), "sign-ups, 14 days"],
+    ];
+    $("tiles").replaceChildren(...tiles.map(([n, label]) => {
+      const t = document.createElement("div"); t.className = "tile card";
+      t.append(el("b", String(n)), el("span", label));
+      return t;
+    }));
+
+    const counts = [["Home page", (r) => r.home, true], ["App page", (r) => r.app, true], ["Demo replies", (r) => r.demo, true], ["Sign-ups", (r) => r.signup, true]];
+    table($("days"), [["Day", (r) => dayLabel(r.day)], ...counts], s.days, "");
+    table($("sources"), [["Source", (r) => r.source], ...counts], s.sources, "No visits counted yet.");
+    table($("accounts"), [
+      ["Email", (r) => r.email],
+      ["Plan", (r) => (r.plan === "pro" ? "Pro" : "Free")],
+      ["Joined", (r) => dateLabel(r.created_at)],
+      ["Came from", (r) => r.source || "not recorded"],
+      ["Replies this month", (r) => r.replies_this_month || 0, true],
+      ["Reviews saved", (r) => r.reviews || 0, true],
+    ], s.accounts, "No accounts yet.");
+  }).catch((err) => {
+    const s = $("status");
+    s.replaceChildren();
+    if (err.status === 401) {
+      const a = el("a", "Log in"); a.href = "/app#login";
+      s.append("This page is private. ", a, " with the owner account, then come back.");
+    } else if (err.status === 404) {
+      s.textContent = "This page isn't available for this account.";
+    } else {
+      s.textContent = "Couldn't load the numbers. Refresh to try again.";
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -46,6 +46,13 @@ CREATE TABLE IF NOT EXISTS usage (
   count INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (user_id, month)
 );
+CREATE TABLE IF NOT EXISTS events (
+  day TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  source TEXT NOT NULL,
+  count INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (day, kind, source)
+);
 `;
 
 async function init(client) {
@@ -54,6 +61,8 @@ async function init(client) {
   const cols = (await client.execute("PRAGMA table_info(users)")).rows.map((c) => c.name);
   if (!cols.includes("terms_accepted_at")) await client.execute("ALTER TABLE users ADD COLUMN terms_accepted_at INTEGER");
   if (!cols.includes("terms_version")) await client.execute("ALTER TABLE users ADD COLUMN terms_version TEXT");
+  // Migration: which link or site a new account came from (see lib/stats.js).
+  if (!cols.includes("source")) await client.execute("ALTER TABLE users ADD COLUMN source TEXT");
 }
 
 // Returns a client right away; schema setup runs in the background and every
@@ -81,11 +90,11 @@ function makeStore(db) {
   const batch = async (stmts) => { await db.ready; return db.batch(stmts.map(([sql, ...args]) => ({ sql, args })), "write"); };
 
   return {
-    async createUser(email, passwordHash, termsVersion = null) {
+    async createUser(email, passwordHash, termsVersion = null, source = null) {
       const now = Date.now();
       const [r] = await batch([
-        ["INSERT INTO users (email, password_hash, created_at, terms_accepted_at, terms_version) VALUES (?, ?, ?, ?, ?)",
-          email, passwordHash, now, termsVersion ? now : null, termsVersion],
+        ["INSERT INTO users (email, password_hash, created_at, terms_accepted_at, terms_version, source) VALUES (?, ?, ?, ?, ?, ?)",
+          email, passwordHash, now, termsVersion ? now : null, termsVersion, source],
         ["INSERT INTO businesses (user_id) VALUES (last_insert_rowid())"],
       ]);
       return Number(r.lastInsertRowid);
@@ -119,7 +128,7 @@ function makeStore(db) {
     },
     async exportData(userId) {
       return {
-        account: await get("SELECT email, plan, created_at, terms_accepted_at, terms_version FROM users WHERE id = ?", userId),
+        account: await get("SELECT email, plan, created_at, terms_accepted_at, terms_version, source FROM users WHERE id = ?", userId),
         business: await get("SELECT name, kind, tone, signoff, notes FROM businesses WHERE user_id = ?", userId),
         reviews: await all("SELECT reviewer, rating, body, reply, status, created_at FROM reviews WHERE user_id = ? ORDER BY created_at", userId),
         usage: await all("SELECT month, count FROM usage WHERE user_id = ? ORDER BY month", userId),
@@ -149,6 +158,15 @@ function makeStore(db) {
     usage: async (userId, month = monthKey()) => (await get("SELECT count FROM usage WHERE user_id = ? AND month = ?", userId, month))?.count ?? 0,
     addUsage: (userId, month = monthKey()) => run(`INSERT INTO usage (user_id, month, count) VALUES (?, ?, 1)
          ON CONFLICT(user_id, month) DO UPDATE SET count = count + 1`, userId, month),
+
+    // Anonymous totals for the owner page: one counter per day, kind and source.
+    countEvent: (day, kind, source) => run(`INSERT INTO events (day, kind, source, count) VALUES (?, ?, ?, 1)
+         ON CONFLICT(day, kind, source) DO UPDATE SET count = count + 1`, day, kind, source),
+    eventsSince: (day) => all("SELECT day, kind, source, count FROM events WHERE day >= ? ORDER BY day", day),
+    accounts: (month = monthKey()) => all(`SELECT users.email, users.plan, users.created_at, users.source,
+         (SELECT count FROM usage WHERE usage.user_id = users.id AND usage.month = ?) AS replies_this_month,
+         (SELECT COUNT(*) FROM reviews WHERE reviews.user_id = users.id) AS reviews
+       FROM users ORDER BY users.created_at DESC LIMIT 500`, month),
   };
 }
 

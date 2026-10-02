@@ -66,7 +66,7 @@
   }
 </style>
 </head>
-<body>
+<body data-src="{{SOURCE}}">
 <div class="ribbons" aria-hidden="true"><img src="/ribbons.svg" alt=""></div>
 <div class="wrap">
 
@@ -96,6 +96,7 @@
       <div class="meter" id="meter"><span id="meterText"></span><span class="bar"><i id="meterBar"></i></span></div>
       <button class="btn small" id="upgrade" hidden>Upgrade to Pro · $9/mo</button>
       <button class="btn ghost small" id="manage" hidden>Manage billing</button>
+      <a class="btn ghost small" id="ownerLink" href="/owner" hidden>Owner page</a>
       <button class="btn link small" id="logout">Log out</button>
     </div>
 
@@ -220,7 +221,7 @@
     $("authGo").disabled = true;
     try {
       state.me = await RD.api(mode === "signup" ? "/api/signup" : "/api/login", {
-        method: "POST", body: { email: $("email").value, password: $("password").value, agreeToTerms: mode === "signup" && $("consent").checked },
+        method: "POST", body: { email: $("email").value, password: $("password").value, agreeToTerms: mode === "signup" && $("consent").checked, ref: RD.src },
       });
       history.replaceState(null, "", "/app");
       await enterApp();
@@ -247,6 +248,7 @@
     $("upgrade").disabled = !billingEnabled;
     $("upgrade").title = billingEnabled ? "" : "Payments aren't set up on this server yet.";
     $("manage").hidden = !hasSubscription;
+    $("ownerLink").hidden = !state.me.owner;
     if (quota.plan === "pro") $("upgradePanel").hidden = true;
     $("acctEmail").textContent = state.me.email;
     $("bName").value = business.name;

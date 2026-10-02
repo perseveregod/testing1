@@ -1,5 +1,8 @@
 // Shared helpers for both pages.
 window.RD = {
+  // Which link or site this visit came from (set by the server; see lib/stats.js).
+  get src() { return document.body?.dataset.src || ""; },
+
   async api(path, opts = {}) {
     const res = await fetch(path, {
       method: opts.method || "GET",

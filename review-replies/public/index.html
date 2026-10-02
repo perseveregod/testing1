@@ -160,7 +160,7 @@
   }
 </style>
 </head>
-<body>
+<body data-src="{{SOURCE}}">
 <div class="ribbons" aria-hidden="true"><img src="/ribbons.svg" alt=""></div>
 <div class="wrap">
   <nav class="nav">
@@ -428,6 +428,14 @@
     revealables.forEach((el) => io.observe(el));
   } else revealables.forEach((el) => el.classList.add("in"));
 
+  // Carry the visit's source to the app, so a sign-up is counted against the link that brought it.
+  if (RD.src && RD.src !== "direct") {
+    for (const a of document.querySelectorAll('a[href^="/app"]')) {
+      const [page, hash] = a.getAttribute("href").split("#");
+      a.setAttribute("href", `${page}?ref=${encodeURIComponent(RD.src)}${hash ? "#" + hash : ""}`);
+    }
+  }
+
   if (new URLSearchParams(location.search).has("deleted")) {
     const n = document.createElement("p");
     n.setAttribute("role", "status");
@@ -454,7 +462,7 @@
     try {
       const { reply } = await RD.api("/api/demo-reply", {
         method: "POST",
-        body: { businessName: $("dBiz").value, reviewer: $("dName").value, rating: stars.get(), body: $("dBody").value },
+        body: { businessName: $("dBiz").value, reviewer: $("dName").value, rating: stars.get(), body: $("dBody").value, ref: RD.src },
       });
       $("dThink").hidden = true;
       $("demoOut").hidden = false;

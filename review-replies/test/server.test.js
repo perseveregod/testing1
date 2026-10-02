@@ -10,6 +10,7 @@ delete process.env.ANTHROPIC_API_KEY;
 process.env.STRIPE_SECRET_KEY = "sk_test_dummy";
 process.env.STRIPE_PRICE_ID = "price_dummy";
 process.env.STRIPE_WEBHOOK_SECRET = "whsec_dummy";
+process.env.OWNER_EMAIL = "boss@shop.co";
 const Stripe = require("stripe");
 const { server } = require("../server");
 
@@ -170,4 +171,41 @@ test("users can export and permanently delete their data", async () => {
   assert.strictEqual((await c("GET", "/api/me")).status, 401);
   const relog = await client()("POST", "/api/login", { email: "leaver@shop.co", password: "password123" });
   assert.strictEqual(relog.status, 401);
+});
+
+test("visits are counted by source, and only the owner sees the numbers", async () => {
+  const browser = { "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Safari/604.1" };
+  const home = await fetch(base + "/?ref=email", { headers: browser });
+  assert.match(await home.text(), /<body data-src="email">/);
+  await fetch(base + "/app?ref=email", { headers: browser });
+  const ig = await fetch(base + "/", { headers: { ...browser, referer: "https://l.instagram.com/?u=x" } });
+  assert.match(await ig.text(), /<body data-src="instagram">/);
+  await fetch(base + "/", { headers: { ...browser, referer: base + "/app" } }); // a click from our own page: not a new visit
+  await fetch(base + "/?ref=email"); // no browser user agent: a script, not a visitor
+  await fetch(base + "/style.css?ref=email", { headers: browser }); // only pages count
+
+  const visitor = client();
+  const joined = await visitor("POST", "/api/signup", { email: "new@shop.co", password: "password123", agreeToTerms: true, ref: "email" });
+  assert.strictEqual(joined.status, 201);
+  assert.strictEqual(joined.body.owner, false);
+  assert.strictEqual((await visitor("GET", "/api/owner/stats")).status, 404);
+  assert.strictEqual((await client()("GET", "/api/owner/stats")).status, 401);
+
+  const boss = client();
+  assert.strictEqual((await boss("POST", "/api/signup", { email: "Boss@shop.co", password: "password123", agreeToTerms: true })).body.owner, true);
+  // The owner looking at their own site while logged in is not a visit.
+  const login = await fetch(base + "/api/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: "boss@shop.co", password: "password123" }) });
+  await fetch(base + "/?ref=email", { headers: { ...browser, cookie: login.headers.get("set-cookie").split(";")[0] } });
+
+  await new Promise((r) => setTimeout(r, 100)); // counts are written in the background
+  const stats = (await boss("GET", "/api/owner/stats")).body;
+  const from = Object.fromEntries(stats.sources.map((x) => [x.source, x]));
+  assert.deepStrictEqual(from.email, { source: "email", home: 1, app: 1, demo: 0, signup: 1 });
+  assert.deepStrictEqual(from.instagram, { source: "instagram", home: 1, app: 0, demo: 0, signup: 0 });
+  assert.ok(from.direct.demo >= 1, "demo replies from the earlier test are counted");
+  assert.strictEqual(stats.days.length, 14);
+  assert.strictEqual(stats.days[0].home, 2);
+  assert.strictEqual(stats.accounts.find((a) => a.email === "new@shop.co").source, "email");
+  assert.strictEqual(stats.totals.accounts, stats.accounts.length);
+  assert.strictEqual((await fetch(base + "/owner")).status, 200);
 });
