@@ -1,0 +1,533 @@
+// Haven's words in English and Spanish. Plain data, no React: the client
+// store (lib/client/lang.ts) picks the language; `t` looks a word up.
+//
+// Houston is close to half Spanish-speaking, so Spanish is a first-class
+// language here, not an afterthought: every label, button and empty state has
+// both. Incident descriptions stay as people wrote them.
+
+export type Lang = "en" | "es";
+
+export const LANGS: Lang[] = ["en", "es"];
+
+export function isLang(v: unknown): v is Lang {
+  return v === "en" || v === "es";
+}
+
+/** [English, Spanish]. `{n}`-style slots are filled by `t`. */
+type Pair = readonly [string, string];
+
+const D = {
+  // ---- tabs ------------------------------------------------------------------
+  "nav.map": ["Map", "Mapa"],
+  "nav.feed": ["Feed", "Noticias"],
+  "nav.report": ["Report", "Reportar"],
+  "nav.safety": ["Safety", "Seguridad"],
+  "nav.events": ["Events", "Eventos"],
+  "nav.profile": ["Profile", "Perfil"],
+  "nav.main": ["Main", "Principal"],
+  "nav.reportIncident": ["Report an incident", "Reportar un incidente"],
+  "nav.reportStorm": ["Report power, flooding or an open place", "Reportar luz, inundación o lugar abierto"],
+  "nav.unread": [" unread alerts", " alertas sin leer"],
+  "nav.back": ["Back", "Atrás"],
+
+  // ---- shared ----------------------------------------------------------------
+  "common.continue": ["Continue", "Continuar"],
+  "common.skip": ["Skip", "Omitir"],
+  "common.notNow": ["Not now", "Ahora no"],
+  "common.maybeLater": ["Maybe later", "Quizás después"],
+  "common.getStarted": ["Get started", "Empezar"],
+  "common.tryAgain": ["Try again", "Intentar de nuevo"],
+  "common.retry": ["Retry", "Reintentar"],
+  "common.learnMore": ["Learn more", "Más información"],
+  "common.showMore": ["Show {n} more", "Ver {n} más"],
+  "common.edit": ["Edit", "Editar"],
+  "common.none": ["None", "Ninguno"],
+  "common.loading": ["Loading…", "Cargando…"],
+  "common.close": ["Close", "Cerrar"],
+  "common.share": ["Share", "Compartir"],
+  "common.details": ["Details", "Detalles"],
+  "common.less": ["Less", "Menos"],
+  "common.all": ["All", "Todo"],
+  "common.any": ["Any", "Cualquiera"],
+  "common.demo": ["Demo", "Demo"],
+  "common.live": ["Live", "En vivo"],
+  "common.turnOn": ["Turn on", "Activar"],
+  "common.turnOff": ["Turn off", "Desactivar"],
+  "common.install": ["Install", "Instalar"],
+  "common.showMeHow": ["Show me how", "Ver cómo"],
+  "common.step": ["Step {n}", "Paso {n}"],
+  "common.done": ["done", "listo"],
+  "common.useMyLocation": ["Use my location", "Usar mi ubicación"],
+  "common.locateMe": ["Locate me", "Ubicarme"],
+  "common.language": ["Language", "Idioma"],
+  "common.lifetime": ["Lifetime", "De por vida"],
+  "common.opensSite": ["Opens another site", "Abre otro sitio"],
+  "common.linkCopied": ["Link copied", "Enlace copiado"],
+  "common.shareFailed": ["Couldn't share this link", "No se pudo compartir el enlace"],
+  "common.mi": ["{n} mi", "{n} mi"],
+  "common.lifetimeFeature": ["Lifetime feature", "Función de por vida"],
+
+  // ---- emergency / demo notes -----------------------------------------------
+  "emergency.inline": ["Emergency? Call {n}. Haven doesn't contact emergency services.", "¿Emergencia? Llame al {n}. Haven no contacta a los servicios de emergencia."],
+  "emergency.inlineLead": ["Emergency? Call ", "¿Emergencia? Llame al "],
+  "emergency.inlineTail": [". Haven doesn't contact emergency services.", ". Haven no contacta a los servicios de emergencia."],
+  "emergency.block": ["In an emergency, call {n}. Haven doesn't contact emergency services.", "En una emergencia, llame al {n}. Haven no contacta a los servicios de emergencia."],
+  "demo.lead": ["Demo data.", "Datos de demostración."],
+  "demo.body": [" These are fictional examples, not real events.", " Son ejemplos ficticios, no eventos reales."],
+  "demo.title": ["Fictional example, not a real event", "Ejemplo ficticio, no un evento real"],
+
+  // ---- welcome ---------------------------------------------------------------
+  "welcome.1.title": ["Know what's happening around you", "Sepa qué pasa a su alrededor"],
+  "welcome.1.body": ["A live map of Houston fire, EMS and police dispatches, plus what neighbors report. Updated every few minutes.", "Un mapa en vivo de los despachos de bomberos, ambulancias y policía de Houston, más lo que reportan los vecinos. Se actualiza cada pocos minutos."],
+  "welcome.2.title": ["Report what you see, safely", "Reporte lo que ve, con seguridad"],
+  "welcome.2.body": ["Share from a safe distance. Haven shows only the block, never your exact spot, and removes names and personal details.", "Comparta desde una distancia segura. Haven muestra solo la cuadra, nunca su ubicación exacta, y quita nombres y datos personales."],
+  "welcome.3.title": ["See what's near you", "Vea qué hay cerca de usted"],
+  "welcome.3.body": ["Allow location to see distances and what's closest. It stays on your device; Haven only uses it to sort and alert.", "Permita la ubicación para ver distancias y lo más cercano. Se queda en su teléfono; Haven solo la usa para ordenar y avisar."],
+  "welcome.alert.title": ["Hear about it first", "Entérese primero"],
+  "welcome.alert.body": ["Alerts for incidents near your places, even when Haven is closed. Only what's near you, never a feed of everything.", "Alertas de incidentes cerca de sus lugares, aun con Haven cerrado. Solo lo que está cerca de usted, nunca todo."],
+  "welcome.install.title": ["Put Haven on your Home Screen", "Ponga Haven en su pantalla de inicio"],
+  "welcome.install.body": ["Full screen, faster, and the only way iPhone lets a web app notify you. Ten seconds, from the Share button.", "Pantalla completa, más rápido, y la única forma en que iPhone deja que una app web le avise. Diez segundos, desde el botón Compartir."],
+  "welcome.note": ["Haven doesn't contact emergency services. If someone is in danger, call {n}.", "Haven no contacta a los servicios de emergencia. Si alguien está en peligro, llame al {n}."],
+  "welcome.turnOnAlerts": ["Turn on alerts", "Activar alertas"],
+  "welcome.houston": ["Made in Houston, for Houston. From the Heights to Pearland.", "Hecho en Houston, para Houston. De los Heights a Pearland."],
+
+  // ---- map -------------------------------------------------------------------
+  "map.search": ["Search Houston", "Buscar en Houston"],
+  "map.quickFilters": ["Quick filters", "Filtros rápidos"],
+  "map.filters": ["Filters", "Filtros"],
+  "map.allFilters": ["All filters", "Todos los filtros"],
+  "map.filtersActive": ["{n} active", "{n} activos"],
+  "map.style": ["Map style", "Estilo del mapa"],
+  "map.north": ["Point the map north", "Orientar al norte"],
+  "map.center": ["Center on my location", "Centrar en mi ubicación"],
+  "map.prepare": ["Prepare", "Prepárese"],
+  "map.pinTip": ["Tap a pin to see what's happening", "Toque un pin para ver qué pasa"],
+  "map.toSpanish": ["Cambiar a español", "Cambiar a español"],
+  "map.toEnglish": ["Switch to English", "Switch to English"],
+  "map.group.police": ["Police", "Policía"],
+  "map.group.fire": ["Fire", "Incendios"],
+  "map.group.medical": ["Medical", "Médico"],
+  "map.group.traffic": ["Traffic", "Tráfico"],
+  "map.group.weather": ["Weather", "Clima"],
+  "map.group.other": ["Other", "Otros"],
+
+  // ---- nearby peek -----------------------------------------------------------
+  "near.active": ["{n} active incidents", "{n} incidentes activos"],
+  "near.active1": ["1 active incident", "1 incidente activo"],
+  "near.withinYou": ["Within {n} mi of you", "A menos de {n} mi de usted"],
+  "near.hoodWithin": ["{hood} · within {n} mi", "{hood} · a menos de {n} mi"],
+  "near.quietIn": ["All quiet in {hood}", "Todo tranquilo en {hood}"],
+  "near.hoodNow": ["{hood} right now", "{hood} ahora mismo"],
+  "fresh.checked": ["Feeds checked {t}", "Fuentes revisadas {t}"],
+  "fresh.stale": ["Feeds last checked {t}", "Fuentes revisadas por última vez {t}"],
+  "fresh.short": ["checked {t}", "revisado {t}"],
+  "fresh.shortStale": ["last checked {t}", "última revisión {t}"],
+  "near.withinCenter": ["Within {n} mi of central Houston", "A menos de {n} mi del centro de Houston"],
+  "near.loadError": ["Couldn't load incidents · Retry", "No se cargaron los incidentes · Reintentar"],
+  "near.seeAll": ["See everything nearby", "Ver todo lo cercano"],
+  "near.from": ["{d} from {place}", "a {d} de {place}"],
+  "near.stormNone": ["No storm reports yet", "Sin reportes de tormenta"],
+  "near.stormCount": ["{n} storm reports", "{n} reportes de tormenta"],
+  "near.stormCount1": ["1 storm report", "1 reporte de tormenta"],
+  "near.stormHint": ["Tap ⚡ to report power, flooding or an open place", "Toque ⚡ para reportar luz, inundación o un lugar abierto"],
+  "near.stormWindow": ["Last 6 hours", "Últimas 6 h"],
+
+  // ---- feed ------------------------------------------------------------------
+  "feed.title": ["Near you", "Cerca de usted"],
+  "feed.filters": ["Feed filters", "Filtros"],
+  "feed.nearby": ["Nearby", "Cercanos"],
+  "feed.newest": ["Newest", "Recientes"],
+  "feed.showingCentral": ["Showing central Houston", "Mostrando el centro de Houston"],
+  "feed.locationOff": [" · location is off in settings", " · la ubicación está apagada en ajustes"],
+  "feed.last24": [" · last 24h", " · últimas 24 h"],
+  "feed.live": ["Live", "En vivo"],
+  "feed.delayed": ["Delayed", "Con retraso"],
+  "feed.liveHint": ["Updates on its own", "Se actualiza solo"],
+  "map.newNearby": ["New", "Nuevo"],
+  "feed.newOne": ["1 new", "1 nuevo"],
+  "feed.newMany": ["{n} new", "{n} nuevos"],
+  "feed.quiet": ["All quiet nearby", "Todo tranquilo por aquí"],
+  "feed.quietCategory": ["No incidents in this category in the last 24 hours.", "No hay incidentes de este tipo en las últimas 24 horas."],
+  "feed.quietAll": ["Nothing has been reported around here in the last 24 hours.", "No se ha reportado nada por aquí en las últimas 24 horas."],
+  "feed.explore": ["Explore the map", "Explorar el mapa"],
+  "feed.freeNote": ["Showing 24 hours. Lifetime keeps 90 days.", "Se muestran 24 horas. De por vida guarda 90 días."],
+  "feed.liveNow": ["Live now", "Ahora mismo"],
+  "feed.earlierToday": ["Earlier today", "Hoy, más temprano"],
+  "feed.yesterday": ["Yesterday", "Ayer"],
+  "feed.older": ["Older", "Anteriores"],
+  "feed.happeningNow": ["Happening now", "Está pasando ahora"],
+  "feed.active": ["{n} active", "{n} activos"],
+
+  // ---- incident rows / badges ------------------------------------------------
+  "inc.ended": ["Ended", "Terminó"],
+  "inc.approx": ["Approximate location", "Ubicación aproximada"],
+  "inc.saw": ["{n} people saw this", "{n} personas lo vieron"],
+  "inc.saw1": ["1 person saw this", "1 persona lo vio"],
+  "inc.active": ["Active", "Activo"],
+  "inc.contained": ["Contained", "Contenido"],
+  "inc.underReview": ["Under review", "En revisión"],
+  "inc.community": ["Community", "Comunidad"],
+  "inc.communityConfirmed": ["Community · confirmed", "Comunidad · confirmado"],
+  "inc.official": ["Official", "Oficial"],
+  "inc.demoData": ["Demo data", "Datos de demostración"],
+  "inc.unverified": ["Unverified report", "Reporte sin verificar"],
+  "inc.confirmedByNeighbors": ["Confirmed by neighbors", "Confirmado por vecinos"],
+  "inc.sev.low": ["Low", "Baja"],
+  "inc.sev.moderate": ["Moderate", "Moderada"],
+  "inc.sev.high": ["High", "Alta"],
+  "inc.sev.critical": ["Critical", "Crítica"],
+  "inc.away": ["{d} away", "a {d}"],
+  "inc.confirmedCount": ["{n} confirmed", "{n} confirmaron"],
+  "inc.iSeeIt": ["I see it", "Lo veo"],
+  "inc.youSawIt": ["You saw it", "Lo vio"],
+  "inc.confirmHint": ["Confirm you see this too", "Confirme que usted también lo ve"],
+  "inc.confirmed": ["Confirmed", "Confirmado"],
+  "inc.closePreview": ["Close preview", "Cerrar vista previa"],
+  "inc.showMore": ["Show more", "Ver más"],
+  "inc.showLess": ["Show less", "Ver menos"],
+  "inc.reported": ["Reported", "Reportado"],
+  "inc.source": ["Source", "Fuente"],
+  "inc.timeline": ["Timeline", "Cronología"],
+  "inc.openPage": ["Open full page", "Abrir página completa"],
+  "inc.photoAlt": ["Photo from the person who reported this", "Foto de quien lo reportó"],
+  "inc.thanksConfirm": ["Thanks. Your confirmation helps others.", "Gracias. Su confirmación ayuda a otros."],
+  "inc.alreadyConfirmed": ["You already confirmed this.", "Ya lo había confirmado."],
+  "inc.detailsOf": ["{t} details", "Detalles: {t}"],
+  "inc.unavailable": ["Incident unavailable", "Incidente no disponible"],
+  "inc.backToFeed": ["Back to feed", "Volver a noticias"],
+  "inc.location": ["Location", "Ubicación"],
+  "inc.distance": ["Distance", "Distancia"],
+  "inc.fromYou": ["{d} from you", "a {d} de usted"],
+  "inc.locationOff": ["Location off", "Ubicación apagada"],
+  "inc.lastUpdate": ["Last update", "Actualizado"],
+  "inc.confirmedBy": ["Confirmed by", "Confirmado"],
+  "inc.noOneYet": ["No one yet", "Nadie todavía"],
+  "inc.peopleNearby": ["{n} people nearby", "{n} personas cercanas"],
+  "inc.personNearby": ["1 person nearby", "1 persona cercana"],
+  "inc.yours": ["Yours", "Suyo"],
+  "inc.itsOver": ["It's over", "Ya terminó"],
+  "inc.marked": ["Marked", "Marcado"],
+  "inc.addInfo": ["Add info", "Agregar info"],
+  "inc.reportProblem": ["Report a problem", "Reportar un problema"],
+  "inc.reportedProblem": ["You reported a problem", "Reportó un problema"],
+  "inc.thanksNeighbors": ["Thanks. Your neighbors will see it was confirmed.", "Gracias. Sus vecinos verán que fue confirmado."],
+  "inc.thanksStatus": ["Thanks. We'll update the status.", "Gracias. Actualizaremos el estado."],
+  "inc.mapAlt": ["Map showing the approximate location: {a}", "Mapa con la ubicación aproximada: {a}"],
+  "inc.firstReported": ["First reported", "Primer reporte"],
+  "inc.step.reported": ["Reported", "Reporte"],
+  "inc.step.responding": ["Responding", "En ruta"],
+  "inc.step.contained": ["Contained", "Contenido"],
+  "inc.step.cleared": ["Cleared", "Resuelto"],
+  "inc.status": ["Status", "Estado"],
+  "inc.who.you": ["You", "Usted"],
+  "inc.who.community": ["Someone nearby", "Alguien cercano"],
+  "inc.who.source": ["Source", "Fuente"],
+  "inc.who.system": ["Haven", "Haven"],
+  "inc.addInformation": ["Add information", "Agregar información"],
+  "inc.updatePlaceholder": ["e.g. Two lanes now open, traffic moving slowly", "p. ej. Ya hay dos carriles abiertos, el tráfico avanza lento"],
+  "inc.updateAdded": ["Update added. Thank you.", "Actualización agregada. Gracias."],
+  "inc.updateRedacted": ["Update added. Personal details were removed.", "Actualización agregada. Se quitaron datos personales."],
+  "inc.sending": ["Sending…", "Enviando…"],
+  "inc.flag.duplicate": ["Duplicate of another incident", "Duplicado de otro incidente"],
+  "inc.flag.personal": ["Contains personal information", "Contiene información personal"],
+  "inc.flag.offensive": ["Offensive, harassing or discriminatory", "Ofensivo, acosador o discriminatorio"],
+  "inc.flag.other": ["Something else", "Otra cosa"],
+  "inc.unread": ["Unread", "Sin leer"],
+
+  // ---- safety ----------------------------------------------------------------
+  "safety.title": ["Safety", "Seguridad"],
+  "safety.walk": ["Safe Walk", "Camino seguro"],
+  "safety.walkOn": ["Safe Walk in progress", "Camino seguro en curso"],
+  "safety.walkMissed": ["Check-in missed", "Faltó el aviso"],
+  "safety.walkMissedBody": ["Tap to say you're OK or alert your contacts.", "Toque para decir que está bien o avisar a sus contactos."],
+  "safety.walkUntil": ["{t} until your check-in", "{t} para su aviso"],
+  "safety.walkBody": ["Walking alone? Set a check-in timer and let someone you trust know.", "¿Camina solo? Ponga un temporizador y avise a alguien de confianza."],
+  "safety.nearby": ["Nearby right now", "Cerca ahora mismo"],
+  "safety.window": ["{n} mi · 24 h", "{n} mi · 24 h"],
+  "safety.quiet": ["All quiet within 5 miles", "Todo tranquilo en 5 millas"],
+  "safety.quietBody": ["Nothing active in the last 24 hours. Official feeds and neighbor reports are checked continuously.", "Nada activo en las últimas 24 horas. Las fuentes oficiales y los reportes de vecinos se revisan continuamente."],
+  "safety.activeWithin": ["active · {n} mi", "activos · {n} mi"],
+  "safety.seeAll": ["See everything nearby", "Ver todo lo cercano"],
+  "safety.pets": ["Missing pets nearby", "Mascotas perdidas cerca"],
+  "safety.postPet": ["Post a lost or found pet", "Publicar mascota perdida o encontrada"],
+  "safety.noPets": ["No missing pets reported within 5 miles.", "No hay mascotas perdidas reportadas en 5 millas."],
+  "safety.resources": ["Official resources", "Recursos oficiales"],
+  "safety.resourcesNote": ["Haven links to these agencies and does not re-host their data. Missing-person reports go through the official bulletins, never Haven, to protect people who may not want to be found.", "Haven enlaza a estas agencias y no copia sus datos. Los reportes de personas desaparecidas van por los boletines oficiales, nunca por Haven, para proteger a quienes quizás no quieran ser encontrados."],
+
+  // ---- alerts ----------------------------------------------------------------
+  "alerts.title": ["Alerts", "Alertas"],
+  "alerts.markAll": ["Mark all read", "Marcar todo leído"],
+  "alerts.section": ["Alerts section", "Sección de alertas"],
+  "alerts.inbox": ["Inbox", "Bandeja"],
+  "alerts.settings": ["Settings", "Ajustes"],
+  "alerts.nothingYet": ["Nothing to report yet", "Nada que reportar aún"],
+  "alerts.none": ["No alerts yet", "Aún no hay alertas"],
+  "alerts.coveredBody": ["You're covered. When something happens inside your radius, it shows up here.", "Está cubierto. Cuando pase algo dentro de su radio, aparecerá aquí."],
+  "alerts.setupBody": ["Alerts only arrive for places you choose. Set one up in under a minute.", "Las alertas solo llegan para los lugares que elija. Configure uno en menos de un minuto."],
+  "alerts.chooseWhere": ["Choose where", "Elija dónde"],
+  "alerts.savedPlaces": ["{n} saved places", "{n} lugares guardados"],
+  "alerts.savedPlace1": ["1 saved place", "1 lugar guardado"],
+  "alerts.currentArea": ["Your current area", "Su zona actual"],
+  "alerts.chooseWhereBody": ["Save Home, Work or School, or use your current area", "Guarde Casa, Trabajo o Escuela, o use su zona actual"],
+  "alerts.setRadius": ["Set a radius", "Elija un radio"],
+  "alerts.radiusAround": ["{n} mi around each place", "{n} mi alrededor de cada lugar"],
+  "alerts.radiusBody": ["How far around each place to watch", "Qué tan lejos vigilar alrededor de cada lugar"],
+  "alerts.getAlerted": ["Get alerted", "Reciba alertas"],
+  "alerts.getAlertedOn": ["New incidents inside your radius land here.", "Los incidentes nuevos dentro de su radio llegan aquí."],
+  "alerts.getAlertedOff": ["Alerts arrive here once a place is set.", "Las alertas llegan aquí cuando configure un lugar."],
+  "alerts.addPlace": ["Add a saved place", "Agregar un lugar"],
+  "alerts.incident": ["Incident alerts", "Alertas de incidentes"],
+  "alerts.incidentBody": ["New incidents in your area", "Incidentes nuevos en su zona"],
+  "alerts.nearMe": ["Near my current location", "Cerca de mi ubicación actual"],
+  "alerts.nearMeBody": ["Shares an approximate (~1 km) location while on. Turning it off deletes it.", "Comparte una ubicación aproximada (~1 km) mientras está activo. Al apagarlo se borra."],
+  "alerts.nearPlaces": ["Near my saved places", "Cerca de mis lugares guardados"],
+  "alerts.noPlaces": ["No saved places yet", "Aún no hay lugares guardados"],
+  "alerts.criticalOnly": ["Critical only", "Solo críticas"],
+  "alerts.criticalOnlyBody": ["Major fires, evacuations, severe weather warnings", "Incendios grandes, evacuaciones, avisos de clima severo"],
+  "alerts.radius": ["Alert radius", "Radio de alerta"],
+  "alerts.freeRadius": ["Free covers up to {n} miles. ", "Gratis cubre hasta {n} millas. "],
+  "alerts.lifetimeRadius": ["Lifetime goes to 25.", "De por vida llega a 25."],
+  "alerts.categories": ["Categories", "Categorías"],
+  "alerts.quiet": ["Quiet hours", "Horas de silencio"],
+  "alerts.quietLifetime": ["Part of Haven Lifetime.", "Parte de Haven de por vida."],
+  "alerts.quietLabel": ["Only critical alerts overnight", "Solo alertas críticas de noche"],
+  "alerts.quietBody": ["Everything else waits in your inbox", "Todo lo demás espera en su bandeja"],
+  "alerts.from": ["From", "Desde"],
+  "alerts.until": ["Until", "Hasta"],
+  "alerts.places": ["Saved places", "Lugares guardados"],
+  "alerts.placesBody": ["Home, Work, School and more", "Casa, Trabajo, Escuela y más"],
+  "push.on": ["Push notifications are on", "Las notificaciones están activadas"],
+  "push.onBody": ["Alerts reach this device even when Haven is closed.", "Las alertas llegan a este dispositivo aun con Haven cerrado."],
+  "push.devices": [" {n} devices in total.", " {n} dispositivos en total."],
+  "push.off": ["Push notifications", "Notificaciones"],
+  "push.offBody": ["Get alerts on this device even when Haven is closed. Only incidents near your places, nothing else.", "Reciba alertas en este dispositivo aun con Haven cerrado. Solo incidentes cerca de sus lugares, nada más."],
+  "push.install": ["Add Haven to your Home Screen", "Agregue Haven a su pantalla de inicio"],
+  "push.installBody": ["On iPhone, notifications only work from the Home Screen. Takes ten seconds.", "En iPhone, las notificaciones solo funcionan desde la pantalla de inicio. Toma diez segundos."],
+  "push.setup": ["Push is being set up", "Las notificaciones se están configurando"],
+  "push.setupBody": ["Alerts show in this inbox for now. Device notifications switch on once the push keys are configured.", "Por ahora las alertas aparecen en esta bandeja. Las notificaciones se activarán cuando se configuren las llaves."],
+  "push.denied": ["Notifications are blocked", "Las notificaciones están bloqueadas"],
+  "push.deniedBody": ["You said no in the browser prompt. To change it: Settings › Haven › Notifications. Alerts still land in this inbox.", "Dijo que no en el aviso del navegador. Para cambiarlo: Ajustes › Haven › Notificaciones. Las alertas siguen llegando a esta bandeja."],
+  "push.unsupported": ["Device notifications", "Notificaciones del dispositivo"],
+  "push.unsupportedBody": ["This browser can't show notifications. Alerts still land in this inbox.", "Este navegador no puede mostrar notificaciones. Las alertas siguen llegando a esta bandeja."],
+  "push.sendTest": ["Send a test", "Enviar prueba"],
+  "push.turnOffDevice": ["Turn off on this device", "Desactivar en este dispositivo"],
+  "push.testSent": ["Sent. It should arrive in a moment.", "Enviada. Debería llegar en un momento."],
+  "push.testFailed": ["Nothing sent. Try turning push off and on.", "No se envió nada. Pruebe desactivar y activar."],
+
+  // ---- install ---------------------------------------------------------------
+  "install.title": ["Add Haven to your Home Screen", "Agregue Haven a su pantalla de inicio"],
+  "install.body": ["Haven runs as an app from your Home Screen: full screen, faster, and it can notify you even when it's closed.", "Haven funciona como app desde su pantalla de inicio: pantalla completa, más rápido, y puede avisarle aun cuando esté cerrada."],
+  "install.1": ["Tap the Share button", "Toque el botón Compartir"],
+  "install.1b": ["The square with an arrow at the bottom of Safari.", "El cuadro con una flecha en la parte de abajo de Safari."],
+  "install.2": ["Choose “Add to Home Screen”", "Elija “Agregar a pantalla de inicio”"],
+  "install.2b": ["Scroll the list a little if you don't see it.", "Deslice un poco la lista si no lo ve."],
+  "install.3": ["Open Haven from the Home Screen", "Abra Haven desde la pantalla de inicio"],
+  "install.3b": ["Then come back to Alerts and turn on notifications.", "Luego vuelva a Alertas y active las notificaciones."],
+  "install.row": ["Full screen, faster, and alerts even when it's closed", "Pantalla completa, más rápido, y alertas aun cuando esté cerrada"],
+
+  // ---- profile ---------------------------------------------------------------
+  "profile.title": ["Profile", "Perfil"],
+  "profile.guest": ["Guest", "Invitado"],
+  "profile.signedIn": ["Signed in with email", "Sesión iniciada con correo"],
+  "profile.private": ["Private account on this device", "Cuenta privada en este dispositivo"],
+  "profile.signIn": ["Sign in", "Iniciar sesión"],
+  "profile.signOut": ["Sign out", "Cerrar sesión"],
+  "profile.signedOut": ["Signed out. You're now browsing as a guest.", "Sesión cerrada. Ahora navega como invitado."],
+  "profile.lifetime": ["Haven Lifetime", "Haven de por vida"],
+  "profile.lifetimeBody": ["Paid once. Everything unlocked, for good.", "Un solo pago. Todo desbloqueado, para siempre."],
+  "profile.getLifetime": ["Get Haven Lifetime", "Obtener Haven de por vida"],
+  "profile.getLifetimeBody": ["One payment, no subscription", "Un solo pago, sin suscripción"],
+  "profile.alerts": ["Alerts", "Alertas"],
+  "profile.unread": ["{n} unread", "{n} sin leer"],
+  "profile.alertsBody": ["Inbox and alert settings", "Bandeja y ajustes de alertas"],
+  "profile.insights": ["Area insights", "Tendencias de la zona"],
+  "profile.insights30": ["30-day trends near you and your places", "Tendencias de 30 días cerca de usted y sus lugares"],
+  "profile.insights7": ["7-day trends · 30 days with Lifetime", "Tendencias de 7 días · 30 días con De por vida"],
+  "profile.language": ["Language", "Idioma"],
+  "profile.languageBody": ["Haven in English or Spanish", "Haven en inglés o español"],
+  "profile.about": ["About", "Acerca de"],
+  "profile.how": ["How Haven works", "Cómo funciona Haven"],
+  "profile.howBody": ["Where the info comes from, what Haven doesn't do", "De dónde sale la información y qué no hace Haven"],
+  "profile.guidelines": ["Safety & community guidelines", "Normas de seguridad y comunidad"],
+  "profile.privacy": ["Privacy", "Privacidad"],
+  "profile.footer": ["Haven · community safety information, not an emergency service", "Haven · información de seguridad comunitaria, no un servicio de emergencia"],
+  "profile.madeIn": ["Made in Houston", "Hecho en Houston"],
+  "profile.reports": ["Your reports", "Sus reportes"],
+  "profile.reportsFooter": ["Showing the last 24 hours.", "Se muestran las últimas 24 horas."],
+  "profile.noReports": ["Nothing reported in the last 24 hours", "Nada reportado en las últimas 24 horas"],
+  "profile.merged": [" · added to an existing report", " · agregado a un reporte existente"],
+  "profile.confirmedN": ["{n} confirmed", "{n} confirmaron"],
+  "profile.sources": ["Data sources", "Fuentes de datos"],
+
+  // ---- report flow -----------------------------------------------------------
+  "report.step1": ["What's happening?", "¿Qué está pasando?"],
+  "report.step2": ["Where is it?", "¿Dónde es?"],
+  "report.step3": ["Add details", "Agregue detalles"],
+  "report.step4": ["Review", "Revisar"],
+  "report.stepOf": ["Step {n} of 4", "Paso {n} de 4"],
+  "report.prev": ["Previous step", "Paso anterior"],
+  "report.cancel": ["Cancel report", "Cancelar reporte"],
+  "report.safeOnly": ["Report only what you can see from a safe place.", "Reporte solo lo que pueda ver desde un lugar seguro."],
+  "report.mapLabel": ["Map to choose the incident location. Drag to move the pin.", "Mapa para elegir la ubicación. Arrastre para mover el pin."],
+  "report.approx": ["Approximate location", "Ubicación aproximada"],
+  "report.finding": ["Finding street…", "Buscando la calle…"],
+  "report.nearPin": ["Near the pin", "Cerca del pin"],
+  "report.enableLocation": ["Enable location", "Activar ubicación"],
+  "report.rounded": ["Rounded to about 100 m. Your exact position is never shared.", "Se redondea a unos 100 m. Su posición exacta nunca se comparte."],
+  "report.confirmLocation": ["Confirm location", "Confirmar ubicación"],
+  "report.describe": ["Describe what you see", "Describa lo que ve"],
+  "report.tip1": ["What, where, how many vehicles or crews", "Qué, dónde, cuántos vehículos o unidades"],
+  "report.tip2": ["Names, faces, plates, phone numbers, addresses", "Nombres, caras, placas, teléfonos, direcciones"],
+  "report.tip3": ["Describing anyone by race or ethnicity", "Describir a alguien por su raza o etnia"],
+  "report.category": ["Category", "Categoría"],
+  "report.location": ["Location", "Ubicación"],
+  "report.details": ["Details", "Detalles"],
+  "report.nearPinPlaced": ["Near the pin you placed", "Cerca del pin que colocó"],
+  "report.similar": ["A similar report is already nearby. Yours will be added to it as a confirmation instead of creating a duplicate.", "Ya hay un reporte parecido cerca. El suyo se agregará como confirmación en vez de crear un duplicado."],
+  "report.anon": ["Reports are anonymous to other people. Personal details are removed automatically. False reports can be flagged and hidden.", "Los reportes son anónimos para los demás. Los datos personales se quitan automáticamente. Los reportes falsos se pueden marcar y ocultar."],
+  "report.submit": ["Submit report", "Enviar reporte"],
+  "report.merged": ["Added to an existing report", "Agregado a un reporte existente"],
+  "report.shared": ["Report shared", "Reporte compartido"],
+  "report.mergedBody": ["Someone already reported this. Yours counts as a confirmation and helps others trust it.", "Alguien ya lo reportó. El suyo cuenta como confirmación y ayuda a que otros confíen."],
+  "report.sharedBody": ["People nearby can now see it. You can add updates or mark it as ended from the incident page.", "La gente cercana ya puede verlo. Puede agregar actualizaciones o marcarlo como terminado desde la página del incidente."],
+  "report.redacted": ["We removed some personal details from your description.", "Quitamos algunos datos personales de su descripción."],
+  "report.view": ["View incident", "Ver incidente"],
+  "report.backToMap": ["Back to map", "Volver al mapa"],
+
+  // ---- filters & layers ------------------------------------------------------
+  "filter.title": ["Filters", "Filtros"],
+  "filter.categories": ["Categories", "Categorías"],
+  "filter.time": ["Time range", "Periodo"],
+  "filter.severity": ["Minimum severity", "Gravedad mínima"],
+  "filter.showEnded": ["Show ended incidents", "Mostrar incidentes terminados"],
+  "filter.confirmedOnly": ["Confirmed or official only", "Solo confirmados u oficiales"],
+  "filter.confirmedOnlyBody": ["Hide reports nobody else has confirmed", "Ocultar reportes que nadie más confirmó"],
+  "filter.hours": ["{n}h", "{n} h"],
+  "filter.days": ["{n}d", "{n} d"],
+  "layers.title": ["Map style", "Estilo del mapa"],
+  "layers.view": ["View", "Vista"],
+  "layers.flat": ["Flat map", "Mapa plano"],
+  "layers.3d": ["3D buildings", "Edificios 3D"],
+  "layers.auto": ["Automatic", "Automático"],
+  "layers.autoBody": ["Day map in daylight, night map after dark", "Mapa de día con luz, de noche al oscurecer"],
+  "layers.night": ["Night", "Noche"],
+  "layers.nightBody": ["Dark map, easy on the eyes", "Mapa oscuro, descansa la vista"],
+  "layers.day": ["Day", "Día"],
+  "layers.dayBody": ["Bright streets, parks and water", "Calles, parques y agua con luz"],
+  "layers.satellite": ["Satellite", "Satélite"],
+  "layers.satelliteBody": ["Aerial photos with street labels", "Fotos aéreas con nombres de calles"],
+  "layers.satelliteKey": ["Needs a MapTiler key in Vercel", "Necesita una llave de MapTiler en Vercel"],
+  "layers.cameras": ["License plate readers", "Lectores de placas"],
+  "layers.camerasBody": ["Flock and other ALPR cameras mapped by volunteers on OpenStreetMap", "Cámaras Flock y otras ALPR mapeadas por voluntarios en OpenStreetMap"],
+  "layers.cameraAlerts": ["Alert me near plate readers", "Avisarme cerca de lectores de placas"],
+  "layers.cameraAlertsBody": ["While Haven is open: a buzz and a banner within about 800 ft of a camera", "Con Haven abierto: una vibración y un aviso a unos 250 m de una cámara"],
+
+  // ---- time ------------------------------------------------------------------
+  "time.justNow": ["just now", "ahora mismo"],
+  "time.min": ["{n} min ago", "hace {n} min"],
+  "time.hr": ["{n} hr ago", "hace {n} h"],
+  "time.day": ["{n}d ago", "hace {n} d"],
+} as const satisfies Record<string, Pair>;
+
+export type Key = keyof typeof D;
+
+type Vars = Record<string, string | number>;
+
+function fill(s: string, vars?: Vars): string {
+  if (!vars) return s;
+  return s.replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? String(vars[k]) : m));
+}
+
+/** The word for `key` in `lang`, with `{slots}` filled from `vars`. */
+export function t(lang: Lang, key: Key, vars?: Vars): string {
+  const pair = D[key];
+  return fill(lang === "es" ? pair[1] : pair[0], vars);
+}
+
+/** Pick the English or Spanish of an inline pair. */
+export function pick(lang: Lang, en: string, es: string): string {
+  return lang === "es" ? es : en;
+}
+
+// ---- timeline entries ---------------------------------------------------------
+
+const STATUS_ES: Record<string, string> = { active: "activo", contained: "contenido", resolved: "terminado", under_review: "en revisión" };
+
+/**
+ * Timeline lines are written by the server in English from a few templates.
+ * Translate the template, keep anything a person wrote (the quoted part).
+ */
+export function updateBody(body: string, lang: Lang): string {
+  if (lang !== "es") return body;
+  let m: RegExpMatchArray | null;
+  if ((m = body.match(/^Reported by (.+)\.$/))) return `Reportado por ${m[1]}.`;
+  if (body === "Source reports this has ended.") return "La fuente informa que esto terminó.";
+  if ((m = body.match(/^Source updated status to (\w+)\.$/))) return `La fuente cambió el estado a ${STATUS_ES[m[1]!] ?? m[1]}.`;
+  if (body === "No longer listed as active by the source.") return "La fuente ya no lo lista como activo.";
+  if ((m = body.match(/^First reported: ("[\s\S]*")$/))) return `Primer reporte: ${m[1]}`;
+  if (body === "First reported by someone nearby.") return "Primer reporte de alguien cercano.";
+  if ((m = body.match(/^Reported: ("[\s\S]*")$/))) return `Reportado: ${m[1]}`;
+  if (body === "Reported by someone nearby.") return "Reportado por alguien cercano.";
+  if ((m = body.match(/^Another person reported: ("[\s\S]*")$/))) return `Otra persona reportó: ${m[1]}`;
+  if (body === "Another person nearby reported this.") return "Otra persona cercana reportó esto.";
+  if (body === "Marked critical after multiple people confirmed it.") return "Marcado como crítico después de que varias personas lo confirmaran.";
+  if (body === "Marked as ended by the community.") return "Marcado como terminado por la comunidad.";
+  if (body === "Someone nearby says this has ended.") return "Alguien cercano dice que esto terminó.";
+  return body;
+}
+
+// ---- data that carries its own translations ---------------------------------
+
+/**
+ * Titles Haven itself writes for dispatch feeds and demo examples. Anything
+ * else (a neighbor's own words, an NWS product name) is shown as written.
+ */
+export const TITLES_ES: Record<string, string> = {
+  // Houston Fire / Police active incidents
+  "Building fire": "Incendio en edificio",
+  "Vehicle fire": "Incendio de vehículo",
+  "Grass or brush fire": "Incendio de pasto o maleza",
+  "Small outdoor fire": "Incendio pequeño al aire libre",
+  "Explosion reported": "Explosión reportada",
+  "Fire response": "Respuesta de bomberos",
+  "Fire department response": "Respuesta de bomberos",
+  "Fatal crash": "Choque fatal",
+  "Pedestrian or cyclist struck": "Peatón o ciclista atropellado",
+  "Major crash": "Choque grave",
+  "Minor crash": "Choque leve",
+  "Crash": "Choque",
+  "Traffic hazard": "Peligro en la vía",
+  "High water on the road": "Agua alta en la calle",
+  "Medical call": "Llamada médica",
+  "Rescue response": "Respuesta de rescate",
+  "Gas leak or hazmat response": "Fuga de gas o materiales peligrosos",
+  "Police response": "Respuesta policial",
+  "Police response: disturbance": "Respuesta policial: disturbio",
+  "Police response: theft or burglary": "Respuesta policial: robo",
+  "Police response: violent incident": "Respuesta policial: incidente violento",
+  // Seattle feed
+  "Brush fire": "Incendio de maleza",
+  "Building fire response": "Respuesta a incendio en edificio",
+  "Medical response": "Respuesta médica",
+  "Vehicle collision response": "Respuesta a choque",
+  "Hazard response (gas/hazmat)": "Respuesta a peligro (gas/materiales)",
+  "Emergency response (scene secured by police)": "Respuesta de emergencia (escena asegurada)",
+  // Demo examples
+  "Two-vehicle collision": "Choque de dos vehículos",
+  "Smoke from building": "Humo en un edificio",
+  "Police activity": "Actividad policial",
+  "Debris in roadway": "Escombros en la vía",
+  "Gas odor reported": "Olor a gas reportado",
+  "Car break-ins reported": "Robos a carros reportados",
+  "Flash flood warning": "Aviso de inundación repentina",
+  "Vehicle vs. cyclist": "Vehículo contra ciclista",
+  "Grass fire contained": "Incendio de pasto contenido",
+  "Road closed for investigation": "Calle cerrada por investigación",
+  "Traffic signal out": "Semáforo apagado",
+  "Power outage": "Apagón",
+  "Evacuation lifted": "Evacuación levantada",
+  "Large police presence": "Gran presencia policial",
+  "Multi-car crash on ramp": "Choque múltiple en la rampa",
+  "Flooded underpass": "Paso a desnivel inundado",
+  "Lost dog: brown lab mix": "Perro perdido: labrador café",
+};

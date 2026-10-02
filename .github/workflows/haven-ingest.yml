@@ -1,0 +1,46 @@
+name: Haven feed pull
+
+# Keeps the app warm and the feeds moving even when nobody has it open:
+# every 5 minutes it reads the public incidents endpoint, which pulls the
+# live feeds when they're due (every INGEST_INTERVAL_MIN) after answering,
+# and wakes the serverless function so the next person doesn't pay the cold
+# start. Vercel's free cron only runs daily, hence this.
+#
+# Optional repository secrets:
+#   HAVEN_URL          overrides the app URL below
+#   HAVEN_CRON_SECRET  the same value as CRON_SECRET in Vercel; when set, the
+#                      job also calls /api/cron/ingest, which reports results.
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: haven-ingest
+  cancel-in-progress: false
+
+jobs:
+  pull:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Warm the app and pull feeds
+        env:
+          HAVEN_URL: ${{ secrets.HAVEN_URL || 'https://haven-kappa-ten.vercel.app' }}
+          SECRET: ${{ secrets.HAVEN_CRON_SECRET }}
+        run: |
+          # Downtown Houston, 5 mi: the same query the app makes. Ingest runs after the response.
+          status=$(curl -sS -o /tmp/inc.json -w '%{http_code}' --max-time 90 \
+            "$HAVEN_URL/api/incidents?lat=29.760&lng=-95.370&radiusMi=5&sort=newest&limit=20")
+          echo "incidents: HTTP $status ($(wc -c < /tmp/inc.json) bytes)"
+          test "$status" = "200"
+          if [ -n "$SECRET" ]; then
+            status=$(curl -sS -o /tmp/out.json -w '%{http_code}' --max-time 90 \
+              -H "Authorization: Bearer $SECRET" "$HAVEN_URL/api/cron/ingest")
+            echo "cron ingest: HTTP $status"
+            head -c 600 /tmp/out.json; echo
+            test "$status" = "200"
+          fi

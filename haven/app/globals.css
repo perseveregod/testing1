@@ -1,0 +1,896 @@
+@import "tailwindcss";
+
+/* Haven design tokens.
+   The chrome is an instrument panel over a night map: deep blue-black
+   surfaces (the same family as the map's water and sky), separated by light
+   and hairlines rather than borders. Color means something: incident
+   categories, live state, one accent for what you can tap. */
+:root {
+  --bg: #0b0e14;
+  /* Solid, calm surfaces. Blur is reserved for the two bars. */
+  --surface: #141923;
+  --surface-2: #1c2330;
+  --surface-3: #26303f;
+  --line: rgba(255, 255, 255, 0.07);
+  --line-strong: rgba(255, 255, 255, 0.12);
+  --text: #f4f6f9;
+  --muted: #9aa6b8;
+  /* Passes WCAG AA (≥4.5:1) on the darkest surface. */
+  --faint: #8792a4;
+  --brand: #4a90ff;
+  --brand-ink: #ffffff;
+  /* Signal red for anything happening right now: LIVE badges, the report button. */
+  --live: #ff3355;
+  --danger: #ff5f57;
+  --warn: #ffb224;
+  --ok: #35d07f;
+  --gold: #e9c27a;
+
+  --glass: rgba(22, 23, 27, 0.72);
+  --glass-tint: rgba(20, 23, 32, 0.42);
+  --glass-rim: inset 0 1px 0 rgba(255, 255, 255, 0.28), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+  --shadow-float: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 10px 30px -8px rgba(0, 0, 0, 0.55);
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --nav-h: 60px;
+  /* One radius scale: chips 10, controls 12, cards 16, sheets 24, pills round. */
+  --radius-card: 16px;
+  --radius-control: 12px;
+  --radius-chip: 10px;
+  --radius-sheet: 24px;
+  /* Space between the floating tab bar and the bottom of the screen. */
+  --nav-gap: 10px;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-danger: var(--danger);
+  --color-warn: var(--warn);
+  --color-ok: var(--ok);
+  --color-gold: var(--gold);
+  --color-live: var(--live);
+  --radius-card: var(--radius-card);
+  --radius-control: var(--radius-control);
+  --radius-chip: var(--radius-chip);
+  --radius-sheet: var(--radius-sheet);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --ease-out-soft: var(--ease-out);
+  --ease-spring: var(--ease-spring);
+}
+
+html {
+  background: var(--bg);
+}
+html,
+body {
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+/* Taps respond at once: no double-tap-to-zoom wait on anything pressable. */
+button,
+a,
+[role="button"],
+input,
+textarea,
+select {
+  touch-action: manipulation;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  letter-spacing: -0.006em;
+}
+
+::selection {
+  background: rgba(61, 139, 255, 0.35);
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* Map chrome follows the map: on the day style every panel, label and scrim
+   flips to light so nothing reads as a black slab on cream. */
+[data-tone="light"] {
+  /* Inherited text color must be re-resolved inside the scope too. */
+  color: var(--text);
+  --bg: #f3f1ec;
+  --surface: #ffffff;
+  --surface-2: #f0eee9;
+  --surface-3: #e4e1da;
+  --line: rgba(0, 0, 0, 0.08);
+  --line-strong: rgba(0, 0, 0, 0.14);
+  --text: #111318;
+  --muted: #5d6370;
+  --faint: #6b7280;
+  /* Tailwind utilities read the --color-* tokens, which resolve at :root,
+     so they have to be re-pointed here as well. */
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --halo: rgba(255, 255, 255, 0.9);
+  --glass-rim: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+}
+:root {
+  --halo: rgba(0, 0, 0, 0.7);
+}
+[data-tone="light"] .glass {
+  background: rgba(255, 255, 255, 0.78);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 28px -12px rgba(0, 0, 0, 0.35);
+}
+[data-tone="light"] .glass-sheet {
+  background: #ffffff;
+  box-shadow:
+    inset 0 0.5px 0 rgba(0, 0, 0, 0.08),
+    0 -12px 40px rgba(0, 0, 0, 0.18);
+}
+[data-tone="light"] .map-skeleton {
+  background-color: #e9e6df;
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+}
+
+/* ---- utilities --------------------------------------------------------- */
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+}
+/* Section headings inside a page: sentence case, quiet, never tracked caps. */
+@utility t-section {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: -0.005em;
+}
+/* Long lists: rows off screen cost nothing to lay out or paint. */
+@utility cv-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 112px;
+}
+/* Floating chrome that the map or page shows through: the tab bar, a toast.
+   One blurred layer, one hairline. No sheen. */
+@utility glass {
+  background: rgba(14, 18, 26, 0.78);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 28px -12px rgba(0, 0, 0, 0.6);
+}
+/* Floating panel over the map: the surface color, slightly see-through. */
+@utility panel {
+  /* No backdrop blur: a dozen blurred layers over a moving WebGL map is the
+     single most expensive thing a phone GPU can be asked to do. */
+  background: color-mix(in srgb, var(--surface) 95%, transparent);
+  box-shadow:
+    inset 0 0 0 0.5px var(--line-strong),
+    0 6px 24px -10px rgba(0, 0, 0, 0.45);
+}
+/* Edge-to-edge bars (headers) once content scrolls under them. */
+@utility glass-bar {
+  background: rgba(11, 14, 20, 0.72);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  box-shadow: inset 0 -0.5px 0 rgba(255, 255, 255, 0.1);
+}
+/* Bottom sheets: a solid surface with a hairline top edge. No blur: a sheet
+   covers the page, so there is nothing worth seeing through it. */
+@utility glass-sheet {
+  background: var(--surface);
+  box-shadow:
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.14),
+    0 -12px 40px rgba(0, 0, 0, 0.45);
+}
+@utility press {
+  transition:
+    transform 120ms var(--ease-out),
+    background-color 120ms ease,
+    opacity 120ms ease;
+  &:active {
+    transform: scale(0.97);
+  }
+}
+@utility hairline-t {
+  box-shadow: inset 0 1px 0 var(--line);
+}
+
+.pt-safe {
+  padding-top: var(--safe-top);
+}
+.pb-safe {
+  padding-bottom: var(--safe-bottom);
+}
+/* Space content above the bottom tab bar (+ home indicator). */
+.pb-nav {
+  padding-bottom: calc(var(--nav-h) + var(--nav-gap) + var(--safe-bottom) + 36px);
+}
+.bottom-nav-offset {
+  bottom: calc(var(--nav-h) + var(--nav-gap) + var(--safe-bottom));
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ---- atmosphere ---------------------------------------------------------- */
+/* Film-like vignette and a whisper of grain over the map and hero images. */
+.vignette {
+  background: radial-gradient(120% 90% at 50% 40%, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+}
+.grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+/* Ambient color washes that drift slowly behind hero content. */
+@keyframes haven-drift {
+  0% {
+    transform: translate3d(-6%, -4%, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(6%, 5%, 0) scale(1.12);
+  }
+  100% {
+    transform: translate3d(-6%, -4%, 0) scale(1);
+  }
+}
+.haven-drift {
+  animation: haven-drift 14s ease-in-out infinite;
+  will-change: transform;
+}
+.haven-drift-slow {
+  animation: haven-drift 22s ease-in-out infinite reverse;
+  will-change: transform;
+}
+/* Lists appear at once. (A staggered build-in read as the app being slow.) */
+.stagger > * {
+  animation: none;
+}
+
+/* ---- motion ------------------------------------------------------------ */
+/* Storm Mode toggle when on: deep storm-blue glass with an amber glow. */
+.storm-on {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.02)),
+    linear-gradient(160deg, #27406f, #121d36);
+  border: 0.5px solid rgba(255, 211, 77, 0.45);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 0 0 3px rgba(255, 194, 51, 0.16),
+    0 8px 24px -8px rgba(255, 194, 51, 0.55);
+}
+/* Storm bolt: two quick flickers, then dark, like real lightning. */
+@keyframes haven-bolt {
+  0%, 6%, 100% { opacity: 1; }
+  3% { opacity: 0.25; }
+  9% { opacity: 0.35; }
+  12%, 60% { opacity: 1; }
+  63% { opacity: 0.3; }
+  66% { opacity: 1; }
+}
+.haven-bolt {
+  animation: haven-bolt 4.5s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .haven-bolt { animation: none; }
+}
+@keyframes haven-pulse {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(2.3);
+    opacity: 0;
+  }
+}
+.haven-pulse {
+  animation: haven-pulse 2.4s var(--ease-out) infinite;
+}
+
+@keyframes haven-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes haven-sheet-out {
+  to {
+    transform: translateY(100%);
+  }
+}
+.haven-sheet-in {
+  animation: haven-sheet-in 340ms cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+.haven-sheet-out {
+  animation: haven-sheet-out 200ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+@keyframes haven-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes haven-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+.haven-fade-in {
+  animation: haven-fade-in 180ms ease-out both;
+}
+.haven-fade-out {
+  animation: haven-fade-out 160ms ease-in both;
+}
+
+@keyframes haven-rise {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+.haven-rise {
+  animation: haven-rise 180ms var(--ease-out) both;
+}
+
+@keyframes haven-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+.haven-pop {
+  animation: haven-pop 360ms var(--ease-spring) both;
+}
+
+@keyframes haven-shimmer {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+.haven-shimmer {
+  background: linear-gradient(100deg, rgba(255, 255, 255, 0.07) 30%, rgba(255, 255, 255, 0.14) 50%, rgba(255, 255, 255, 0.07) 70%) 0 0 / 200% 100%;
+  animation: haven-shimmer 1.4s linear infinite;
+}
+
+/* ---- layers: the map lives under every page ---------------------------- */
+.map-host {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+/* Off the map tab the map is hidden at once: the page above is opaque, and
+   compositing WebGL under it would only cost frames. */
+.map-host[data-active="false"] {
+  visibility: hidden;
+}
+.page-root {
+  position: relative;
+  z-index: 2;
+  min-height: 100dvh;
+  background: var(--bg);
+}
+/* Detail screens slide in from the right; going back is instant. */
+@keyframes page-push {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+}
+.page-push {
+  animation: page-push 220ms var(--ease-out) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-push {
+    animation: none;
+  }
+}
+
+/* ---- page transitions (React <ViewTransition>) -------------------------- */
+::view-transition {
+  pointer-events: none;
+}
+
+@keyframes vt-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes vt-slide {
+  from {
+    translate: var(--vt-offset) 0;
+  }
+}
+/* Tabs: a short fade, nothing else. Native tab switches don't animate much. */
+::view-transition-group(.tab) {
+  animation-duration: 160ms;
+}
+::view-transition-old(.tab) {
+  animation: 120ms ease-in both vt-fade reverse;
+}
+::view-transition-new(.tab) {
+  animation: 160ms var(--ease-out) both vt-fade;
+}
+::view-transition-old(.nav-forward) {
+  --vt-offset: -48px;
+  animation:
+    160ms ease-in both vt-fade reverse,
+    360ms var(--ease-out) both vt-slide reverse;
+}
+::view-transition-new(.nav-forward) {
+  --vt-offset: 48px;
+  animation:
+    220ms ease-out 80ms both vt-fade,
+    360ms var(--ease-out) both vt-slide;
+}
+::view-transition-old(.nav-back) {
+  --vt-offset: 48px;
+  animation:
+    160ms ease-in both vt-fade reverse,
+    360ms var(--ease-out) both vt-slide reverse;
+}
+::view-transition-new(.nav-back) {
+  --vt-offset: -48px;
+  animation:
+    220ms ease-out 80ms both vt-fade,
+    360ms var(--ease-out) both vt-slide;
+}
+
+/* ---- map ---------------------------------------------------------------- */
+.maplibregl-map {
+  font-family: var(--font-sans);
+}
+.maplibregl-ctrl-attrib {
+  background: rgba(11, 12, 15, 0.6) !important;
+  color: var(--faint) !important;
+  font-size: 10px;
+}
+.maplibregl-ctrl-attrib a {
+  color: var(--faint) !important;
+}
+.maplibregl-ctrl-attrib-button {
+  filter: invert(1) opacity(0.6);
+}
+
+.haven-marker {
+  cursor: pointer;
+  transition: transform 220ms var(--ease-spring);
+}
+.haven-marker:active {
+  transform: scale(0.92);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .haven-pulse,
+  .haven-sheet-in,
+  .haven-sheet-out,
+  .haven-fade-in,
+  .haven-rise,
+  .haven-pop,
+  .haven-shimmer,
+  .haven-drift,
+  .haven-drift-slow,
+  .stagger > * {
+    animation: none;
+  }
+  .haven-marker,
+  .press {
+    transition: none;
+  }
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}
+
+/* ---- animated icons (components/incident/AnimatedIcons.tsx) ------------- */
+.aic {
+  overflow: visible;
+}
+.aic-static * {
+  animation: none !important;
+}
+@keyframes aic-flicker {
+  0%,
+  100% {
+    transform: scale(1, 1) skewX(0);
+  }
+  25% {
+    transform: scale(1.04, 0.95) skewX(-3deg);
+  }
+  50% {
+    transform: scale(0.97, 1.06) skewX(2deg);
+  }
+  75% {
+    transform: scale(1.02, 0.98) skewX(-1deg);
+  }
+}
+.aic-flame {
+  animation: aic-flicker 1.1s ease-in-out infinite;
+}
+.aic-d2 {
+  animation-duration: 0.8s;
+  animation-delay: -0.3s;
+}
+.aic-d3 {
+  animation-duration: 0.6s;
+  animation-delay: -0.15s;
+}
+@keyframes aic-ember {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-9px);
+    opacity: 0;
+  }
+}
+.aic-ember {
+  animation: aic-ember 2.2s ease-out infinite;
+}
+@keyframes aic-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.aic-sweep {
+  animation: aic-spin 2.4s linear infinite;
+}
+@keyframes aic-beacon {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+.aic-beacon {
+  animation: aic-beacon 1.2s ease-in-out infinite;
+}
+@keyframes aic-beat {
+  0%,
+  30%,
+  100% {
+    transform: scale(1);
+  }
+  10% {
+    transform: scale(1.08);
+  }
+  20% {
+    transform: scale(1.03);
+  }
+}
+.aic-beat {
+  animation: aic-beat 1.6s ease-out infinite;
+}
+@keyframes aic-ecg {
+  0% {
+    stroke-dashoffset: 36;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  60% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  80%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+.aic-ecg {
+  stroke-dasharray: 36;
+  animation: aic-ecg 1.6s linear infinite;
+}
+@keyframes aic-blinklight {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  55%,
+  100% {
+    opacity: 0.15;
+  }
+}
+.aic-hazard {
+  animation: aic-blinklight 0.9s steps(1) infinite;
+}
+@keyframes aic-spark {
+  0%,
+  70%,
+  100% {
+    opacity: 0;
+  }
+  75%,
+  85% {
+    opacity: 1;
+  }
+}
+.aic-spark {
+  animation: aic-spark 2.6s linear infinite;
+}
+@keyframes aic-stripes {
+  to {
+    transform: translateX(-7px);
+  }
+}
+.aic-stripes {
+  animation: aic-stripes 1.1s linear infinite;
+}
+@keyframes aic-blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.08);
+  }
+}
+.aic-blink {
+  animation: aic-blink 4.5s ease-in-out infinite;
+}
+@keyframes aic-scan {
+  0%,
+  100% {
+    transform: translateX(-2.4px);
+  }
+  50% {
+    transform: translateX(2.4px);
+  }
+}
+.aic-scan {
+  animation: aic-scan 3.2s ease-in-out infinite;
+}
+@keyframes aic-flash {
+  0%,
+  60%,
+  68%,
+  74%,
+  100% {
+    opacity: 0.35;
+  }
+  62%,
+  70% {
+    opacity: 1;
+  }
+}
+.aic-flash {
+  animation: aic-flash 2.8s linear infinite;
+}
+@keyframes aic-rain {
+  0% {
+    transform: translateY(-2px);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(4px);
+    opacity: 0;
+  }
+}
+.aic-rain {
+  animation: aic-rain 1s linear infinite;
+}
+@keyframes aic-wave {
+  0% {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.12);
+  }
+}
+.aic-wave {
+  animation: aic-wave 1.8s ease-out infinite;
+}
+@keyframes aic-ring {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(3.2);
+    opacity: 0;
+  }
+}
+.aic-ring {
+  animation: aic-ring 2.2s ease-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .aic * {
+    animation: none !important;
+  }
+}
+/* Live icons get a faint bloom in their own color. */
+.aic-live {
+  filter: drop-shadow(0 0 2.5px color-mix(in srgb, currentColor 65%, transparent));
+}
+
+/* ---- live ------------------------------------------------------------------ */
+/* Red "on air" badge used for incidents that are happening right now. */
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 5px;
+  background: var(--live);
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+@keyframes haven-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.haven-blink {
+  animation: haven-blink 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .haven-blink {
+    animation: none;
+  }
+}
+
+/* Map placeholder: a faint street grid while tiles load. */
+.map-skeleton {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 64px 64px;
+  transition: opacity 400ms ease;
+}
+
+/* Tile attribution: a small ⓘ bottom-left, above the tab bar and the bottom sheet. */
+.maplibregl-map .maplibregl-ctrl-bottom-right {
+  bottom: calc(var(--nav-h) + var(--nav-gap) + var(--safe-bottom) + var(--map-bottom-inset, 0px)) !important;
+  right: 6px !important;
+}
+.maplibregl-map .maplibregl-ctrl-bottom-right .maplibregl-ctrl {
+  margin: 0 0 4px 0 !important;
+}
+.maplibregl-ctrl-group,
+.maplibregl-ctrl-attrib.maplibregl-compact {
+  background: color-mix(in srgb, var(--surface) 85%, transparent) !important;
+  border-radius: 999px !important;
+  box-shadow: inset 0 0 0 0.5px var(--line-strong) !important;
+}
+.maplibregl-ctrl-attrib.maplibregl-compact-show {
+  border-radius: 12px !important;
+  padding-right: 28px !important;
+}
+.maplibregl-ctrl-attrib-button {
+  filter: none;
+  opacity: 0.6;
+}
+[data-tone="dark"] .maplibregl-ctrl-attrib-button {
+  filter: invert(1);
+}
+.maplibregl-ctrl-attrib {
+  background: color-mix(in srgb, var(--surface) 70%, transparent) !important;
+  color: var(--faint) !important;
+  font-size: 9.5px !important;
+  line-height: 1.3 !important;
+  border-radius: 6px 0 0 0;
+  padding: 1px 6px !important;
+  backdrop-filter: blur(6px);
+}
+.maplibregl-ctrl-attrib a {
+  color: var(--muted) !important;
+}
+
+/* Every marker gets a 44×44 hit area even when the pin itself is smaller. */
+.haven-marker::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+}
+/* The map's quick chips sit in a 44px-tall row so the whole band is tappable. */
+
+/* Live feed: a breathing dot while feeds are being checked, a glow on rows
+   that just came in, and the "3 new" pill. */
+.live-dot {
+  position: relative;
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-ok);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-ok) 55%, transparent);
+  animation: live-breathe 2.2s ease-out infinite;
+}
+.live-dot-stale {
+  background: var(--color-warn);
+  box-shadow: none;
+  animation: none;
+}
+@keyframes live-breathe {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-ok) 55%, transparent); }
+  70% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--color-ok) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-ok) 0%, transparent); }
+}
+[data-arrived] {
+  animation: row-arrive 6s var(--ease-out) both;
+}
+@keyframes row-arrive {
+  0% { opacity: 0; transform: translateY(-6px); background: color-mix(in srgb, var(--color-brand) 18%, transparent); }
+  6% { opacity: 1; transform: none; }
+  40% { background: color-mix(in srgb, var(--color-brand) 14%, transparent); }
+  100% { background: transparent; }
+}
+.pill-in {
+  animation: haven-pop 220ms var(--ease-out) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .live-dot,
+  .pill-in {
+    animation: none;
+  }
+  [data-arrived] {
+    animation: none;
+    background: color-mix(in srgb, var(--color-brand) 10%, transparent);
+  }
+}
