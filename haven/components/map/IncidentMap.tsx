@@ -23,14 +23,11 @@ import {
   BEACONS,
   BEARING_3D,
   beaconGeoJson,
-  ACTIVITY,
-  activityGeoJson,
   RIPPLE,
   RIPPLE_MS,
   addRippleLayer,
   rippleGeoJson,
   setRipple,
-  addActivityLayer,
   addLightsLayers,
   enhanceStyle,
   LIGHTS,
@@ -371,6 +368,10 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
         pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
       });
       map.current = m;
+      // A tilted map sees far, and the far tiles are the expensive ones
+      // (hundreds of tiny buildings nobody can make out). Let distant ground
+      // use coarser tiles: at most twice the tile count of a flat view.
+      m.setSourceTileLodParams(4, 2);
       // The OpenStreetMap / OpenFreeMap credit, per license: a small ⓘ that opens on tap.
       m.addControl(new ml.AttributionControl({ compact: true }), "bottom-left");
 
@@ -448,14 +449,9 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
             paint: { "circle-opacity": 0, "circle-radius": 1 },
           });
         }
-        addActivityLayer(m, "incidents-glow");
-        (m.getSource(ACTIVITY) as GeoJSONSource | undefined)?.setData(
-          activityGeoJson(latest.current),
-        );
         addRippleLayer(m);
         // Lights from above; pins and their glow take over past LIGHTS_ZOOM.
         if (m.getLayer("incidents-glow")) m.setLayerZoomRange("incidents-glow", LIGHTS_ZOOM, 24);
-        if (m.getLayer(ACTIVITY)) m.setLayerZoomRange(ACTIVITY, LIGHTS_ZOOM, 24);
         addLightsLayers(m, resolved.current !== "day", "incidents-glow");
         (m.getSource(LIGHTS) as GeoJSONSource | undefined)?.setData(lightsGeoJson(latest.current));
         if (!booted.current) setLightsReveal(m, 0);
@@ -497,6 +493,15 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
       // (see .map-moving in globals.css): the GPU should only be moving the
       // map, not repainting a few dozen animated markers on top of it.
       m.on("movestart", () => container.current?.classList.add("map-moving"));
+      // Pins for ground that slides into view show up while the finger is
+      // still down (a few times a second), not in a batch when it lifts.
+      let lastMoveSync = 0;
+      m.on("move", () => {
+        const now = performance.now();
+        if (now - lastMoveSync < 160) return;
+        lastMoveSync = now;
+        scheduleSync();
+      });
       m.on("moveend", () => {
         container.current?.classList.remove("map-moving");
         scheduleSync();
@@ -609,9 +614,6 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
     src.setData(toGeoJson(incidents));
     (map.current?.getSource(BEACONS) as GeoJSONSource | undefined)?.setData(
       beaconGeoJson(incidents),
-    );
-    (map.current?.getSource(ACTIVITY) as GeoJSONSource | undefined)?.setData(
-      activityGeoJson(incidents),
     );
     (map.current?.getSource(LIGHTS) as GeoJSONSource | undefined)?.setData(lightsGeoJson(incidents));
   }, [incidents, incidentsKey, ready]);

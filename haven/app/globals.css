@@ -411,12 +411,15 @@ body {
   visibility: hidden;
 }
 /* Mid-gesture: pins keep their current frame; glows and pulses wait. */
-.map-moving .haven-marker,
 .map-moving .haven-marker *,
 .map-moving .haven-radar,
 .map-moving .haven-radar-sweep {
   animation-play-state: paused !important;
   filter: none !important;
+  transition: none !important;
+}
+/* (The pin itself is left alone so one that arrives mid-pan can pop in.) */
+.map-moving .haven-marker {
   transition: none !important;
 }
 

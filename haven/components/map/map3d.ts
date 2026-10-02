@@ -18,7 +18,7 @@ export const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY ?? "";
 export const DAY_STYLE_URL = "https://tiles.openfreemap.org/styles/positron";
 
 /** Camera used for the "3D" view. */
-export const PITCH_3D = 58;
+export const PITCH_3D = 54;
 // North-up: rotated maps read as disoriented, and a compass control appears.
 export const BEARING_3D = 0;
 
@@ -381,67 +381,6 @@ export function hideBaseClutter(m: MlMap) {
       m.setLayoutProperty(l.id, "visibility", "none");
     }
   }
-}
-
-export const ACTIVITY = "neighbor-activity";
-
-/** Deterministic 0..1 from a string, so dots don't jump between renders. */
-function hash01(str: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < str.length; i++) {
-    h ^= str.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return ((h >>> 0) % 10_000) / 10_000;
-}
-
-/**
- * Small glowing dots: one per report or neighbor confirmation in the last
- * day, scattered within ~150 m of where it happened. Decorative, but every
- * dot stands for something someone actually sent.
- */
-export function activityGeoJson(incidents: PublicIncident[]): GeoJSON.FeatureCollection {
-  const features: GeoJSON.Feature[] = [];
-  for (const i of incidents) {
-    const n = Math.min(8, 2 + (i.confirmationCount ?? 0));
-    for (let k = 0; k < n; k++) {
-      const seed = `${i.id}:${k}`;
-      const a = hash01(seed) * Math.PI * 2;
-      const r = 50 + hash01(seed + "r") * 260;
-      const p = offsetMeters({ lat: i.latitude, lng: i.longitude }, Math.sin(a) * r, Math.cos(a) * r);
-      features.push({
-        type: "Feature",
-        geometry: { type: "Point", coordinates: [p.lng, p.lat] },
-        properties: { twinkle: hash01(seed + "t") },
-      });
-    }
-  }
-  return { type: "FeatureCollection", features };
-}
-
-/** Adds the activity layer (idempotent) and fades it in. */
-export function addActivityLayer(m: MlMap, before?: string) {
-  if (m.getSource(ACTIVITY)) return;
-  m.addSource(ACTIVITY, { type: "geojson", data: { type: "FeatureCollection", features: [] } });
-  m.addLayer(
-    {
-      id: ACTIVITY,
-      type: "circle",
-      source: ACTIVITY,
-      paint: {
-        "circle-color": "#5ee0c8",
-        "circle-radius": ["interpolate", ["linear"], ["zoom"], 11, 2, 14, 3.2, 17, 4.5],
-        "circle-blur": 0.35,
-        "circle-opacity": 0,
-        "circle-opacity-transition": { duration: 1400, delay: 200 },
-      },
-    },
-    before,
-  );
-  // Next frame, so the transition runs from 0.
-  requestAnimationFrame(() => {
-    if (m.getLayer(ACTIVITY)) m.setPaintProperty(ACTIVITY, "circle-opacity", ["interpolate", ["linear"], ["get", "twinkle"], 0, 0.45, 1, 0.9]);
-  });
 }
 
 // ---- arrivals ---------------------------------------------------------------
