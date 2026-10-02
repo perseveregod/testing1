@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Crown } from "lucide-react";
 import { apiSend } from "@/lib/client/api";
-import { useViewer } from "@/lib/client/hooks";
+import { usePricing, useViewer } from "@/lib/client/hooks";
+import { FEATURES } from "@/lib/features";
 import { useT } from "@/lib/client/lang";
 import type { Viewer } from "@/lib/types";
 import { ButtonLink } from "@/components/ui/Button";
@@ -27,6 +28,8 @@ export function PurchaseSuccess() {
 
   const unlocked = viewer?.plan === "lifetime";
   const { es } = useT();
+  const { pricing } = usePricing();
+  const test = pricing?.mode === "test";
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-lg flex-col items-center justify-center px-6 text-center" style={{ paddingBottom: "var(--safe-bottom)" }}>
@@ -43,15 +46,27 @@ export function PurchaseSuccess() {
           <h1 className="haven-rise mt-6 text-[28px] font-bold tracking-[-0.03em]">{es ? "De por vida desbloqueado" : "Lifetime unlocked"}</h1>
           <p className="mt-2 text-[15px] leading-relaxed text-muted">
             {es
-              ? "Radio de alerta más amplio, más lugares guardados, reglas por lugar, tendencias de la zona, filtros avanzados e historial de 90 días ya están activos. Nunca se le volverá a cobrar."
-              : "Larger alert radius, more saved places, per-place rules, area insights, advanced filters and 90-day history are on. You'll never be billed again."}
+              ? `Radio de alerta más amplio, más lugares guardados, reglas por lugar${FEATURES.insights ? ", tendencias de la zona" : ""}, filtros avanzados e historial de hasta 30 días ya están activos. No hay renovaciones.`
+              : `Larger alert radius, more saved places, per-place rules${FEATURES.insights ? ", area insights" : ""}, advanced filters and up to 30 days of history are on. There are no renewals.`}
           </p>
+          {test && (
+            <p className="mt-3 rounded-card bg-warn/10 px-4 py-2.5 text-[13px] font-medium text-warn">
+              {es ? "Compra de prueba · no se cobró nada real" : "Test purchase · no real payment was taken"}
+            </p>
+          )}
         </>
       ) : (
         <>
-          <h1 className="text-[22px] font-bold">{es ? "Pago recibido" : "Payment received"}</h1>
-          <p className="mt-2 text-[15px] text-muted">
-            {es ? "Su desbloqueo se está finalizando. Suele tomar unos segundos; actualice esta página si no aparece." : "Your unlock is being finalized. It usually takes a few seconds; refresh this page if it doesn't appear."}
+          {/* Nothing here has confirmed a payment, so the page doesn't claim one. */}
+          <h1 className="text-[22px] font-bold">{es ? "Aún no se confirma ningún pago" : "No payment confirmed yet"}</h1>
+          <p className="mt-2 text-[15px] leading-relaxed text-muted">
+            {sessionId
+              ? es
+                ? "Haven no pudo confirmar un pago para esta cuenta. Si completó el pago, el desbloqueo suele aparecer en un minuto: actualice esta página. Nada se desbloquea hasta que el pago se confirme."
+                : "Haven couldn't confirm a payment for this account. If you completed checkout, the unlock usually appears within a minute: refresh this page. Nothing is unlocked until the payment is confirmed."
+              : es
+                ? "Esta cuenta no tiene De por vida y no hay ninguna compra en curso."
+                : "This account doesn't have Lifetime and there's no purchase in progress."}
           </p>
         </>
       )}

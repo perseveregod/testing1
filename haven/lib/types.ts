@@ -241,7 +241,8 @@ export interface PricingInfo {
   amountCents: number;
   currency: string;
   formatted: string;
-  mode: "stripe" | "test";
+  /** "test": nothing real is charged. "live": real payments, confirmed working. "unavailable": can't buy yet. */
+  mode: "live" | "test" | "unavailable";
   /** Set when the viewer's verified email is a .edu address: this price already includes the student discount. */
   student: { fullFormatted: string; percentOff: number } | null;
   /** Student price shown to everyone, so students know to sign in with their .edu email. */

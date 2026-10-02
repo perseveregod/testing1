@@ -65,7 +65,7 @@ async function getBasePricing(): Promise<PricingInfo> {
     amountCents,
     currency,
     formatted: format(amountCents, currency),
-    mode: s ? "stripe" : "test",
+    mode: config.billing.mode,
     student: null,
     studentFormatted: format(Math.min(config.billing.studentAmountCents, amountCents), currency),
   };
@@ -81,6 +81,10 @@ export async function createCheckout(user: UserRecord, origin: string): Promise<
   }
   const existing = await getStore().getEntitlement(user.id);
   if (existing) throw new ApiError(409, "You already have Haven Lifetime.", "already_owned");
+  // Includes a live key that hasn't been confirmed yet: no real charges until it is.
+  if (config.billing.mode === "unavailable") {
+    throw new ApiError(503, "Purchases aren't open yet.", "billing_unavailable");
+  }
 
   const s = stripeClient();
   if (!s) {

@@ -177,7 +177,7 @@ const D = {
   "feed.quietCategory": ["Haven has nothing in this category from the last 24 hours. Other categories may have something.", "Haven no tiene nada de este tipo en las últimas 24 horas. Puede haber algo en otras categorías."],
   "feed.quietAll": ["Haven has no reports within 5 miles from the last 24 hours. That means nothing reached Haven, not that the area is safe.", "Haven no tiene reportes a 5 millas en las últimas 24 horas. Eso significa que nada llegó a Haven, no que la zona sea segura."],
   "feed.explore": ["Explore the map", "Explorar el mapa"],
-  "feed.freeNote": ["Showing 24 hours. Lifetime keeps 90 days.", "Se muestran 24 horas. De por vida guarda 90 días."],
+  "feed.freeNote": ["Showing 24 hours. Lifetime shows up to 30 days.", "Se muestran 24 horas. De por vida muestra hasta 30 días."],
   "feed.liveNow": ["Live now", "Ahora mismo"],
   "feed.earlierToday": ["Earlier today", "Hoy, más temprano"],
   "feed.yesterday": ["Yesterday", "Ayer"],

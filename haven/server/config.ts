@@ -72,6 +72,22 @@ export const config = {
     get testCheckoutEnabled() {
       return !env.STRIPE_SECRET_KEY && (!isProduction || env.HAVEN_ENABLE_TEST_CHECKOUT === "1");
     },
+    /**
+     * What a purchase would do right now. The app shows this to people, so it
+     * has to be true:
+     * - "test": nothing real is charged (a Stripe test key, or the practice checkout).
+     * - "live": real payments. Needs a live Stripe key AND HAVEN_BILLING_LIVE=1,
+     *   which the owner sets only after a real purchase has been seen to
+     *   unlock Lifetime end to end. A key on its own never starts real charges.
+     * - "unavailable": there is no way to pay yet (no key in production, or a
+     *   live key that hasn't been confirmed). Checkout is refused.
+     */
+    get mode(): "live" | "test" | "unavailable" {
+      const key = env.STRIPE_SECRET_KEY ?? "";
+      if (!key) return this.testCheckoutEnabled ? "test" : "unavailable";
+      if (!/^(sk|rk)_live_/.test(key)) return "test";
+      return env.HAVEN_BILLING_LIVE === "1" ? "live" : "unavailable";
+    },
   },
   push: {
     /** Web Push (VAPID). Generate once with `npx web-push generate-vapid-keys`. */

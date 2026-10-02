@@ -50,3 +50,41 @@ describe("Stripe webhook", () => {
     expect(await store.getEntitlement(u.id)).toBeNull();
   });
 });
+
+describe("what the upgrade page is allowed to claim", () => {
+  const mode = async (envs: Record<string, string>) => {
+    vi.unstubAllEnvs();
+    for (const [k, v] of Object.entries(envs)) vi.stubEnv(k, v);
+    const { config } = await import("@/server/config");
+    return config.billing.mode;
+  };
+
+  it("is test mode with a Stripe test key: nothing real is charged", async () => {
+    expect(await mode({ STRIPE_SECRET_KEY: "sk_test_abc" })).toBe("test");
+  });
+
+  it("a live key alone never starts real charges", async () => {
+    expect(await mode({ STRIPE_SECRET_KEY: "sk_live_abc" })).toBe("unavailable");
+    expect(await mode({ STRIPE_SECRET_KEY: "rk_live_abc", HAVEN_BILLING_LIVE: "0" })).toBe("unavailable");
+  });
+
+  it("goes live only with a live key and the owner's confirmation", async () => {
+    expect(await mode({ STRIPE_SECRET_KEY: "sk_live_abc", HAVEN_BILLING_LIVE: "1" })).toBe("live");
+  });
+
+  it("the confirmation flag does nothing with a test key or no key", async () => {
+    expect(await mode({ STRIPE_SECRET_KEY: "sk_test_abc", HAVEN_BILLING_LIVE: "1" })).toBe("test");
+    expect(await mode({ HAVEN_BILLING_LIVE: "1" })).not.toBe("live");
+  });
+
+  it("refuses checkout while purchases aren't open", async () => {
+    vi.unstubAllEnvs();
+    vi.stubEnv("STRIPE_SECRET_KEY", "sk_live_abc");
+    const { createCheckout } = await import("@/server/billing");
+    const store = new LocalStore(null);
+    setStoreForTests(store);
+    const u = await store.createUser({ email: "buyer@example.com", displayName: "b" });
+    await expect(createCheckout(u, "http://localhost")).rejects.toMatchObject({ status: 503, code: "billing_unavailable" });
+    vi.unstubAllEnvs();
+  });
+});
