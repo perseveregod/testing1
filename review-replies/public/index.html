@@ -13,156 +13,174 @@
 <meta property="og:url" content="https://replydesk-vyx6.onrender.com/">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="theme-color" content="#f5f5f7">
+<meta name="theme-color" content="#efeff2">
+<meta name="color-scheme" content="light">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="/style.css">
 <style>
-  /* Layout: one centred column. A very large headline, then the product itself (paste a review,
-     get a reply) as the hero object. Sections below alternate white and light grey. */
-  body { background: var(--page); }
-  .topbar { position: sticky; top: 0; z-index: 20; border-bottom: 1px solid var(--line);
-    background: color-mix(in srgb, var(--page) 80%, transparent);
-    -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); }
-  .topbar .nav { padding-block: 10px; }
-  .topbar .btn.link { font-size: 15px; }
-  .topbar .btn:not(.link) { padding: 7px 16px; font-size: 15px; }
+  /* Layout: a bento. Rounded tiles of uneven size on a grey page; the size of a tile says how
+     much it matters. White tiles carry words, the black tile carries a review and its reply,
+     blue is the price, yellow is the surprise. The home page is light only, by design. */
+  body { --bg: #efeff2; --surface: #ffffff; --ink: #111111; --muted: #5c5c63; --line: rgba(0,0,0,.1); --field-line: #d0d0d6;
+    --brand: #0b57d0; --accent: #0b57d0; --brand-soft: rgba(11,87,208,.1); --sun: #ffd335; --reply: #8ab4ff;
+    background: var(--bg); color: var(--ink); color-scheme: light; font-family: "Inter", -apple-system, BlinkMacSystemFont, system-ui, sans-serif; }
+  h1, h2, h3 { font-family: inherit; }
+  .wrap { max-width: 1220px; padding-inline: 24px; }
 
-  .hero { text-align: center; padding-block: clamp(56px, 9vw, 104px) 0; }
-  .hero h1 { font-size: clamp(40px, 7vw, 76px); line-height: 1.04; letter-spacing: -0.035em; font-weight: 600; }
-  .hero h1 .nb { white-space: nowrap; }
-  .hero .lede { font-size: clamp(19px, 2.3vw, 25px); line-height: 1.36; color: var(--muted); max-width: 29em; margin: 24px auto 0; text-wrap: balance; }
-  .cta { display: flex; justify-content: center; align-items: center; gap: 12px 24px; margin-top: 32px; flex-wrap: wrap; }
-  .btn.lg { padding: 13px 28px; font-size: 17px; }
-  .textlink { color: var(--accent); text-decoration: none; }
-  .textlink:hover { text-decoration: underline; }
-  .hero .fine { margin-top: 18px; font-size: 14px; color: var(--muted); }
+  .nav { padding-block: 18px; }
+  .nav .btn.link { font-size: 15px; color: var(--ink); }
+  .btn.dark { background: var(--ink); color: #fff; }
+  .btn.light { background: #fff; color: var(--ink); }
+  .btn.sun { background: var(--sun); color: var(--ink); }
+  .btn.outline { background: transparent; color: #fff; border-color: rgba(255,255,255,.4); }
+  .btn.lg { padding: 15px 26px; font-size: 18px; font-weight: 600; }
 
-  /* The product, live: paste a review on the left, read the reply on the right. */
-  .try { padding-block: clamp(56px, 8vw, 88px) clamp(72px, 10vw, 120px); }
-  .try-intro { text-align: center; font: 600 clamp(21px, 2.6vw, 28px)/1.2 var(--font-display); letter-spacing: -0.02em; }
-  .demo { margin-top: 28px; background: var(--band); border-radius: 30px; padding: 22px; display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
-  .pane { background: var(--surface); border-radius: 20px; padding: 26px; display: flex; flex-direction: column; gap: 16px; box-shadow: var(--shadow); }
-  .pane h2 { font: 600 15px var(--font-body); letter-spacing: 0; color: var(--muted); }
-  .pane textarea { min-height: 148px; }
-  .pane .btn.lg { margin-top: 2px; }
-  .reply-text { white-space: pre-wrap; font-size: 19px; line-height: 1.5; }
+  .bento { display: grid; gap: 16px; }
+  .tile { border-radius: 28px; padding: 30px; background: var(--surface); position: relative; overflow: hidden; min-width: 0; }
+  .tile.black { background: var(--ink); color: #fff; }
+  .tile.blue { background: var(--brand); color: #fff; }
+  .tile.sun { background: var(--sun); }
+  a.tile { text-decoration: none; color: inherit; display: block; }
+
+  /* first screen */
+  .hero { grid-template-columns: 1.22fr 1fr 1fr; grid-template-rows: minmax(300px, auto) minmax(260px, auto); }
+  .hero .lead { grid-row: 1 / 3; display: flex; flex-direction: column; }
+  .hero h1 { font-size: clamp(40px, 4.7vw, 62px); line-height: 1.0; letter-spacing: -0.045em; font-weight: 700; margin-top: clamp(28px, 7vw, 104px); }
+  .hero .lead p { font-size: 20px; line-height: 1.4; color: var(--muted); margin-top: 20px; }
+  .hero .go { margin-top: auto; padding-top: 32px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; font-size: 16px; color: var(--muted); }
+  .hero .show { grid-column: 2 / 4; display: flex; flex-direction: column; }
+  .who { display: flex; align-items: center; gap: 12px; font-size: 15px; color: #9a9aa2; }
+  .who .stars { font-size: 22px; }
+  .stars .off { color: #47474d; }
+  .show blockquote { margin: 12px 0 0; font-size: clamp(22px, 2.3vw, 29px); line-height: 1.15; font-weight: 600; letter-spacing: -0.025em; }
+  .show .label { font-size: 14px; font-weight: 500; color: #9a9aa2; margin-top: 22px; }
+  .show .reply { font-size: clamp(18px, 1.7vw, 21px); line-height: 1.4; color: var(--reply); margin-top: 6px; max-width: 31em; min-height: 4.2em; }
+  .show .sample { margin-top: auto; padding-top: 14px; font-size: 13px; color: #7e7e86; }
+  .hero .price b { display: block; font-size: clamp(84px, 9vw, 118px); line-height: .9; letter-spacing: -0.06em; font-weight: 700; }
+  .hero .price p, .hero .lang p { font-size: 18px; line-height: 1.35; margin-top: 14px; }
+  .hero .lang b { display: block; font-size: clamp(25px, 2.5vw, 31px); line-height: 1.08; letter-spacing: -0.035em; font-weight: 700; }
+
+  section.band { padding-top: clamp(64px, 8vw, 104px); }
+  .band h2 { font-size: clamp(32px, 4vw, 48px); line-height: 1.04; letter-spacing: -0.042em; font-weight: 700; max-width: 17em; }
+  .band .sub { font-size: 19px; color: var(--muted); margin-top: 12px; }
+  .band .bento { margin-top: 28px; }
+  .tile h3 { font-size: 24px; line-height: 1.12; letter-spacing: -0.03em; font-weight: 700; }
+  .tile h3 + p { margin-top: 10px; color: var(--muted); }
+  .tile.black h3 + p { color: #b9b9c1; }
+
+  /* try it */
+  .try { grid-template-columns: 1fr 1fr; }
+  .try form { display: grid; gap: 15px; align-content: start; }
+  .try textarea { min-height: 136px; }
+  .try .out { display: flex; flex-direction: column; min-height: 320px; }
+  .try .out .label { font-size: 14px; font-weight: 500; color: #9a9aa2; }
+  .reply-text { white-space: pre-wrap; font-size: 20px; line-height: 1.45; color: var(--reply); margin-top: 8px; }
   #dEmpty { display: flex; flex-direction: column; flex: 1; }
-  .sample-note { margin-top: auto; padding-top: 24px; }
+  #dEmpty .note { margin-top: auto; padding-top: 22px; font-size: 14px; color: #8d8d95; }
   .reply-actions { display: flex; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
-  .caret { display: inline-block; width: 2px; height: 1em; background: var(--accent); vertical-align: -2px; margin-left: 1px; animation: blink 1s steps(1) infinite; }
+  .out .msg { color: #b9b9c1; }
+  .out .fine { font-size: 13px; color: #8d8d95; margin-top: 4px; }
+  .caret { display: inline-block; width: 2px; height: 1em; background: currentColor; vertical-align: -2px; margin-left: 1px; animation: blink 1s steps(1) infinite; }
   @keyframes blink { 50% { opacity: 0; } }
-  .thinking { display: grid; place-items: center; align-content: center; gap: 14px; flex: 1; min-height: 220px; text-align: center; color: var(--muted); }
-  .thinking .bar { width: 160px; height: 2px; background: var(--line); overflow: hidden; border-radius: 2px; }
-  .thinking .bar i { display: block; width: 40%; height: 100%; background: var(--accent); animation: slide 1.2s ease-in-out infinite; }
+  .thinking { display: grid; place-items: center; align-content: center; gap: 14px; flex: 1; text-align: center; color: #b9b9c1; }
+  .thinking .bar { width: 160px; height: 2px; background: #3a3a40; overflow: hidden; border-radius: 2px; }
+  .thinking .bar i { display: block; width: 40%; height: 100%; background: var(--reply); animation: slide 1.2s ease-in-out infinite; }
   @keyframes slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
-  .try-note { text-align: center; font-size: 13px; color: var(--muted); margin-top: 18px; }
+  .try-note { font-size: 13px; color: var(--muted); margin-top: 14px; }
 
-  section.band { padding-block: 104px; }
-    .band-head { max-width: 38em; }
-  .band-head h2 { font-size: clamp(34px, 4.4vw, 54px); letter-spacing: -0.04em; font-weight: 700; }
-  .band-head p { color: var(--muted); font-size: 18px; margin-top: 14px; }
+  /* how it works: a real sequence, so it is numbered */
+  .steps { grid-template-columns: repeat(3, 1fr); counter-reset: step; }
+  .steps .tile::before { counter-increment: step; content: counter(step); display: block; font-size: 64px; line-height: 1; font-weight: 700; letter-spacing: -0.05em; color: #d3d3da; margin-bottom: 44px; }
 
-  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 56px; counter-reset: step; }
-  .step { padding: 28px; background: var(--surface); }
-  .step::before { counter-increment: step; content: counter(step); display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; font: 600 14px var(--font-body); color: var(--ink); background: var(--glass-strong); border: 1px solid var(--glass-edge); box-shadow: var(--glass-shadow); margin-bottom: 20px; }
-  .step h3 { font-size: 22px; margin-bottom: 8px; }
-  .step p { color: var(--muted); }
+  /* why owners use it */
+  .why { grid-template-columns: repeat(3, 1fr); }
+  .why .big { grid-column: 1 / 3; display: flex; flex-direction: column; justify-content: flex-end; min-height: 250px; }
+  .why .big h3 { font-size: clamp(30px, 3.4vw, 42px); letter-spacing: -0.04em; }
+  .why .big p { font-size: 19px; max-width: 30em; }
 
-
-  .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 56px; }
-  .feature { padding: 28px; background: var(--surface); }
-  .feature h3 { font-size: 20px; margin-bottom: 8px; }
-  .feature p { color: var(--muted); }
-
-  .pricing { display: grid; grid-template-columns: repeat(2, minmax(0, 400px)); gap: 20px; margin-top: 56px; }
-  .plan { padding: 32px; border-radius: 26px; display: flex; flex-direction: column; background: var(--surface); }
+  /* pricing */
+  .pricing { grid-template-columns: repeat(2, 1fr); }
+  .plan { display: flex; flex-direction: column; padding: 34px; }
   .plan h3 { font-size: 26px; }
-  .plan .sub { color: var(--muted); margin-top: 4px; }
-  .plan .price { font: 700 56px var(--font-display); margin-top: 20px; letter-spacing: -0.05em; line-height: 1; }
-  .plan .price span { font: 400 16px var(--font-body); color: var(--muted); letter-spacing: 0; }
+  .plan .for { margin-top: 4px; color: var(--muted); }
+  .plan .price { font-size: 68px; line-height: 1; font-weight: 700; letter-spacing: -0.055em; margin-top: 22px; }
+  .plan .price span { font-size: 17px; font-weight: 400; letter-spacing: 0; color: var(--muted); }
   .plan ul { list-style: none; padding: 0; margin: 24px 0 28px; display: grid; gap: 12px; flex: 1; }
   .plan li { display: flex; gap: 12px; }
-  .plan li::before { content: ""; flex: none; width: 14px; height: 8px; margin-top: 7px; border-left: 1.5px solid var(--accent); border-bottom: 1.5px solid var(--accent); transform: rotate(-45deg); }
-  .plan.pro { background: linear-gradient(165deg, rgba(255,255,255,.08), rgba(255,255,255,0) 40%), rgba(29,29,31,.92); color: #f5f5f7; border-color: rgba(255,255,255,.18); }
-  .plan.pro .sub, .plan.pro .price span, .plan.pro .fine, .plan.pro .fine a { color: rgba(255,255,255,.78); }
-  .plan.pro li::before { border-color: var(--accent); }
-  .plan.pro .btn { background: var(--brand); color: #fff; }
+  .plan li::before { content: ""; flex: none; width: 14px; height: 8px; margin-top: 7px; border-left: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); }
   .plan .btn { width: 100%; }
   .plan .fine { font-size: 13px; color: var(--muted); margin-top: 14px; }
+  .plan.blue .for, .plan.blue .price span, .plan.blue .fine, .plan.blue .fine a { color: rgba(255,255,255,.82); }
 
-  .faq { margin-top: 40px; max-width: 780px; padding: 8px 28px; background: var(--surface); }
+  /* questions */
+  .faq { padding: 10px 30px; }
   .faq details { padding-block: 20px; }
   .faq details + details { border-top: 1px solid var(--line); }
-  .faq summary { font: 600 18px var(--font-display); letter-spacing: -0.02em; cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+  .faq summary { font-size: 19px; font-weight: 600; letter-spacing: -0.02em; cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
   .faq summary::-webkit-details-marker { display: none; }
-  .faq summary::after { content: "+"; font: 300 24px/1 var(--font-body); color: var(--muted); }
+  .faq summary::after { content: "+"; font-weight: 300; font-size: 26px; line-height: .9; color: var(--muted); }
   .faq details[open] summary::after { content: "–"; }
   .faq p { margin-top: 12px; color: var(--muted); max-width: 62ch; }
 
-  .final { padding-block: 40px 104px; }
-  .final .glass { text-align: center; padding: 88px 24px; border-radius: 32px; background: var(--surface); }
-  .final h2 { font-size: clamp(36px, 5.4vw, 64px); letter-spacing: -0.045em; font-weight: 700; max-width: 13em; margin-inline: auto; }
-  .final p { color: var(--muted); margin-top: 14px; font-size: 18px; }
-  .final .btn { margin-top: 30px; }
-
-  .shine { position: relative; overflow: hidden; isolation: isolate; }
-  .shine::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0; transition: opacity .35s;
-    background: radial-gradient(320px circle at var(--mx, 50%) var(--my, 0%), rgba(255, 255, 255, 0.35), transparent 60%); }
-  .shine:hover::after { opacity: 1; }
-  @media (prefers-color-scheme: dark) { .shine::after { background: radial-gradient(320px circle at var(--mx, 50%) var(--my, 0%), rgba(255, 255, 255, 0.08), transparent 60%); } }
-  html.js .reveal { opacity: 0; transform: translateY(10px); transition: opacity .6s ease, transform .6s ease; }
-  html.js .reveal.in { opacity: 1; transform: none; }
+  .final { padding: clamp(48px, 7vw, 88px) 30px; text-align: center; }
+  .final h2 { color: #fff; margin-inline: auto; font-size: clamp(34px, 5vw, 60px); max-width: 13em; }
+  .final p { color: #b9b9c1; margin-top: 14px; font-size: 19px; }
+  .final .btn { margin-top: 28px; }
+  .site-footer { border-top: 0; margin-top: 24px; }
 
   @media (max-width: 900px) {
     .nav .hide-sm { display: none; }
-    .hero h1 br.wide { display: none; }
-    .demo { grid-template-columns: 1fr; padding: 12px; border-radius: 24px; gap: 12px; }
-    .pane { padding: 20px; }
-    .steps { grid-template-columns: 1fr; }
-    .steps { gap: 36px; }
-    .features { grid-template-columns: 1fr; }
-    .pricing { grid-template-columns: 1fr; }
-    section.band { padding-block: 72px; }
-    .final { padding-block: 24px 72px; }
-    .final .glass { padding: 56px 20px; }
+    .tile { padding: 24px; border-radius: 24px; }
+    .hero { grid-template-columns: 1fr 1fr; grid-template-rows: auto; }
+    .hero .lead, .hero .show { grid-column: 1 / 3; grid-row: auto; }
+    .hero h1 { margin-top: 8px; }
+    .try, .steps, .why, .pricing { grid-template-columns: 1fr; }
+    .why .big { grid-column: auto; min-height: 0; }
+    .steps .tile::before { margin-bottom: 20px; font-size: 52px; }
+    .try .out { min-height: 260px; }
   }
-  @media (prefers-reduced-motion: reduce) {
-    .caret { display: none; }
-    html.js .reveal { opacity: 1; transform: none; transition: none; }
+  @media (max-width: 560px) {
+    .hero .price, .hero .lang { grid-column: 1 / 3; }
+    .hero .price { display: flex; align-items: center; gap: 18px; }
+    .hero .price b { font-size: 76px; }
+    .hero .price p { margin-top: 0; }
   }
+  @media (prefers-reduced-motion: reduce) { .caret { display: none; } }
 </style>
 </head>
 <body data-src="{{SOURCE}}">
-<div class="topbar"><div class="wrap">
+<div class="wrap">
   <nav class="nav">
     <a class="logo" href="/"><i>★</i>ReplyDesk</a>
     <span class="spacer"></span>
     <a class="btn link hide-sm" href="#pricing">Pricing</a>
     <a class="btn link" href="/app#login">Log in</a>
-    <a class="btn" href="/app#signup">Start free</a>
+    <a class="btn dark" href="/app#signup">Start free</a>
   </nav>
-</div></div>
 
-<header class="hero">
-  <div class="wrap">
-    <h1>Every review answered,<br class="wide"> <span class="nb">in your voice.</span></h1>
-    <p class="lede">Paste a Google or Yelp review and get a reply that sounds like you. Built for restaurants, salons, clinics and shops.</p>
-    <div class="cta">
-      <a class="btn lg" href="/app#signup">Start free</a>
-      <a class="textlink" href="#pricing">See pricing</a>
+  <header class="bento hero">
+    <div class="tile lead">
+      <h1>Every review answered, in your voice.</h1>
+      <p>Paste a Google or Yelp review. Read the reply. Post it.</p>
+      <div class="go"><a class="btn dark lg" href="/app#signup">Start free</a><span>15 free replies a month. No card needed.</span></div>
     </div>
-    <p class="fine">15 free replies a month. No card needed.</p>
-  </div>
-</header>
+    <div class="tile black show" aria-label="Example of a review and the reply ReplyDesk drafts">
+      <div class="who"><span class="stars" aria-label="1 out of 5 stars">★<span class="off">★★★★</span></span><span>Dana K., 3 hours ago</span></div>
+      <blockquote>“Waited 45 minutes and my order was wrong. Not coming back.”</blockquote>
+      <div class="label">The reply ReplyDesk drafts</div>
+      <p class="reply" id="heroReply">Dana, we’re truly sorry. A 45-minute wait and a wrong order is not what we want for anyone. I’d like to make it right. Call the restaurant and ask for Rosa.</p>
+      <p class="sample">A sample review, for illustration.</p>
+    </div>
+    <a class="tile blue price" href="#pricing"><b>$9</b><p>a month for 300 replies. The first 15 every month are free.</p></a>
+    <div class="tile sun lang"><b>¿Reseña en español? Respuesta en español.</b><p>Replies come back in the language of the review.</p></div>
+  </header>
 
-<section class="try" id="try" aria-label="Try ReplyDesk on a review">
-  <div class="wrap">
-    <p class="try-intro">Try it on one of your own reviews.</p>
-    <div class="demo">
-      <form class="pane" id="demo" autocomplete="off">
-        <h2>The review</h2>
+  <section class="band" id="try">
+    <h2>Try it on one of your own reviews.</h2>
+    <div class="bento try">
+      <form class="tile" id="demo" autocomplete="off">
         <div class="two">
           <div class="field"><label for="dBiz">Your business</label><input id="dBiz" placeholder="Rosa's Taqueria"></div>
           <div class="field"><label for="dName">Reviewer</label><input id="dName" placeholder="Jamie L."></div>
@@ -172,133 +190,123 @@
           <label for="dBody">What they wrote</label>
           <textarea id="dBody" required>Waited almost 40 minutes for our food on a Tuesday night and nobody told us why. The carnitas were honestly great once they came, but the wait killed it.</textarea>
         </div>
-        <button class="btn lg" id="dGo" type="submit">Write my reply</button>
+        <button class="btn dark lg" id="dGo" type="submit">Write my reply</button>
         <p class="msg" id="dMsg" role="status"></p>
       </form>
-      <div class="pane" aria-live="polite">
-        <h2 id="dLabel">Sample reply</h2>
-        <div id="dEmpty"><p class="reply-text">Hi Jamie, thank you for telling us, and I'm sorry about Tuesday. Forty minutes is too long, and someone should have come to your table to explain. I'm glad the carnitas were worth it once they arrived. Next time you're in, ask for me and we'll make sure the wait matches the food.
+      <div class="tile black out" aria-live="polite">
+        <div class="label" id="dLabel">Sample reply</div>
+        <div id="dEmpty">
+          <p class="reply-text">Hi Jamie, thank you for telling us, and I’m sorry about Tuesday. Forty minutes is too long, and someone should have come to your table to explain. I’m glad the carnitas were worth it once they arrived. Next time you’re in, ask for me and we’ll make sure the wait matches the food.
 
 — Rosa</p>
-          <p class="muted small sample-note">This one is a sample. Paste your own review and press Write my reply.</p></div>
+          <p class="note">This one is a sample. Paste your own review and press Write my reply.</p>
+        </div>
         <div class="thinking" id="dThink" hidden><div class="bar"><i></i></div><p id="dThinkText">Reading the review…</p></div>
         <div id="demoOut" hidden>
           <p class="reply-text" id="dReply"></p>
           <div class="reply-actions">
-            <button class="btn ghost small" type="button" id="dCopy">Copy reply</button>
-            <a class="btn small" href="/app#signup">Save it and do the rest</a>
+            <button class="btn outline small" type="button" id="dCopy">Copy reply</button>
+            <a class="btn sun small" href="/app#signup">Save it and do the rest</a>
           </div>
           <p class="msg" id="dCopyMsg" role="status"></p>
-          <p class="muted small">AI drafts can contain mistakes. Always read before posting.</p>
+          <p class="fine">AI drafts can contain mistakes. Always read before posting.</p>
         </div>
       </div>
     </div>
     <p class="try-note">No account needed. The review is sent to our AI provider to write the reply and isn't saved. See our <a href="/privacy">Privacy Policy</a>.</p>
-  </div>
-</section>
+  </section>
 
-<section class="band">
-  <div class="wrap">
-    <div class="band-head">
-      <p class="eyebrow">How it works</p>
-      <h2>From review to reply in under a minute.</h2>
+  <section class="band">
+    <h2>From review to reply in under a minute.</h2>
+    <div class="bento steps">
+      <div class="tile"><h3>Set your voice once</h3><p>Add your business name, tone, sign-off and anything worth mentioning, like specials, booking links or who to contact about problems.</p></div>
+      <div class="tile"><h3>Paste a review</h3><p>Copy it from Google or Yelp, or import a batch from a spreadsheet. The harshest reviews are flagged so you answer them first.</p></div>
+      <div class="tile"><h3>Read, edit, post</h3><p>Check the draft, change anything you like, and paste it into Google or Yelp. Nothing goes public until you post it.</p></div>
     </div>
-    <div class="steps">
-      <div class="step glass shine"><h3>Set your voice once</h3><p>Add your business name, tone, sign-off and anything worth mentioning, like specials, booking links or who to contact about problems.</p></div>
-      <div class="step glass shine"><h3>Paste a review</h3><p>Copy it from Google or Yelp, or import a batch from a spreadsheet. The harshest reviews are flagged so you answer them first.</p></div>
-      <div class="step glass shine"><h3>Read, edit, post</h3><p>Check the draft, change anything you like, and paste it into Google or Yelp. Nothing goes public until you post it.</p></div>
-    </div>
-  </div>
-</section>
+  </section>
 
-<section class="band">
-  <div class="wrap">
-    <div class="band-head">
-      <p class="eyebrow">Why owners use it</p>
-      <h2>The replies you mean to write, actually written.</h2>
+  <section class="band">
+    <h2>The replies you mean to write, actually written.</h2>
+    <div class="bento why">
+      <div class="tile black big"><h3>Calm on the hard ones.</h3><p>One-star reviews get a sincere, non-defensive reply that moves the conversation offline. No arguing in public.</p></div>
+      <div class="tile"><h3>Sounds like you</h3><p>Choose warm, formal, playful or short. Every reply uses your sign-off and mentions a real detail from the review.</p></div>
+      <div class="tile"><h3>You stay in control</h3><p>Nothing posts automatically. Edit any draft, rewrite it, or throw it away.</p></div>
+      <div class="tile"><h3>Catch up in one sitting</h3><p>Import your backlog from a spreadsheet and work through it with filters for Needs reply, Ready to post and Posted.</p></div>
+      <div class="tile"><h3>Private by default</h3><p>No ad trackers and no selling data. Export or delete everything from your account whenever you want.</p></div>
     </div>
-    <div class="features">
-      <div class="feature glass"><h3>Calm on the bad ones</h3><p>One-star reviews get a sincere, non-defensive reply that moves the conversation offline. No arguing in public.</p></div>
-      <div class="feature glass"><h3>Sounds like you</h3><p>Choose warm, formal, playful or short. Every reply uses your sign-off and mentions a real detail from the review.</p></div>
-      <div class="feature glass"><h3>You stay in control</h3><p>Nothing posts automatically. Edit any draft, rewrite it, or throw it away.</p></div>
-      <div class="feature glass"><h3>Catch up in one sitting</h3><p>Import your backlog from a spreadsheet and work through it with filters for Needs reply, Ready to post and Posted.</p></div>
-      <div class="feature glass"><h3>Any language</h3><p>A review in Spanish gets a reply in Spanish, and the same goes for French and many more.</p></div>
-      <div class="feature glass"><h3>Private by default</h3><p>No ad trackers and no selling data. Export or delete everything from your account whenever you want.</p></div>
-    </div>
-  </div>
-</section>
+  </section>
 
-<section class="band" id="pricing">
-  <div class="wrap">
-    <div class="band-head">
-      <p class="eyebrow">Pricing</p>
-      <h2>Simple pricing. Less than one lunch a month.</h2>
-      <p>Start free. Upgrade when replying to every review becomes a habit.</p>
-    </div>
-    <div class="pricing">
-      <div class="card plan">
+  <section class="band" id="pricing">
+    <h2>Simple pricing. Less than one lunch a month.</h2>
+    <p class="sub">Start free. Upgrade when replying to every review becomes a habit.</p>
+    <div class="bento pricing">
+      <div class="tile plan">
         <h3>Free</h3>
-        <p class="sub">For trying it out</p>
+        <p class="for">For trying it out</p>
         <div class="price">$0 <span>/ month</span></div>
         <ul><li>15 AI replies a month</li><li>Your tone and sign-off</li><li>Spreadsheet import</li><li>Any language</li></ul>
-        <a class="btn ghost" href="/app#signup">Start free</a>
+        <a class="btn dark lg" href="/app#signup">Start free</a>
         <p class="fine">No card needed.</p>
       </div>
-      <div class="card plan pro">
+      <div class="tile plan blue">
         <h3>Pro</h3>
-        <p class="sub">For businesses that reply to everything</p>
+        <p class="for">For businesses that reply to everything</p>
         <div class="price">$9 <span>/ month</span></div>
         <ul><li>300 AI replies a month</li><li>Everything in Free</li><li>Cancel anytime in two clicks</li><li>7-day refund on any charge</li></ul>
-        <a class="btn" href="/app#signup">Start free, upgrade anytime</a>
+        <a class="btn light lg" href="/app#signup">Start free, upgrade anytime</a>
         <p class="fine">Renews monthly at $9 plus any applicable tax until you cancel. See <a href="/terms">Terms</a> and <a href="/refunds">Refund Policy</a>.</p>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<section class="band">
-  <div class="wrap">
-    <div class="band-head"><p class="eyebrow">Questions</p><h2>Good to know.</h2></div>
-    <div class="faq glass">
-      <details><summary>Does it post to Google or Yelp for me?</summary><p>No. You copy the reply and paste it yourself, so you always get a final read before anything goes public.</p></details>
-      <details><summary>Can I trust what the AI writes?</summary><p>The drafts are usually ready to post, but AI can get things wrong, so always read before posting. ReplyDesk is told never to make up discounts, policies or promises you haven't given it.</p></details>
-      <details><summary>Will every reply sound the same?</summary><p>No. Each reply picks up specifics from that review, follows your chosen tone, and can be rewritten with one click.</p></details>
-      <details><summary>What happens to my data?</summary><p>Review text is sent to our AI provider only to write your reply. We don't sell data or run ad trackers, and you can export or delete everything from your account. Details are in our <a href="/privacy">Privacy Policy</a>.</p></details>
-      <details><summary>I run a medical or dental practice. Anything special?</summary><p>Yes. Never confirm that a reviewer is a patient or mention their care in a public reply. ReplyDesk drafts replies that move the conversation offline, but check every reply against your own privacy obligations.</p></details>
-      <details><summary>How do I cancel?</summary><p>Click <em>Manage billing</em> in the app and cancel. You keep Pro until the end of the month you paid for, and if you change your mind within 7 days of a charge, we'll refund it.</p></details>
+  <section class="band">
+    <h2>Good to know.</h2>
+    <div class="bento">
+      <div class="tile faq">
+        <details><summary>Does it post to Google or Yelp for me?</summary><p>No. You copy the reply and paste it yourself, so you always get a final read before anything goes public.</p></details>
+        <details><summary>Can I trust what the AI writes?</summary><p>The drafts are usually ready to post, but AI can get things wrong, so always read before posting. ReplyDesk is told never to make up discounts, policies or promises you haven't given it.</p></details>
+        <details><summary>Will every reply sound the same?</summary><p>No. Each reply picks up specifics from that review, follows your chosen tone, and can be rewritten with one click.</p></details>
+        <details><summary>What happens to my data?</summary><p>Review text is sent to our AI provider only to write your reply. We don't sell data or run ad trackers, and you can export or delete everything from your account. Details are in our <a href="/privacy">Privacy Policy</a>.</p></details>
+        <details><summary>I run a medical or dental practice. Anything special?</summary><p>Yes. Never confirm that a reviewer is a patient or mention their care in a public reply. ReplyDesk drafts replies that move the conversation offline, but check every reply against your own privacy obligations.</p></details>
+        <details><summary>How do I cancel?</summary><p>Click <em>Manage billing</em> in the app and cancel. You keep Pro until the end of the month you paid for, and if you change your mind within 7 days of a charge, we'll refund it.</p></details>
+      </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<section class="final">
-  <div class="wrap"><div class="glass shine">
-    <h2>Your next review is coming. Be ready for it.</h2>
-    <p>15 free replies every month. No card needed.</p>
-    <a class="btn lg" href="/app#signup">Create your free account</a>
-  </div></div>
-</section>
+  <section class="band">
+    <div class="tile black final">
+      <h2>Your next review is coming. Be ready for it.</h2>
+      <p>15 free replies every month. No card needed.</p>
+      <a class="btn sun lg" href="/app#signup">Create your free account</a>
+    </div>
+  </section>
+</div>
 
-<footer class="site-footer" style="margin-top:0"><div class="wrap"><span>© {{YEAR}} {{COMPANY_NAME}}</span><a href="/terms">Terms</a><a href="/privacy">Privacy</a><a href="/refunds">Refunds</a><span>{{CONTACT_EMAIL}}</span><span>Not affiliated with Google or Yelp.</span></div></footer>
+<footer class="site-footer"><div class="wrap"><span>© {{YEAR}} {{COMPANY_NAME}}</span><a href="/terms">Terms</a><a href="/privacy">Privacy</a><a href="/refunds">Refunds</a><span>{{CONTACT_EMAIL}}</span><span>Not affiliated with Google or Yelp.</span></div></footer>
 
 <script src="/common.js"></script>
 <script>
   const $ = (id) => document.getElementById(id);
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  let typing = null;
-
+  // Types text into an element, the way a reply appears as it is written.
+  const typers = new WeakMap();
   function typeInto(el, text, speed = 3) {
-    clearInterval(typing);
+    clearInterval(typers.get(el));
     if (reduced) { el.textContent = text; return; }
     let n = 0;
     const caret = document.createElement("span"); caret.className = "caret";
     el.textContent = "";
-    typing = setInterval(() => {
+    const timer = setInterval(() => {
       n = Math.min(text.length, n + speed);
       el.textContent = text.slice(0, n);
-      if (n < text.length) el.append(caret); else clearInterval(typing);
+      if (n < text.length) el.append(caret); else clearInterval(timer);
     }, 24);
+    typers.set(el, timer);
   }
+  // The one moment of motion on arrival: the sample reply writes itself.
+  typeInto($("heroReply"), $("heroReply").textContent, 2);
+
   // Carry the visit's source to the app, so a sign-up is counted against the link that brought it.
   if (RD.src && RD.src !== "direct") {
     for (const a of document.querySelectorAll('a[href^="/app"]')) {

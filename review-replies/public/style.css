@@ -9,10 +9,10 @@
   --field-line: #d2d2d7;
   --ink: #1d1d1f;
   --muted: #6e6e73;
-  --brand: #0071e3;
+  --brand: #0b57d0;
   --brand-ink: #ffffff;
-  --brand-soft: rgba(0, 113, 227, 0.08);
-  --accent: #0071e3;
+  --brand-soft: rgba(11, 87, 208, 0.08);
+  --accent: #0b57d0;
   --star: #f5a623;
   --danger: #d70015;
   --danger-soft: #ffe9eb;
@@ -23,8 +23,8 @@
   --glass-edge: var(--line);
   --glass-sheen: linear-gradient(transparent, transparent);
   --glass-shadow: none;
-  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif;
-  --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
+  --font-display: "Inter", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --radius: 18px;
 }
 @media (prefers-color-scheme: dark) {
