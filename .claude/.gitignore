@@ -1,0 +1,2 @@
+# Keep vendored skill data that the repo-level "data/" rule would drop
+!data/
