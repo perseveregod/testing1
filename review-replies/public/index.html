@@ -19,55 +19,45 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="/style.css">
 <style>
-  /* Layout: editorial hero (text left, product card right), then evenly spaced sections divided by hairlines. */
-  .nav { position: sticky; top: 12px; z-index: 20; margin-top: 12px; padding: 6px 6px 6px 16px; border-radius: 999px;
-    background: var(--glass-sheen), var(--glass); border: 1px solid var(--glass-edge); box-shadow: var(--glass-shadow);
-    -webkit-backdrop-filter: blur(20px) saturate(160%); backdrop-filter: blur(20px) saturate(160%); }
-  .nav .btn.link { font-size: 15px; }
+  /* Layout: one centred column. A very large headline, then the product itself (paste a review,
+     get a reply) as the hero object. Sections below alternate white and light grey. */
+  body { background: var(--page); }
+  .topbar { position: sticky; top: 0; z-index: 20; border-bottom: 1px solid var(--line);
+    background: color-mix(in srgb, var(--page) 80%, transparent);
+    -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); }
+  .topbar .nav { padding-block: 10px; }
+  .topbar .btn.link { font-size: 15px; }
+  .topbar .btn:not(.link) { padding: 7px 16px; font-size: 15px; }
 
-  .hero { display: grid; grid-template-columns: 1.1fr 1fr; gap: 64px; align-items: center; padding-block: 72px 96px; }
-  .hero h1 { font-size: clamp(44px, 5.6vw, 72px); line-height: 1.0; letter-spacing: -0.04em; font-weight: 700; }
-  .hero h1 em { font-style: normal; color: var(--ink); opacity: .55; }
-  .appicon { position: relative; width: 96px; height: 96px; border-radius: 26px; margin-bottom: 30px;
-    background: linear-gradient(170deg, #8fd3ff 0%, #2f8cff 42%, #0b45d6 100%);
-    box-shadow: inset 0 2px 2px rgba(255,255,255,.75), inset 0 -3px 8px rgba(0,25,110,.35), 0 2px 0 rgba(255,255,255,.5), 0 18px 34px -14px rgba(10,60,200,.55), 0 36px 60px -30px rgba(0,30,120,.45); }
-  .appicon::before { content: ""; position: absolute; inset: 2px; border-radius: 24px; background: radial-gradient(120% 80% at 28% 10%, rgba(255,255,255,.7), rgba(255,255,255,0) 50%), linear-gradient(180deg, rgba(255,255,255,.25), rgba(255,255,255,0) 55%); }
-  /* glass speech bubble */
-  .appicon i { position: absolute; left: 22px; top: 20px; width: 52px; height: 42px; border-radius: 22px; background: linear-gradient(180deg, #ffffff, #e9f3ff); box-shadow: 0 10px 16px -8px rgba(0,30,120,.55), inset 0 -2px 3px rgba(80,140,255,.3); }
-  .appicon b { position: absolute; left: 34px; top: 56px; width: 16px; height: 14px; background: #e9f3ff; clip-path: polygon(0 0, 100% 0, 10% 100%); }
-  .appicon::after { content: ""; position: absolute; left: 35px; top: 36px; width: 26px; height: 5px; border-radius: 3px; background: #2f8cff; box-shadow: 0 9px 0 -1px #6fb8ff; }
-  .appicon .shadow { position: absolute; left: 10%; right: 10%; bottom: -14px; height: 14px; border-radius: 50%; background: rgba(0,30,120,.28); filter: blur(8px); }
-  .hero .lede { font-size: 19px; line-height: 1.6; color: var(--muted); margin-top: 24px; max-width: 30em; }
-  .cta { display: flex; gap: 12px; margin-top: 34px; flex-wrap: wrap; }
-  .btn.lg { padding: 13px 24px; font-size: 16px; }
-  .assure { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 22px; font-size: 14px; color: var(--muted); }
-  .assure span { display: inline-flex; align-items: center; gap: 8px; }
-  .assure span::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+  .hero { text-align: center; padding-block: clamp(56px, 9vw, 104px) 0; }
+  .hero h1 { font-size: clamp(40px, 7vw, 76px); line-height: 1.04; letter-spacing: -0.035em; font-weight: 600; }
+  .hero h1 .nb { white-space: nowrap; }
+  .hero .lede { font-size: clamp(19px, 2.3vw, 25px); line-height: 1.36; color: var(--muted); max-width: 29em; margin: 24px auto 0; text-wrap: balance; }
+  .cta { display: flex; justify-content: center; align-items: center; gap: 12px 24px; margin-top: 32px; flex-wrap: wrap; }
+  .btn.lg { padding: 13px 28px; font-size: 17px; }
+  .textlink { color: var(--accent); text-decoration: none; }
+  .textlink:hover { text-decoration: underline; }
+  .hero .fine { margin-top: 18px; font-size: 14px; color: var(--muted); }
 
-  /* product card */
-  .panel { background: var(--glass-sheen), var(--glass); border: 1px solid var(--glass-edge); box-shadow: var(--glass-shadow); border-radius: 28px; padding: 18px; -webkit-backdrop-filter: blur(22px) saturate(160%); backdrop-filter: blur(22px) saturate(160%); }
-  .play { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 14px; }
-  .seg { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--glass-strong); border: 1px solid var(--glass-edge); }
-  .seg button { border: 0; background: transparent; color: var(--muted); font: 500 13px var(--font-body); padding: 5px 12px; border-radius: 999px; cursor: pointer; transition: background .15s, color .15s; }
-  .seg button[aria-pressed=true] { background: var(--ink); color: var(--bg); }
-  .gcard { background: var(--surface); border: 1px solid var(--glass-edge); border-radius: 20px; padding: 22px; box-shadow: 0 1px 0 rgba(255,255,255,.6) inset, 0 10px 30px -18px rgba(0,20,60,.35); }
-  .who { display: flex; align-items: center; gap: 12px; }
-  .avatar { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-weight: 500; color: #fff; flex: none; }
-  .gcard .name { font-weight: 500; }
-  .gcard .meta { font-size: 13px; color: var(--muted); }
-  .gcard .rev { margin-top: 12px; min-height: 3.2em; }
-  .owner { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
-  .owner .label { font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 8px; }
-  .owner .text { min-height: 6.6em; white-space: pre-wrap; font-size: 17px; line-height: 1.55; }
+  /* The product, live: paste a review on the left, read the reply on the right. */
+  .try { padding-block: clamp(56px, 8vw, 88px) clamp(72px, 10vw, 120px); }
+  .try-intro { text-align: center; font: 600 clamp(21px, 2.6vw, 28px)/1.2 var(--font-display); letter-spacing: -0.02em; }
+  .demo { margin-top: 28px; background: var(--band); border-radius: 30px; padding: 22px; display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  .pane { background: var(--surface); border-radius: 20px; padding: 26px; display: flex; flex-direction: column; gap: 16px; box-shadow: var(--shadow); }
+  .pane h2 { font: 600 15px var(--font-body); letter-spacing: 0; color: var(--muted); }
+  .pane textarea { min-height: 148px; }
+  .pane .btn.lg { margin-top: 2px; }
+  .reply-text { white-space: pre-wrap; font-size: 19px; line-height: 1.5; }
+  #dEmpty { display: flex; flex-direction: column; flex: 1; }
+  .sample-note { margin-top: auto; padding-top: 24px; }
+  .reply-actions { display: flex; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
   .caret { display: inline-block; width: 2px; height: 1em; background: var(--accent); vertical-align: -2px; margin-left: 1px; animation: blink 1s steps(1) infinite; }
   @keyframes blink { 50% { opacity: 0; } }
-  .mock-note { font-size: 12px; color: var(--muted); margin-top: 12px; text-align: center; }
-
-  .facts .glass { display: grid; grid-template-columns: repeat(4, 1fr); padding: 0 24px; border-radius: 26px; }
-  .facts .glass > div { padding: 22px 20px; border-left: 1px solid var(--line); }
-  .facts .glass > div:first-child { border-left: 0; padding-left: 0; }
-  .facts b { display: block; font: 600 19px var(--font-display); letter-spacing: -0.02em; }
-  .facts span { font-size: 14px; color: var(--muted); }
+  .thinking { display: grid; place-items: center; align-content: center; gap: 14px; flex: 1; min-height: 220px; text-align: center; color: var(--muted); }
+  .thinking .bar { width: 160px; height: 2px; background: var(--line); overflow: hidden; border-radius: 2px; }
+  .thinking .bar i { display: block; width: 40%; height: 100%; background: var(--accent); animation: slide 1.2s ease-in-out infinite; }
+  @keyframes slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
+  .try-note { text-align: center; font-size: 13px; color: var(--muted); margin-top: 18px; }
 
   section.band { padding-block: 104px; }
     .band-head { max-width: 38em; }
@@ -80,16 +70,6 @@
   .step h3 { font-size: 22px; margin-bottom: 8px; }
   .step p { color: var(--muted); }
 
-  .try { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 48px; align-items: stretch; }
-  .try .card { padding: 26px; border-radius: 26px; }
-  .try form { display: grid; gap: 16px; }
-  .out { display: flex; flex-direction: column; gap: 12px; background: var(--surface); }
-  .out .placeholder { color: var(--muted); display: grid; place-items: center; text-align: center; min-height: 260px; padding: 24px; font-size: 18px; border: 1.5px dashed var(--line); border-radius: 18px; }
-  .out .text { white-space: pre-wrap; font-size: 17px; line-height: 1.6; }
-  .thinking { display: grid; place-items: center; gap: 14px; min-height: 260px; text-align: center; color: var(--muted); }
-  .thinking .bar { width: 160px; height: 2px; background: var(--line); overflow: hidden; border-radius: 2px; }
-  .thinking .bar i { display: block; width: 40%; height: 100%; background: var(--accent); animation: slide 1.2s ease-in-out infinite; }
-  @keyframes slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
 
   .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 56px; }
   .feature { padding: 28px; background: var(--surface); }
@@ -137,18 +117,12 @@
 
   @media (max-width: 900px) {
     .nav .hide-sm { display: none; }
-    .hero { grid-template-columns: 1fr; gap: 44px; padding-block: 36px 64px; }
-    /* In one column the ribbon runs behind the intro text, so it needs more contrast than grey. */
-    .hero .lede { color: var(--ink); opacity: .85; }
-    .hero .eyebrow { color: var(--ink); opacity: .8; }
-    .hero h1 em { opacity: .7; }
-    .facts .glass { grid-template-columns: 1fr 1fr; }
-    .facts .glass > div:nth-child(3) { border-left: 0; padding-left: 0; }
-    .facts .glass > div:nth-child(n+3) { border-top: 1px solid var(--line); }
-    .steps, .try { grid-template-columns: 1fr; }
+    .hero h1 br.wide { display: none; }
+    .demo { grid-template-columns: 1fr; padding: 12px; border-radius: 24px; gap: 12px; }
+    .pane { padding: 20px; }
+    .steps { grid-template-columns: 1fr; }
     .steps { gap: 36px; }
     .features { grid-template-columns: 1fr; }
-    .nav { padding-left: 14px; }
     .pricing { grid-template-columns: 1fr; }
     section.band { padding-block: 72px; }
     .final { padding-block: 24px 72px; }
@@ -161,8 +135,7 @@
 </style>
 </head>
 <body data-src="{{SOURCE}}">
-<div class="ribbons" aria-hidden="true"><img src="/ribbons.svg" alt=""></div>
-<div class="wrap">
+<div class="topbar"><div class="wrap">
   <nav class="nav">
     <a class="logo" href="/"><i>★</i>ReplyDesk</a>
     <span class="spacer"></span>
@@ -170,62 +143,59 @@
     <a class="btn link" href="/app#login">Log in</a>
     <a class="btn" href="/app#signup">Start free</a>
   </nav>
+</div></div>
 
-  <header class="hero">
-    <div>
-      <div class="appicon" aria-hidden="true"><i></i><b></b><span class="shadow"></span></div>
-      <p class="eyebrow">For restaurants, salons, clinics and shops</p>
-      <h1>Every review answered, <em>in your voice.</em></h1>
-      <p class="lede">Paste a Google or Yelp review and get a thoughtful reply in seconds. Warm thanks for the five-star reviews, and calm, professional answers to the hard ones.</p>
-      <div class="cta">
-        <a class="btn lg" href="/app#signup">Start free</a>
-        <a class="btn ghost lg" href="#try">See it on a real review</a>
-      </div>
-      <div class="assure"><span>15 free replies a month</span><span>No card needed</span><span>You approve every word</span></div>
+<header class="hero">
+  <div class="wrap">
+    <h1>Every review answered,<br class="wide"> <span class="nb">in your voice.</span></h1>
+    <p class="lede">Paste a Google or Yelp review and get a reply that sounds like you. Built for restaurants, salons, clinics and shops.</p>
+    <div class="cta">
+      <a class="btn lg" href="/app#signup">Start free</a>
+      <a class="textlink" href="#pricing">See pricing</a>
     </div>
+    <p class="fine">15 free replies a month. No card needed.</p>
+  </div>
+</header>
 
-    <div aria-label="Example of a review and a drafted reply">
-      <div class="panel shine">
-        <div class="play">
-          <div class="seg" id="pickRating" role="group" aria-label="Review rating">
-            <button type="button" data-r="5" aria-pressed="true">5 stars</button>
-            <button type="button" data-r="3" aria-pressed="false">3 stars</button>
-            <button type="button" data-r="1" aria-pressed="false">1 star</button>
-          </div>
-          <div class="seg" id="pickTone" role="group" aria-label="Reply tone">
-            <button type="button" data-t="warm" aria-pressed="true">Warm</button>
-            <button type="button" data-t="pro" aria-pressed="false">Formal</button>
-            <button type="button" data-t="fun" aria-pressed="false">Playful</button>
-          </div>
+<section class="try" id="try" aria-label="Try ReplyDesk on a review">
+  <div class="wrap">
+    <p class="try-intro">Try it on one of your own reviews.</p>
+    <div class="demo">
+      <form class="pane" id="demo" autocomplete="off">
+        <h2>The review</h2>
+        <div class="two">
+          <div class="field"><label for="dBiz">Your business</label><input id="dBiz" placeholder="Rosa's Taqueria"></div>
+          <div class="field"><label for="dName">Reviewer</label><input id="dName" placeholder="Jamie L."></div>
         </div>
-        <div class="gcard" id="gcard">
-          <div class="who">
-            <div class="avatar" id="mAvatar"></div>
-            <div>
-              <div class="name" id="mName"></div>
-              <div class="meta"><span class="stars" id="mStars"></span> · <span id="mWhen"></span></div>
-            </div>
+        <div class="field"><label>Rating</label><div id="dStars"></div></div>
+        <div class="field">
+          <label for="dBody">What they wrote</label>
+          <textarea id="dBody" required>Waited almost 40 minutes for our food on a Tuesday night and nobody told us why. The carnitas were honestly great once they came, but the wait killed it.</textarea>
+        </div>
+        <button class="btn lg" id="dGo" type="submit">Write my reply</button>
+        <p class="msg" id="dMsg" role="status"></p>
+      </form>
+      <div class="pane" aria-live="polite">
+        <h2 id="dLabel">Sample reply</h2>
+        <div id="dEmpty"><p class="reply-text">Hi Jamie, thank you for telling us, and I'm sorry about Tuesday. Forty minutes is too long, and someone should have come to your table to explain. I'm glad the carnitas were worth it once they arrived. Next time you're in, ask for me and we'll make sure the wait matches the food.
+
+— Rosa</p>
+          <p class="muted small sample-note">This one is a sample. Paste your own review and press Write my reply.</p></div>
+        <div class="thinking" id="dThink" hidden><div class="bar"><i></i></div><p id="dThinkText">Reading the review…</p></div>
+        <div id="demoOut" hidden>
+          <p class="reply-text" id="dReply"></p>
+          <div class="reply-actions">
+            <button class="btn ghost small" type="button" id="dCopy">Copy reply</button>
+            <a class="btn small" href="/app#signup">Save it and do the rest</a>
           </div>
-          <p class="rev" id="mReview"></p>
-          <div class="owner">
-            <div class="label">Your reply</div>
-            <p class="text" id="mReply"></p>
-          </div>
+          <p class="msg" id="dCopyMsg" role="status"></p>
+          <p class="muted small">AI drafts can contain mistakes. Always read before posting.</p>
         </div>
       </div>
-      <p class="mock-note">Sample review and reply, for illustration.</p>
     </div>
-  </header>
-</div>
-
-<div class="facts" aria-label="At a glance">
-  <div class="wrap"><div class="glass">
-    <div><b>Seconds</b><span>from review to ready-to-post reply</span></div>
-    <div><b>Your voice</b><span>tone, sign-off and details you choose</span></div>
-    <div><b>Nothing auto-posts</b><span>you read and post every reply</span></div>
-    <div><b>Cancel anytime</b><span>plus a 7-day refund on any charge</span></div>
-  </div></div>
-</div>
+    <p class="try-note">No account needed. The review is sent to our AI provider to write the reply and isn't saved. See our <a href="/privacy">Privacy Policy</a>.</p>
+  </div>
+</section>
 
 <section class="band">
   <div class="wrap">
@@ -237,44 +207,6 @@
       <div class="step glass shine"><h3>Set your voice once</h3><p>Add your business name, tone, sign-off and anything worth mentioning, like specials, booking links or who to contact about problems.</p></div>
       <div class="step glass shine"><h3>Paste a review</h3><p>Copy it from Google or Yelp, or import a batch from a spreadsheet. The harshest reviews are flagged so you answer them first.</p></div>
       <div class="step glass shine"><h3>Read, edit, post</h3><p>Check the draft, change anything you like, and paste it into Google or Yelp. Nothing goes public until you post it.</p></div>
-    </div>
-  </div>
-</section>
-
-<section class="band" id="try">
-  <div class="wrap">
-    <div class="band-head">
-      <p class="eyebrow">Try it free</p>
-      <h2>Paste one of your real reviews.</h2>
-      <p>No account needed. See exactly what you'd get.</p>
-    </div>
-    <div class="try">
-      <form class="card" id="demo" autocomplete="off">
-        <div class="two">
-          <div class="field"><label for="dBiz">Your business</label><input id="dBiz" placeholder="Rosa's Taqueria"></div>
-          <div class="field"><label for="dName">Reviewer name</label><input id="dName" placeholder="Jamie L."></div>
-        </div>
-        <div class="field"><label>Rating</label><div id="dStars"></div></div>
-        <div class="field">
-          <label for="dBody">Review</label>
-          <textarea id="dBody" required>Waited almost 40 minutes for our food on a Tuesday night and nobody told us why. The carnitas were honestly great once they came, but the wait killed it.</textarea>
-        </div>
-        <button class="btn lg" id="dGo" type="submit">Write my reply</button>
-        <p class="msg" id="dMsg" role="status"></p>
-        <p class="muted small">The review is sent to our AI provider to write the reply and isn't saved. See our <a href="/privacy">Privacy Policy</a>.</p>
-      </form>
-      <div class="card out" aria-live="polite">
-        <div class="placeholder" id="dEmpty">Your reply will appear here.</div>
-        <div class="thinking" id="dThink" hidden><div class="bar"><i></i></div><p id="dThinkText">Reading the review…</p></div>
-        <div id="demoOut" hidden>
-          <div class="owner" style="margin-top:0;padding-top:0;border:0"><div class="label">Draft reply</div><p class="text" id="dReply"></p></div>
-          <div style="display:flex; gap:8px; margin-top:18px; flex-wrap:wrap;">
-            <button class="btn ghost small" type="button" id="dCopy">Copy reply</button>
-            <a class="btn small" href="/app#signup">Save it and do the rest</a>
-          </div>
-          <p class="muted small" style="margin-top:12px">AI drafts can contain mistakes. Always read before posting.</p>
-        </div>
-      </div>
     </div>
   </div>
 </section>
@@ -351,34 +283,9 @@
 <script src="/common.js"></script>
 <script>
   const $ = (id) => document.getElementById(id);
-  document.documentElement.classList.add("js");
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  // ----- hero: example card (rating x tone) -----
-  const EXAMPLES = {
-    5: { name: "Marco P.", initial: "M", color: "#8a5a3b", when: "2 days ago",
-      review: "Best al pastor in town, hands down. The salsa bar is unreal and the staff remembered my order from last week.",
-      reply: {
-        warm: "Marco, this made our week! We love having you back, and we'll keep your usual ready. Next time, try the salsa macha on the al pastor. Trust us.\n\n— Rosa & the team",
-        pro: "Thank you, Marco. We're glad the al pastor and salsa bar lived up to expectations, and our team takes pride in remembering regulars. We look forward to serving you again soon.\n\n— Rosa's Taqueria",
-        fun: "Marco! You remembered us, we remembered you. That's basically friendship. The salsa bar says hi, and your usual is already on standby.\n\n— Rosa & the crew",
-      } },
-    3: { name: "Priya S.", initial: "P", color: "#5b6b7a", when: "1 week ago",
-      review: "Cut was good but I waited 25 minutes past my appointment time with no heads up.",
-      reply: {
-        warm: "Hi Priya, thank you for the honest feedback, and we're glad you liked the cut. Waiting 25 minutes without a word isn't okay. We now text clients when we're running behind so it doesn't happen again.\n\n— Studio Nine",
-        pro: "Thank you for your feedback, Priya. We're pleased you were happy with your cut, and we apologize for the delay. We've introduced text alerts when appointments run late so your time is respected.\n\n— Studio Nine",
-        fun: "Priya, the cut: great. The wait: not great, and we know it. We text heads-ups now when we run behind, so next time you get a fresh cut and your 25 minutes back.\n\n— Studio Nine",
-      } },
-    1: { name: "Dana K.", initial: "D", color: "#6b7a5b", when: "3 hours ago",
-      review: "Waited 45 minutes and my order was wrong. Not coming back.",
-      reply: {
-        warm: "Dana, we're truly sorry. A long wait and a wrong order is not the experience we want for anyone. We'd like to make this right. Please email rosa@example.com so we can talk directly.\n\n— Rosa",
-        pro: "Dana, we sincerely apologize for the wait and the error with your order. This falls short of our standards. Please contact us at rosa@example.com so we can resolve this personally.\n\n— Rosa's Taqueria",
-        fun: "Dana, we're really sorry. A 45-minute wait and the wrong order is a rough night, and that's on us. We'd love the chance to fix it. Please reach out at rosa@example.com.\n\n— Rosa",
-      } },
-  };
-  let rating = 5, tone = "warm", typing = null;
+  let typing = null;
 
   function typeInto(el, text, speed = 3) {
     clearInterval(typing);
@@ -392,42 +299,6 @@
       if (n < text.length) el.append(caret); else clearInterval(typing);
     }, 24);
   }
-  function render(animate) {
-    const ex = EXAMPLES[rating];
-    $("mAvatar").textContent = ex.initial;
-    $("mAvatar").style.background = ex.color;
-    $("mName").textContent = ex.name;
-    $("mStars").textContent = RD.stars(rating);
-    $("mWhen").textContent = ex.when;
-    $("mReview").textContent = ex.review;
-    for (const b of $("pickRating").children) b.setAttribute("aria-pressed", String(+b.dataset.r === rating));
-    for (const b of $("pickTone").children) b.setAttribute("aria-pressed", String(b.dataset.t === tone));
-    if (animate) typeInto($("mReply"), ex.reply[tone]); else $("mReply").textContent = ex.reply[tone];
-  }
-  for (const b of $("pickRating").children) b.onclick = () => { rating = +b.dataset.r; render(true); };
-  for (const b of $("pickTone").children) b.onclick = () => { tone = b.dataset.t; render(true); };
-  render(false);
-
-  // ----- light follows the pointer across glass -----
-  document.querySelectorAll(".feature, .plan, .try > .card").forEach((el) => { el.classList.add("glass"); el.classList.add("shine"); });
-  if (!reduced) document.addEventListener("pointermove", (e) => {
-    const el = e.target.closest?.(".shine");
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    el.style.setProperty("--mx", e.clientX - r.left + "px");
-    el.style.setProperty("--my", e.clientY - r.top + "px");
-  });
-
-  // ----- gentle fade-in as sections scroll into view -----
-  const revealables = document.querySelectorAll(".band-head, .step, .feature, .plan, .try > *, .final h2");
-  revealables.forEach((el) => el.classList.add("reveal"));
-  if ("IntersectionObserver" in window && !reduced) {
-    const io = new IntersectionObserver((entries) => {
-      for (const en of entries) if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); }
-    }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
-    revealables.forEach((el) => io.observe(el));
-  } else revealables.forEach((el) => el.classList.add("in"));
-
   // Carry the visit's source to the app, so a sign-up is counted against the link that brought it.
   if (RD.src && RD.src !== "direct") {
     for (const a of document.querySelectorAll('a[href^="/app"]')) {
@@ -455,6 +326,8 @@
     $("dEmpty").hidden = true;
     $("demoOut").hidden = true;
     $("dThink").hidden = false;
+    $("dLabel").textContent = "Your reply";
+    $("dCopyMsg").textContent = "";
     const phases = ["Reading the review…", "Picking up the details…", "Matching the tone…", "Writing your reply…"];
     let ph = 0;
     $("dThinkText").textContent = phases[0];
@@ -470,6 +343,7 @@
     } catch (err) {
       $("dThink").hidden = true;
       $("dEmpty").hidden = false;
+      $("dLabel").textContent = "Sample reply";
       $("dMsg").className = "msg err";
       $("dMsg").textContent = err.message;
     } finally {
@@ -478,7 +352,7 @@
       $("dGo").textContent = "Write my reply";
     }
   });
-  $("dCopy").onclick = () => RD.copy($("dReply").textContent, $("dMsg"));
+  $("dCopy").onclick = () => RD.copy($("dReply").textContent, $("dCopyMsg"));
 </script>
 </body>
 </html>
