@@ -1,26 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import { Bell, BellRing, MapPin, Smartphone } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { EVERYDAY_CATEGORIES } from "@/lib/categories";
 import { apiSend, errorMessage } from "@/lib/client/api";
-import { useAlertPrefs, usePlaces, useViewer } from "@/lib/client/hooks";
+import { useAlertPrefs, useViewer } from "@/lib/client/hooks";
 import { useT } from "@/lib/client/lang";
 import { RADIUS_OPTIONS_MI } from "@/lib/plans";
 import type { AlertPreferences, CategoryId } from "@/lib/types";
 import { useLocation } from "@/components/providers/LocationProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { Chip, Group, Row, Segmented, Toggle } from "@/components/ui/Controls";
-import { usePush, type PushStatus } from "@/lib/client/push";
-import { InstallSheet } from "@/components/onboarding/InstallSheet";
+import { useAlertReadiness } from "@/lib/client/readiness";
+import { AlertStatus } from "./AlertStatus";
 import { Skeleton } from "@/components/ui/States";
-import { Button } from "@/components/ui/Button";
 
 export function AlertSettings() {
   const { prefs, mutate, isLoading } = useAlertPrefs();
   const { viewer } = useViewer();
-  const { places } = usePlaces();
   const { request: requestLocation } = useLocation();
+  // What can really be delivered, as opposed to what is switched on below.
+  const readiness = useAlertReadiness();
   const toast = useToast();
   const { t, cat } = useT();
   const limits = viewer?.limits;
@@ -62,10 +62,25 @@ export function AlertSettings() {
 
   return (
     <div className="pb-4">
-      <BrowserNotifications />
+      <AlertStatus
+        readiness={readiness}
+        onUseArea={() => {
+          requestLocation();
+          save({ enabled: true, nearMe: true });
+        }}
+      />
 
-      <Group>
-        <Toggle checked={prefs.enabled} onChange={(v) => save({ enabled: v })} label={t("alerts.incident")} description={t("alerts.incidentBody")} />
+      {/* These are preferences. A switch that is on with nothing behind it
+          shows amber and says why; green is kept for ones that are working. */}
+      <Group title={t("alerts.prefs")}>
+        <Toggle
+          checked={prefs.enabled}
+          onChange={(v) => save({ enabled: v })}
+          label={t("alerts.incident")}
+          description={t("alerts.incidentBody")}
+          idle={readiness.loaded && readiness.state === "setup_needed"}
+          note={t("ready.masterIdle")}
+        />
         <Toggle
           checked={prefs.nearMe}
           disabled={!prefs.enabled}
@@ -75,13 +90,17 @@ export function AlertSettings() {
           }}
           label={t("alerts.nearMe")}
           description={t("alerts.nearMeBody")}
+          idle={readiness.nearMe === "blocked"}
+          note={t("ready.nearMeIdle")}
         />
         <Toggle
           checked={prefs.savedPlaceAlerts}
           disabled={!prefs.enabled}
           onChange={(v) => save({ savedPlaceAlerts: v })}
           label={t("alerts.nearPlaces")}
-          description={places.length ? (places.length === 1 ? t("alerts.savedPlace1") : t("alerts.savedPlaces", { n: places.length })) : t("alerts.noPlaces")}
+          description={readiness.watchedPlaces === 1 ? t("alerts.savedPlace1") : t("alerts.savedPlaces", { n: readiness.watchedPlaces })}
+          idle={readiness.placesSwitchIdle}
+          note={t("ready.placesIdle")}
         />
         <Toggle
           checked={prefs.criticalOnly}
@@ -167,66 +186,5 @@ function QuietHours({ prefs, allowed, onSave }: { prefs: AlertPreferences; allow
         </div>
       )}
     </Group>
-  );
-}
-
-function BrowserNotifications() {
-  const push = usePush();
-  const toast = useToast();
-  const { t } = useT();
-  const [installOpen, setInstallOpen] = useState(false);
-  if (push.status === "loading") return null;
-
-  const copy: Record<Exclude<PushStatus, "loading">, { title: string; body: string }> = {
-    on: { title: t("push.on"), body: `${t("push.onBody")}${push.devices > 1 ? t("push.devices", { n: push.devices }) : ""}` },
-    off: { title: t("push.off"), body: t("push.offBody") },
-    install: { title: t("push.install"), body: t("push.installBody") },
-    setup: { title: t("push.setup"), body: t("push.setupBody") },
-    denied: { title: t("push.denied"), body: t("push.deniedBody") },
-    unsupported: { title: t("push.unsupported"), body: t("push.unsupportedBody") },
-  };
-  const c = copy[push.status];
-
-  return (
-    <div className="mt-4 flex items-start gap-3 rounded-card bg-surface p-4">
-      <span className={`mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full ${push.status === "on" ? "bg-ok/15 text-ok" : "bg-brand/15 text-brand"}`}>
-        {push.status === "on" ? <BellRing className="size-[18px]" aria-hidden /> : push.status === "install" ? <Smartphone className="size-[18px]" aria-hidden /> : <Bell className="size-[18px]" aria-hidden />}
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="text-[15px] font-semibold tracking-[-0.01em]">{c.title}</p>
-        <p className="mt-0.5 text-[13px] leading-snug text-muted">{c.body}</p>
-        {push.error && <p className="mt-1 text-[13px] text-danger">{push.error}</p>}
-        <div className="mt-3 flex flex-wrap gap-2">
-          {push.status === "off" && (
-            <Button size="sm" onClick={push.enable} loading={push.busy}>
-              {t("common.turnOn")}
-            </Button>
-          )}
-          {push.status === "on" && (
-            <>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={async () => {
-                  const n = await push.sendTest().catch(() => 0);
-                  toast(n > 0 ? t("push.testSent") : t("push.testFailed"), n > 0 ? "success" : "error");
-                }}
-              >
-                {t("push.sendTest")}
-              </Button>
-              <Button size="sm" variant="ghost" onClick={push.disable} loading={push.busy}>
-                {t("push.turnOffDevice")}
-              </Button>
-            </>
-          )}
-          {push.status === "install" && (
-            <Button size="sm" onClick={() => setInstallOpen(true)}>
-              {t("common.showMeHow")}
-            </Button>
-          )}
-        </div>
-      </div>
-      <InstallSheet open={installOpen} onClose={() => setInstallOpen(false)} />
-    </div>
   );
 }

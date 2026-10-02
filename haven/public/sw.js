@@ -28,6 +28,14 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     (async () => {
       await self.registration.showNotification(data.title, options);
+      // Tell any open Haven window that a push really arrived here. The alert
+      // settings use this to confirm a test instead of assuming it worked.
+      try {
+        const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+        for (const client of windows) client.postMessage({ type: "haven-push", tag: data.tag, at: Date.now() });
+      } catch {
+        // No window to tell: nothing to confirm.
+      }
       if (typeof data.badge === "number" && "setAppBadge" in navigator) {
         try {
           await navigator.setAppBadge(data.badge);

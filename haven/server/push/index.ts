@@ -79,8 +79,8 @@ export async function sendTestPush(userId: string): Promise<number> {
   let sent = 0;
   for (const sub of subs) {
     const payload: PushPayload = {
-      title: "Haven alerts are on",
-      body: "You'll hear about incidents near your places, and nothing else.",
+      title: "Test from Haven",
+      body: "If you can read this, notifications reach this device.",
       url: "/alerts",
       tag: "haven-test",
     };

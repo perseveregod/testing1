@@ -69,6 +69,8 @@ export function Toggle({
   description,
   disabled,
   locked,
+  idle,
+  note,
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
@@ -76,7 +78,12 @@ export function Toggle({
   description?: string;
   disabled?: boolean;
   locked?: boolean;
+  /** Switched on, but not doing anything yet: shown amber, never green. */
+  idle?: boolean;
+  /** Why it's idle, in place of the description. */
+  note?: string;
 }) {
+  const waiting = Boolean(idle) && checked;
   return (
     <label className={`flex min-h-[52px] cursor-pointer items-center gap-4 py-3 ${disabled ? "opacity-45" : ""}`}>
       <span className="flex-1">
@@ -84,7 +91,11 @@ export function Toggle({
           {label}
           {locked && <Lock className="size-3.5 text-gold" aria-label="Lifetime feature" />}
         </span>
-        {description && <span className="mt-0.5 block text-[13px] leading-snug text-muted">{description}</span>}
+        {waiting && note ? (
+          <span className="mt-0.5 block text-[13px] leading-snug text-warn">{note}</span>
+        ) : (
+          description && <span className="mt-0.5 block text-[13px] leading-snug text-muted">{description}</span>
+        )}
       </span>
       <input
         type="checkbox"
@@ -96,7 +107,7 @@ export function Toggle({
       />
       <span
         aria-hidden
-        className="relative h-[31px] w-[51px] shrink-0 rounded-full bg-[#3a3d44] transition-colors duration-200 peer-checked:bg-ok peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand after:absolute after:left-[2px] after:top-[2px] after:size-[27px] after:rounded-full after:bg-white after:shadow-[0_2px_6px_rgba(0,0,0,0.35)] after:transition-transform after:duration-300 after:ease-[var(--ease-spring)] peer-checked:after:translate-x-5"
+        className={`relative h-[31px] w-[51px] shrink-0 rounded-full bg-surface-3 transition-colors duration-200 ${waiting ? "peer-checked:bg-warn/70" : "peer-checked:bg-ok"} peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand after:absolute after:left-[2px] after:top-[2px] after:size-[27px] after:rounded-full after:bg-white after:shadow-[0_2px_6px_rgba(0,0,0,0.35)] after:transition-transform after:duration-300 after:ease-[var(--ease-spring)] peer-checked:after:translate-x-5`}
       />
     </label>
   );
