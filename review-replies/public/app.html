@@ -19,8 +19,8 @@
   .auth { max-width: 400px; margin: 48px auto; }
   .auth h1 { font-size: 30px; margin-bottom: 6px; }
   .tabs { display: flex; gap: 4px; margin: 20px 0; border-bottom: 1px solid var(--line); }
-  .tabs button { background: none; border: 0; padding: 10px 12px; font: 600 15px var(--font-body); color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
-  .tabs button[aria-selected=true] { color: var(--ink); border-color: var(--brand); }
+  .tabs button { background: none; border: 0; padding: 10px 12px; font: 600 15px var(--font-body); color: var(--ink); opacity: .65; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tabs button[aria-selected=true] { opacity: 1; border-color: var(--brand); }
 
   .topbar { display: flex; align-items: center; gap: 14px; padding-block: 14px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
   .meter { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); }
@@ -83,7 +83,7 @@
       <label class="check" id="consentRow"><input type="checkbox" id="consent"> <span>I'm 18 or older and agree to the <a href="/terms" target="_blank">Terms of Service</a> and <a href="/privacy" target="_blank">Privacy Policy</a>.</span></label>
       <button class="btn" id="authGo" type="submit">Create free account</button>
       <p class="msg" id="authMsg" role="status"></p>
-      <p class="muted small" id="authNote">Free for 15 replies a month. No card needed.</p>
+      <p class="small" id="authNote" style="opacity:.85">Free for 15 replies a month. No card needed.</p>
     </form>
   </section>
 

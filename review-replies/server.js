@@ -390,6 +390,17 @@ if (require.main === module) {
     if (!stripe) console.log("No STRIPE_SECRET_KEY/STRIPE_PRICE_ID: upgrade button is disabled.");
     if (stripe && !WEBHOOK_SECRET) console.log("WARNING: STRIPE_WEBHOOK_SECRET is not set, so paid upgrades will never activate.");
     if (SITE_DEFAULTS) console.log("WARNING: set COMPANY_NAME, CONTACT_EMAIL and GOVERNING_LAW before launch. The legal pages show placeholders until you do.");
+
+    // Render's free plan sleeps the service after about 15 idle minutes, and the
+    // next visitor waits on a loading screen. A request to our own public address
+    // every 10 minutes counts as traffic and keeps it awake. KEEP_AWAKE=off stops it.
+    if (process.env.RENDER_EXTERNAL_URL && process.env.KEEP_AWAKE !== "off") {
+      const self = process.env.RENDER_EXTERNAL_URL.replace(/\/$/, "");
+      setInterval(() => {
+        fetch(`${self}/`, { signal: AbortSignal.timeout(30_000) }).catch(() => {});
+      }, 10 * 60 * 1000).unref();
+      console.log("Keep-awake ping is on (every 10 minutes).");
+    }
   });
 }
 
