@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import useSWR, { useSWRConfig } from "swr";
-import { Check, ChevronLeft, Layers, LocateFixed, X } from "lucide-react";
+import { Check, ChevronLeft, Layers, LocateFixed, Search, X } from "lucide-react";
 import { EVERYDAY_CATEGORIES, categoriesInGroup, getCategory } from "@/lib/categories";
 import { apiSend, ApiClientError, errorMessage, fetcher } from "@/lib/client/api";
 import { DEFAULT_CENTER } from "@/lib/client/defaults";
@@ -18,6 +18,7 @@ import { useToast } from "@/components/providers/ToastProvider";
 import { CategoryIcon } from "@/components/incident/CategoryIcon";
 import { EmergencyNote } from "@/components/EmergencyNote";
 import { MiniMap } from "@/components/map/MiniMap";
+import { SearchSheet } from "@/components/map/SearchSheet";
 import { Button, ButtonLink } from "@/components/ui/Button";
 
 type Step = 1 | 2 | 3 | 4 | 5;
@@ -49,6 +50,10 @@ export function ReportFlow() {
   const [step, setStep] = useState<Step>(1);
   const [category, setCategory] = useState<CategoryId | null>(null);
   const [point, setPoint] = useState<LatLng | null>(null);
+  // How the point was chosen. "none" means the pin is still on the default
+  // spot (central Houston): that must never be confirmed by accident.
+  const [chosenBy, setChosenBy] = useState<"none" | "gps" | "map" | "search">("none");
+  const [pickedLabel, setPickedLabel] = useState<string | null>(null);
   const [recenter, setRecenter] = useState(0);
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -68,6 +73,8 @@ export function ReportFlow() {
     if (step !== 2 || autoCentered.current || !position) return;
     autoCentered.current = true;
     setPoint(position);
+    setChosenBy("gps");
+    setPickedLabel(null);
     setRecenter((n) => n + 1);
   }, [step, position]);
 
@@ -141,16 +148,33 @@ export function ReportFlow() {
             recenterKey={recenter}
             category={category}
             point={point}
-            onChange={setPoint}
+            chosenBy={chosenBy}
+            pickedLabel={pickedLabel}
+            onChange={(p, byUser) => {
+              setPoint(p);
+              if (byUser) {
+                setChosenBy("map");
+                setPickedLabel(null);
+              }
+            }}
+            onSearchPick={(p, label) => {
+              setPoint(p);
+              setChosenBy("search");
+              setPickedLabel(label);
+              setRecenter((n) => n + 1);
+            }}
             hasPosition={Boolean(position)}
+            locationBlocked={status === "denied" || status === "unavailable"}
             onUseMyLocation={() => {
               if (position) {
                 setPoint(position);
+                setChosenBy("gps");
+                setPickedLabel(null);
                 setRecenter((n) => n + 1);
               } else request();
             }}
             onNext={() => {
-              if (!point) setPoint(start);
+              if (chosenBy === "none" || !point) return;
               setStep(3);
             }}
           />
@@ -209,23 +233,36 @@ function StepLocation({
   category,
   point,
   onChange,
+  onSearchPick,
   onUseMyLocation,
   onNext,
   hasPosition,
+  locationBlocked,
+  chosenBy,
+  pickedLabel,
 }: {
   start: LatLng;
   recenterKey: number;
   category: CategoryId;
   point: LatLng | null;
-  onChange: (p: LatLng) => void;
+  onChange: (p: LatLng, byUser: boolean) => void;
+  onSearchPick: (p: LatLng, label: string) => void;
   onUseMyLocation: () => void;
   onNext: () => void;
   hasPosition: boolean;
+  locationBlocked: boolean;
+  chosenBy: "none" | "gps" | "map" | "search";
+  pickedLabel: string | null;
 }) {
   const { t } = useT();
+  const [mapFailed, setMapFailed] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const chosen = chosenBy !== "none";
   const p = point ?? start;
-  const key = `/api/geocode/reverse?lat=${p.lat.toFixed(3)}&lng=${p.lng.toFixed(3)}`;
+  // Only look a street up for a point someone actually chose.
+  const key = chosen ? `/api/geocode/reverse?lat=${p.lat.toFixed(3)}&lng=${p.lng.toFixed(3)}` : null;
   const { data, isLoading } = useSWR<{ label: string }>(key, fetcher, { revalidateOnFocus: false, keepPreviousData: true });
+  const street = isLoading && !data ? t("report.finding") : data?.label || (chosenBy === "gps" ? t("report.fromGps") : t("report.nearPin"));
 
   return (
     <div className="haven-rise flex flex-1 flex-col">
@@ -235,28 +272,49 @@ function StepLocation({
         recenterKey={recenterKey}
         color={getCategory(category).color}
         onChange={onChange}
-        className="h-[min(50dvh,440px)]"
+        onFail={() => setMapFailed(true)}
+        className={mapFailed ? "h-40" : "h-[min(44dvh,400px)]"}
         label={t("report.mapLabel")}
       />
       <div className="mt-4 flex items-center gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-[12px] text-muted">{t("report.approx")}</p>
-          <p className="truncate text-[17px] font-semibold tracking-[-0.015em]">{isLoading && !data ? t("report.finding") : data?.label || t("report.nearPin")}</p>
+          {chosen ? (
+            <>
+              <p className="text-[12px] text-muted">{t("report.approx")}</p>
+              <p className="truncate text-[17px] font-semibold tracking-[-0.015em]">{pickedLabel ?? street}</p>
+            </>
+          ) : (
+            // Nothing chosen: say so, instead of naming the default spot as if it were theirs.
+            <div role="status">
+              <p className="text-[17px] font-semibold tracking-[-0.015em] text-warn">{t("report.notChosen")}</p>
+              <p className="mt-0.5 text-[13px] leading-snug text-muted">{mapFailed ? t("report.notChosenFailed") : t("report.notChosenBody")}</p>
+            </div>
+          )}
         </div>
         <button
           onClick={onUseMyLocation}
+          disabled={locationBlocked && !hasPosition}
           aria-label={hasPosition ? t("common.useMyLocation") : t("report.enableLocation")}
-          className="press flex size-11 shrink-0 items-center justify-center rounded-full bg-surface-2 text-brand"
+          className="press flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-surface-2 text-brand disabled:text-faint disabled:opacity-60"
         >
           <LocateFixed className="size-5" aria-hidden />
         </button>
       </div>
-      <p className="mt-2 text-[12px] leading-snug text-faint">{t("report.rounded")}</p>
+      <button
+        type="button"
+        onClick={() => setSearchOpen(true)}
+        className="press mt-3 flex min-h-12 w-full items-center gap-2.5 rounded-control bg-surface-2 px-4 text-left text-[15px] text-muted"
+      >
+        <Search className="size-[18px] shrink-0" aria-hidden />
+        {t("report.search")}
+      </button>
+      {chosen && <p className="mt-2 text-[12px] leading-snug text-faint">{t("report.rounded")}</p>}
       <StickyFooter>
-        <Button size="lg" block onClick={onNext}>
-          {t("report.confirmLocation")}
+        <Button size="lg" block onClick={onNext} disabled={!chosen}>
+          {chosen ? t("report.confirmLocation") : t("report.chooseFirst")}
         </Button>
       </StickyFooter>
+      <SearchSheet open={searchOpen} onClose={() => setSearchOpen(false)} near={p} onPick={onSearchPick} />
     </div>
   );
 }

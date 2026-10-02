@@ -3,7 +3,8 @@
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useRef, useState } from "react";
 import type { Map as MlMap } from "maplibre-gl";
-import { MapPin } from "lucide-react";
+import { MapPin, MapPinOff } from "lucide-react";
+import { useT } from "@/lib/client/lang";
 import { MAP_STYLE_URL } from "@/lib/client/defaults";
 import type { LatLng } from "@/lib/geo";
 import { tuneStyle } from "./IncidentMap";
@@ -20,6 +21,7 @@ export function MiniMap({
   mode,
   color = "#5ee0c8",
   onChange,
+  onFail,
   recenterKey,
   className = "",
   label,
@@ -28,7 +30,10 @@ export function MiniMap({
   center: LatLng;
   mode: "preview" | "picker";
   color?: string;
-  onChange?: (p: LatLng) => void;
+  /** `byUser` is true when the person moved the map themselves (not the first load or a programmatic move). */
+  onChange?: (p: LatLng, byUser: boolean) => void;
+  /** The map could not start on this device (no WebGL, blocked, out of memory). */
+  onFail?: () => void;
   /** Change this to fly the picker to a new `center`. */
   recenterKey?: string | number;
   className?: string;
@@ -39,10 +44,14 @@ export function MiniMap({
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MlMap | null>(null);
   const onChangeRef = useRef(onChange);
+  const onFailRef = useRef(onFail);
   const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const { t } = useT();
 
   useEffect(() => {
     onChangeRef.current = onChange;
+    onFailRef.current = onFail;
   });
 
   useEffect(() => {
@@ -85,13 +94,21 @@ export function MiniMap({
       m.on("load", () => {
         setLoaded(true);
         const c = m.getCenter();
-        onChangeRef.current?.({ lat: c.lat, lng: c.lng });
+        onChangeRef.current?.({ lat: c.lat, lng: c.lng }, false);
       });
-      m.on("moveend", () => {
+      m.on("moveend", (e) => {
         const c = m.getCenter();
-        onChangeRef.current?.({ lat: c.lat, lng: c.lng });
+        // A gesture carries the browser event that caused it; a flyTo doesn't.
+        onChangeRef.current?.({ lat: c.lat, lng: c.lng }, Boolean((e as { originalEvent?: unknown }).originalEvent));
       });
-    })();
+    })().catch((err) => {
+      // No WebGL, a blocked context, or the library failed to load: say so
+      // instead of leaving a blank box that looks like a working map.
+      console.warn("[haven] mini map failed", (err as Error)?.message);
+      if (cancelled) return;
+      setFailed(true);
+      onFailRef.current?.();
+    });
     return () => {
       cancelled = true;
       map.current?.remove();
@@ -112,8 +129,15 @@ export function MiniMap({
       <div className="absolute inset-0">
         <div ref={container} className="h-full w-full" role="img" aria-label={label} />
       </div>
-      {!loaded && <div className="haven-shimmer absolute inset-0" aria-hidden />}
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden>
+      {!loaded && !failed && <div className="haven-shimmer absolute inset-0" aria-hidden />}
+      {failed && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-surface-2 px-6 text-center" role="status">
+          <MapPinOff className="size-7 text-faint" strokeWidth={1.6} aria-hidden />
+          <p className="text-[15px] font-semibold">{t("map.failedShort")}</p>
+          {mode === "picker" && <p className="text-[13px] leading-snug text-muted">{t("report.mapFailedBody")}</p>}
+        </div>
+      )}
+      <div className={`pointer-events-none absolute inset-0 flex items-center justify-center ${failed ? "hidden" : ""}`} aria-hidden>
         {mode === "picker" ? (
           <div className="flex -translate-y-5 flex-col items-center">
             <MapPin className="size-10 drop-shadow-[0_6px_10px_rgba(0,0,0,0.5)]" style={{ color }} fill="#0b0c0f" strokeWidth={2.2} />
@@ -128,10 +152,10 @@ export function MiniMap({
           </div>
         )}
       </div>
-      {mode === "picker" && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
-          <span className="rounded-full bg-bg/75 px-3 py-1.5 text-[12px] font-medium text-muted backdrop-blur-md">
-            Drag the map to place the pin
+      {mode === "picker" && !failed && (
+        <div className="pointer-events-none absolute inset-x-0 top-3 flex justify-center">
+          <span className="rounded-full bg-bg/85 px-3 py-1.5 text-[12px] font-medium text-muted">
+            {t("report.dragHint")}
           </span>
         </div>
       )}

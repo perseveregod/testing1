@@ -157,3 +157,22 @@ export function streetAddress(address: string | null | undefined): string {
   const a = (address ?? "").trim();
   return a.toLowerCase() === "approximate location" ? "" : a;
 }
+
+/** Neighborhoods people ask for first, shown before anything is typed. */
+const COMMON = ["Downtown", "The Heights", "Montrose", "Midtown", "Third Ward", "East End", "Galleria", "Museum District", "Texas Medical Center", "Acres Homes", "Sharpstown", "Alief"];
+
+/**
+ * Neighborhoods matching what was typed (names that start with it first).
+ * Works with no network and no GPS: it's how someone picks their part of
+ * town when location is off or the map can't load.
+ */
+export function searchNeighborhoods(query: string, limit = 6): Neighborhood[] {
+  const q = query.trim().toLowerCase();
+  if (!q) {
+    const byName = new Map(NEIGHBORHOODS.map((n) => [n.name, n]));
+    return COMMON.map((name) => byName.get(name)).filter((n): n is Neighborhood => Boolean(n)).slice(0, limit);
+  }
+  const starts = NEIGHBORHOODS.filter((n) => n.name.toLowerCase().startsWith(q) || n.name.toLowerCase().startsWith(`the ${q}`));
+  const contains = NEIGHBORHOODS.filter((n) => !starts.includes(n) && n.name.toLowerCase().includes(q));
+  return [...starts, ...contains].slice(0, limit);
+}

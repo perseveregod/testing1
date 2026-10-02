@@ -11,6 +11,8 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
+import { useT } from "@/lib/client/lang";
 import type { GeoJSONSource, Map as MlMap, Marker } from "maplibre-gl";
 import { getCategory, SEVERITY_RANK } from "@/lib/categories";
 import { STATE_STYLE, stormFade } from "@/lib/storm";
@@ -175,6 +177,7 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
   // Bumps on every style load, so layers added by effects come back after a swap.
   const [styleEpoch, setStyleEpoch] = useState(0);
   const [failed, setFailed] = useState(false);
+  const { t } = useT();
   const onViewport = useRef(onViewportChange);
   const latest = useRef<PublicIncident[]>(incidents);
   const onSelectRef = useRef(onSelect);
@@ -887,8 +890,12 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
         </div>
       )}
       {failed && (
-        <div className="absolute inset-0 flex items-center justify-center bg-bg px-8 text-center text-muted">
-          The map couldn&apos;t load. The Feed tab still shows nearby incidents.
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-bg px-8 text-center" role="status">
+          <p className="text-[17px] font-semibold">{t("map.failed")}</p>
+          <p className="max-w-xs text-[14px] leading-snug text-muted">{t("map.failedBody")}</p>
+          <Link href="/feed" className="press pointer-events-auto mt-2 inline-flex min-h-12 items-center rounded-control bg-text px-5 text-[15px] font-semibold text-bg">
+            {t("map.failedList")}
+          </Link>
         </div>
       )}
       {visible.map((v) =>

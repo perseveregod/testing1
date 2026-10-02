@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Briefcase, GraduationCap, Heart, Home, MapPin, Search, Star, X } from "lucide-react";
+import { Briefcase, Building2, GraduationCap, Heart, Home, MapPin, Search, Star, X } from "lucide-react";
+import { searchNeighborhoods } from "@/lib/houston";
 import { useT } from "@/lib/client/lang";
 import useSWR from "swr";
 import { fetcher } from "@/lib/client/api";
@@ -67,7 +68,7 @@ export function SearchInput({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         aria-label={placeholder}
-        className="min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-faint [&::-webkit-search-cancel-button]:hidden"
+        className="min-w-0 flex-1 bg-transparent text-[16px] outline-none focus-visible:outline-none placeholder:text-faint [&::-webkit-search-cancel-button]:hidden"
       />
       {value && (
         <button onClick={() => onChange("")} aria-label={es ? "Borrar" : "Clear"} className="-mr-1.5 flex size-7 items-center justify-center rounded-full bg-white/10 text-muted">
@@ -108,6 +109,19 @@ export function SearchSheet({
   // Saved places are only shown here, so only ask once the sheet opens.
   const { places } = usePlaces(open);
   const { es } = useT();
+  // Neighborhoods come from a list in the app: they work with location off,
+  // with the address search down, and offline.
+  const hoods = searchNeighborhoods(q);
+  const hoodRows = hoods.length > 0 && (
+    <>
+      <p className="pb-1 pt-3 text-[13px] font-medium text-muted">{es ? "Vecindarios" : "Neighborhoods"}</p>
+      <ul className="divide-y divide-line">
+        {hoods.map((n) => (
+          <ResultRow key={n.name} title={n.name} detail="Houston" icon={<Building2 className="size-[18px]" aria-hidden />} onClick={() => pick({ lat: n.lat, lng: n.lng }, n.name)} />
+        ))}
+      </ul>
+    </>
+  );
 
   const pick = (p: LatLng, label: string) => {
     onPick(p, label);
@@ -138,18 +152,25 @@ export function SearchSheet({
                 })}
               </ul>
             </>
-          ) : (
-            <p className="py-8 text-center text-[14px] text-faint">{es ? "Pruebe “Heights”, “Westheimer” o un código postal." : "Try “Heights”, “Westheimer” or a ZIP code."}</p>
-          )
+          ) : null
+        ) : null}
+        {/* Always: neighborhoods that match (or the common ones before typing). */}
+        {hoodRows}
+        {q.trim().length < 2 ? (
+          <p className="pb-2 pt-4 text-center text-[13px] text-faint">{es ? "O escriba una calle, un lugar o un código postal." : "Or type a street, a place or a ZIP code."}</p>
         ) : searching ? (
           <div className="flex justify-center py-8 text-muted">
             <Spinner />
           </div>
         ) : error ? (
-          <p className="py-8 text-center text-[14px] text-faint">{es ? "La búsqueda no está disponible ahora." : "Search is unavailable right now."}</p>
+          <p className="py-6 text-center text-[14px] text-faint">{es
+              ? `La búsqueda de direcciones no está disponible ahora.${hoods.length ? " Los vecindarios de arriba siguen funcionando." : ""}`
+              : `Address search is unavailable right now.${hoods.length ? " The neighborhoods above still work." : ""}`}</p>
         ) : results.length === 0 ? (
-          <p className="py-8 text-center text-[14px] text-faint">{es ? `No se encontraron lugares para “${q.trim()}”.` : `No places found for “${q.trim()}”.`}</p>
+          hoods.length === 0 && <p className="py-8 text-center text-[14px] text-faint">{es ? `No se encontraron lugares para “${q.trim()}”.` : `No places found for “${q.trim()}”.`}</p>
         ) : (
+          <>
+          <p className="pb-1 pt-3 text-[13px] font-medium text-muted">{es ? "Direcciones y lugares" : "Addresses and places"}</p>
           <ul className="divide-y divide-line">
             {results.map((r) => (
               <ResultRow
@@ -161,6 +182,7 @@ export function SearchSheet({
               />
             ))}
           </ul>
+          </>
         )}
       </div>
       <p className="pb-2 pt-3 text-[11px] text-faint">{es ? "Búsqueda por OpenStreetMap Nominatim" : "Search by OpenStreetMap Nominatim"}</p>
