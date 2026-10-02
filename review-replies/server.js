@@ -397,7 +397,9 @@ if (require.main === module) {
     if (process.env.RENDER_EXTERNAL_URL && process.env.KEEP_AWAKE !== "off") {
       const self = process.env.RENDER_EXTERNAL_URL.replace(/\/$/, "");
       setInterval(() => {
-        fetch(`${self}/`, { signal: AbortSignal.timeout(30_000) }).catch(() => {});
+        fetch(`${self}/`, { signal: AbortSignal.timeout(30_000) })
+          .then((r) => console.log(`Keep-awake ping: HTTP ${r.status}`))
+          .catch((err) => console.log(`Keep-awake ping failed: ${err.message}`));
       }, 10 * 60 * 1000).unref();
       console.log("Keep-awake ping is on (every 10 minutes).");
     }
