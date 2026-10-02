@@ -39,15 +39,18 @@ export function BottomNav() {
         style={{ paddingBottom: "calc(var(--safe-bottom) + var(--nav-gap))" }}
         data-tone={onMap ? tone : "dark"}
       >
-        <ul className={`nav-bar pointer-events-auto mx-auto grid h-[var(--nav-h)] max-w-lg rounded-full px-1.5 ${TABS.length === 6 ? "grid-cols-6" : "grid-cols-5"}`}>
+        {/* A compact bar that hugs the bottom edge: small icons with their
+            names (the app should read at a glance to someone new), and the
+            report button standing up out of the bar. */}
+        <ul className={`nav-bar pointer-events-auto mx-auto grid h-[var(--nav-h)] max-w-md rounded-[26px] px-1 ${TABS.length === 6 ? "grid-cols-6" : "grid-cols-5"}`}>
           {TABS.map((tab) => {
             const active = tab.href === "/" ? path === "/" : path.startsWith(tab.href);
             const Icon = tab.icon;
             if ("primary" in tab) {
               const cls =
-                "press flex size-[50px] items-center justify-center rounded-full shadow-[inset_0_1px_0.5px_rgba(255,255,255,0.4),0_6px_18px_-6px_rgba(0,0,0,0.6)]";
+                "press -mt-3.5 flex size-[52px] items-center justify-center rounded-full ring-[3px] ring-bg shadow-[inset_0_1px_0.5px_rgba(255,255,255,0.4),0_8px_20px_-6px_rgba(0,0,0,0.7)]";
               return (
-                <li key={tab.href} className="flex items-center justify-center">
+                <li key={tab.href} className="flex items-start justify-center">
                   {stormReport ? (
                     <button
                       type="button"
@@ -71,21 +74,14 @@ export function BottomNav() {
                   href={tab.href}
                   transitionTypes={["tab"]}
                   aria-current={active ? "page" : undefined}
-                  className={`press relative flex size-11 items-center justify-center rounded-full transition-colors duration-200 ${
+                  className={`press relative flex h-full w-full flex-col items-center justify-center gap-[3px] rounded-2xl transition-colors duration-200 ${
                     active ? "text-text" : "text-muted hover:text-text"
                   }`}
                 >
-                  <span className="sr-only">{t(tab.label)}</span>
-                  <Icon className="size-[24px]" strokeWidth={active ? 2.3 : 1.8} aria-hidden />
-                  {/* Active: a small dot under the icon, like the big apps' tab bars. */}
-                  <span
-                    className={`absolute bottom-0.5 left-1/2 size-1 -translate-x-1/2 rounded-full bg-text transition-opacity duration-200 ${
-                      active ? "opacity-100" : "opacity-0"
-                    }`}
-                    aria-hidden
-                  />
+                  <Icon className="size-[22px]" strokeWidth={active ? 2.3 : 1.8} aria-hidden />
+                  <span className={`text-[10.5px] leading-none ${active ? "font-semibold" : "font-medium"}`}>{t(tab.label)}</span>
                   {tab.href === "/profile" && unread > 0 && (
-                    <span className="haven-pop absolute right-0.5 top-0.5 min-w-[17px] rounded-full bg-danger px-1 text-center text-[10px] font-bold leading-[17px] text-white tnum">
+                    <span className="haven-pop absolute left-1/2 top-1 ml-1.5 min-w-[17px] rounded-full bg-danger px-1 text-center text-[10px] font-bold leading-[17px] text-white tnum">
                       {unread > 9 ? "9+" : unread}
                       <span className="sr-only">{t("nav.unread")}</span>
                     </span>

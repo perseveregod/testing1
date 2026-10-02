@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Layers, ListChecks, LocateFixed, Navigation2, Search, SlidersHorizontal, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Layers, ListChecks, LocateFixed, Navigation2, Search, SlidersHorizontal, X } from "lucide-react";
 import { setStormPrefs, useStormPrefs, useStormReportTick } from "@/lib/client/stormMode";
 import { peekMapFocus, takeMapFocus } from "@/lib/client/mapFocus";
 import { setMapTone } from "@/lib/client/mapTone";
@@ -128,7 +128,7 @@ function Chip({
     <button
       type="button"
       aria-pressed={on}
-      className={`press inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold ${
+      className={`press inline-flex h-[34px] shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold ${
         on ? "bg-text text-bg" : tint ? "" : "panel text-text"
       } ${className}`}
       style={tint ? { background: tint, color: "#1b1300" } : undefined}
@@ -402,13 +402,13 @@ export function MapScreen({ initial, active = true }: { initial?: InitialInciden
         style={{ paddingTop: "calc(var(--safe-top) + 8px)" }}
       >
         <div className="mx-auto max-w-lg">
-          <div className="panel pointer-events-auto flex h-12 items-center gap-1 rounded-full pl-1 pr-1.5">
+          <div className="panel pointer-events-auto flex h-11 items-center gap-1 rounded-full pl-1 pr-1">
             <button
               onClick={() => setSearchOpen(true)}
               className="press flex h-full min-w-0 flex-1 items-center gap-2.5 rounded-full pl-3 text-left"
             >
               <Search className="size-[18px] shrink-0 text-muted" aria-hidden />
-              <span className={`truncate text-[16px] ${searchLabel ? "text-text" : "text-muted"}`}>
+              <span className={`truncate text-[15px] ${searchLabel ? "text-text" : "text-muted"}`}>
                 {searchLabel ?? t("map.search")}
               </span>
             </button>
@@ -429,7 +429,7 @@ export function MapScreen({ initial, active = true }: { initial?: InitialInciden
           </div>
 
           <div
-            className="no-scrollbar pointer-events-auto -mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-2 pt-2.5"
+            className="no-scrollbar pointer-events-auto -mx-4 flex items-center gap-1.5 overflow-x-auto px-4 pb-2 pt-2"
             role="toolbar"
             aria-label={storm.on ? st.stormMode : t("map.quickFilters")}
           >
@@ -510,16 +510,17 @@ export function MapScreen({ initial, active = true }: { initial?: InitialInciden
           )}
           {weatherAlert && (
             <div className="pointer-events-auto flex">
-              <div className="panel inline-flex min-h-11 items-center gap-2 rounded-full py-1 pl-3.5 pr-1 text-[13px] font-semibold">
-                <StormIcon className="size-5" active bolt="#FFC233" />
-                <span>{st.suggest}</span>
-                <button
-                  onClick={() => setStormPrefs({ on: true })}
-                  className="press inline-flex min-h-9 items-center rounded-full bg-[#ffc233] px-3 text-[12px] font-bold text-[#1b1300]"
-                >
-                  {st.turnOn}
-                </button>
-              </div>
+              {/* One line, one tap: the whole pill turns Storm Mode on. */}
+              <button
+                type="button"
+                onClick={() => setStormPrefs({ on: true })}
+                className="press inline-flex min-h-10 max-w-full items-center gap-2 rounded-full py-1 pl-3 pr-3.5 text-[13px] font-semibold text-[#1b1300]"
+                style={{ background: "#ffc233", boxShadow: "0 6px 24px -10px rgba(0,0,0,.45)" }}
+              >
+                <StormIcon className="size-5 shrink-0" active bolt="#1b1300" cloud="#1b1300" />
+                <span className="truncate">{st.suggestShort}</span>
+                <ChevronRight className="size-4 shrink-0 opacity-70" aria-hidden />
+              </button>
             </div>
           )}
         </div>

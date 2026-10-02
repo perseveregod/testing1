@@ -687,7 +687,7 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
       const m = map.current;
       const ml = lib.current;
       const p = userPosition;
-      if (!m || !ml || !m.isStyleLoaded()) return;
+      if (!m || !ml) return;
       if (!p) {
         userMarker.current?.remove();
         userMarker.current = null;
@@ -699,8 +699,10 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
       const ink = day ? "#111318" : "#ffffff";
       const ring = circlePolygon(p, RING_METERS);
       const ringSrc = m.getSource(RING) as GeoJSONSource | undefined;
+      // The dot and label are HTML and can go on at once; the 1 mi ring is a
+      // style layer and has to wait for the style (it's drawn again on load).
       if (ringSrc) ringSrc.setData(ring);
-      else {
+      else if (m.isStyleLoaded()) {
         m.addSource(RING, { type: "geojson", data: ring });
         m.addLayer({
           id: `${RING}-fill`,
@@ -732,10 +734,12 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
       if (!userMarker.current) {
         const el = document.createElement("div");
         el.setAttribute("aria-label", "Your location");
-        // Calm, like the big map apps: a crisp dot inside a faint accuracy halo.
+        // A crisp dot inside a faint halo, and every ten seconds a radar
+        // sweep around it: the app is looking for anything new nearby.
         el.innerHTML =
-          '<span style="position:absolute;inset:0;border-radius:9999px;background:rgba(61,139,255,.14)"></span>' +
-          '<span style="position:absolute;inset:11px;border-radius:9999px;background:#3d8bff;border:3px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.35)"></span>';
+          '<span class="haven-radar" aria-hidden><span class="haven-radar-sweep"></span></span>' +
+          '<span style="position:absolute;inset:0;border-radius:9999px;background:rgba(74,144,255,.14)"></span>' +
+          '<span style="position:absolute;inset:11px;border-radius:9999px;background:#4a90ff;border:3px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.35)"></span>';
         el.style.cssText =
           "position:relative;width:44px;height:44px;pointer-events:none;z-index:4";
         userMarker.current = new ml.Marker({ element: el })

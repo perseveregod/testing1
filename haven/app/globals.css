@@ -36,14 +36,14 @@
 
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --nav-h: 60px;
+  --nav-h: 56px;
   /* One radius scale: chips 10, controls 12, cards 16, sheets 24, pills round. */
   --radius-card: 16px;
   --radius-control: 12px;
   --radius-chip: 10px;
   --radius-sheet: 24px;
   /* Space between the floating tab bar and the bottom of the screen. */
-  --nav-gap: 10px;
+  --nav-gap: 6px;
   color-scheme: dark;
 }
 
@@ -408,10 +408,60 @@ body {
 }
 /* Mid-gesture: pins keep their current frame; glows and pulses wait. */
 .map-moving .haven-marker,
-.map-moving .haven-marker * {
+.map-moving .haven-marker *,
+.map-moving .haven-radar,
+.map-moving .haven-radar-sweep {
   animation-play-state: paused !important;
   filter: none !important;
   transition: none !important;
+}
+
+/* Radar: around the person's dot, a sweep goes round once every ten seconds
+   (1.6 s of motion, then it rests), the way a scope looks for anything new. */
+.haven-radar {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 164px;
+  height: 164px;
+  margin: -82px 0 0 -82px;
+  border-radius: 9999px;
+  overflow: hidden;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(74, 144, 255, 0.22);
+  opacity: 0;
+  animation: haven-radar-ring 10s linear infinite;
+}
+.haven-radar-sweep {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: conic-gradient(
+    from 0deg,
+    rgba(74, 144, 255, 0) 0deg,
+    rgba(74, 144, 255, 0) 240deg,
+    rgba(74, 144, 255, 0.05) 285deg,
+    rgba(74, 144, 255, 0.5) 360deg
+  );
+  will-change: transform;
+  animation: haven-radar-sweep 10s linear infinite;
+}
+@keyframes haven-radar-sweep {
+  0% { transform: rotate(0deg); }
+  16% { transform: rotate(360deg); }
+  100% { transform: rotate(360deg); }
+}
+@keyframes haven-radar-ring {
+  0% { opacity: 1; }
+  15% { opacity: 1; }
+  22% { opacity: 0; }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .haven-radar,
+  .haven-radar-sweep {
+    animation: none;
+  }
 }
 .page-root {
   position: relative;
