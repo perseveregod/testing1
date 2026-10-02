@@ -27,7 +27,7 @@ export function EmergencyNote({ compact, inline }: { compact?: boolean; inline?:
       </p>
       <a
         href={`tel:${EMERGENCY_NUMBER}`}
-        className="press inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-full bg-danger px-3.5 text-[14px] font-semibold text-white"
+        className="press inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full bg-danger px-3.5 text-[14px] font-semibold text-white"
       >
         <Phone className="size-4" aria-hidden /> {EMERGENCY_NUMBER}
       </a>

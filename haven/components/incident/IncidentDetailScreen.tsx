@@ -6,7 +6,7 @@ import { Check, CircleSlash, Flag, MapPin, MessageSquarePlus, Share2 } from "luc
 import { apiSend, errorMessage, fetcher } from "@/lib/client/api";
 import { shareIncident } from "@/lib/client/share";
 import { useAffects } from "@/lib/client/affects";
-import { useT } from "@/lib/client/lang";
+import { sourceText, useT } from "@/lib/client/lang";
 import { formatDistance } from "@/lib/geo";
 import { neighborhoodLabel, streetAddress } from "@/lib/houston";
 import { dateTime } from "@/lib/time";
@@ -37,7 +37,7 @@ export function IncidentDetailScreen({ id }: { id: string }) {
   const incident = data?.incident;
   const affectsOf = useAffects();
   const affects = incident ? affectsOf(incident) : null;
-  const { t, es, timeAgo, title, cat } = useT();
+  const { t, es, lang, timeAgo, title, cat } = useT();
 
   async function vote(kind: "confirm" | "ended") {
     setBusy(kind);
@@ -139,7 +139,8 @@ export function IncidentDetailScreen({ id }: { id: string }) {
           </div>
           <p className="flex items-center gap-2 text-[13px] font-semibold" style={{ color: ended ? "var(--muted)" : def.color }}>
             {isLive(incident) && <LiveBadge size="md" />}
-            {catLabel}
+            {/* The kind, unless the title already is the kind (a neighbor's report). */}
+            {catLabel.toLowerCase() !== heading.toLowerCase() && catLabel}
             {incident.isDemo && <DemoTag />}
           </p>
           <h2 className="mt-2 text-[32px] font-bold leading-[1.05] tracking-[-0.035em]">{heading}</h2>
@@ -165,7 +166,7 @@ export function IncidentDetailScreen({ id }: { id: string }) {
 
         {incident.status !== "under_review" && !incident.storm && (
           <div className="mt-6 rounded-card bg-surface px-4 pb-3 pt-4">
-            <StatusStepper status={incident.status} color={def.color} />
+            <StatusStepper status={incident.status} color={def.color} community={incident.source.kind === "user"} />
           </div>
         )}
 
@@ -193,7 +194,7 @@ export function IncidentDetailScreen({ id }: { id: string }) {
             label={t("inc.source")}
             value={
               <>
-                {incident.source.attribution}
+                {sourceText(incident.source, lang).attribution}
                 {incident.source.url && (
                   <>
                     {" "}

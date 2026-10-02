@@ -44,7 +44,10 @@ export function BottomNav() {
             report button standing up out of the bar. */}
         <ul className={`nav-bar pointer-events-auto mx-auto grid h-[var(--nav-h)] max-w-md rounded-[26px] px-1 ${TABS.length === 6 ? "grid-cols-6" : "grid-cols-5"}`}>
           {TABS.map((tab) => {
-            const active = tab.href === "/" ? path === "/" : path.startsWith(tab.href);
+            const active =
+              tab.href === "/"
+                ? path === "/"
+                : path.startsWith(tab.href) || (tab.href === "/profile" && (path.startsWith("/alerts") || path.startsWith("/upgrade")));
             const Icon = tab.icon;
             if ("primary" in tab) {
               const cls =
@@ -79,7 +82,7 @@ export function BottomNav() {
                   }`}
                 >
                   <Icon className="size-[22px]" strokeWidth={active ? 2.3 : 1.8} aria-hidden />
-                  <span className={`text-[10.5px] leading-none ${active ? "font-semibold" : "font-medium"}`}>{t(tab.label)}</span>
+                  <span className={`text-[11px] leading-none ${active ? "font-semibold" : "font-medium"}`}>{t(tab.label)}</span>
                   {tab.href === "/profile" && unread > 0 && (
                     <span className="haven-pop absolute left-1/2 top-1 ml-1.5 min-w-[17px] rounded-full bg-danger px-1 text-center text-[10px] font-bold leading-[17px] text-white tnum">
                       {unread > 9 ? "9+" : unread}

@@ -124,20 +124,20 @@ function CampusDetails({ campus, onChange }: { campus: Campus; onChange: () => v
       <div className="mt-3 grid grid-cols-2 gap-2">
         <a
           href={telHref(campus.police.emergency)}
-          className="press flex min-h-12 items-center justify-center gap-2 whitespace-nowrap rounded-card bg-live px-3 text-[14px] font-bold text-white"
+          className="press flex min-h-12 items-center justify-center gap-2 rounded-card bg-danger px-3 text-[14px] font-bold text-white"
         >
           <ShieldAlert className="size-4 shrink-0" aria-hidden /> {es ? "Policía" : "Police"}
         </a>
         <a
           href={telHref(campus.police.nonEmergency)}
-          className="press flex min-h-12 items-center justify-center gap-2 whitespace-nowrap rounded-card bg-surface-2 px-3 text-[14px] font-semibold"
+          className="press flex min-h-12 items-center justify-center gap-2 rounded-card bg-surface-2 px-3 text-center text-[14px] font-semibold leading-tight"
         >
-          <Phone className="size-4" aria-hidden /> {es ? "No emergencia" : "Non-emergency"}
+          <Phone className="size-4 shrink-0" aria-hidden /> {es ? "No emergencia" : "Non-emergency"}
         </a>
         {campus.escort ? (
           <a
             href={telHref(campus.escort.phone)}
-            className="press flex min-h-12 items-center justify-center gap-2 whitespace-nowrap rounded-card bg-surface-2 px-3 text-[14px] font-semibold"
+            className="press flex min-h-12 items-center justify-center gap-2 rounded-card bg-surface-2 px-3 text-center text-[14px] font-semibold leading-tight"
           >
             <Footprints className="size-4" aria-hidden /> {es ? "Acompañante" : "Safety escort"}
           </a>
@@ -145,7 +145,7 @@ function CampusDetails({ campus, onChange }: { campus: Campus; onChange: () => v
           <Link
             href="/safety/walk"
             transitionTypes={["nav-forward"]}
-            className="press flex min-h-12 items-center justify-center gap-2 whitespace-nowrap rounded-card bg-surface-2 px-3 text-[14px] font-semibold"
+            className="press flex min-h-12 items-center justify-center gap-2 rounded-card bg-surface-2 px-3 text-center text-[14px] font-semibold leading-tight"
           >
             <Footprints className="size-4" aria-hidden /> {es ? "Camino seguro" : "Safe Walk"}
           </Link>
@@ -155,7 +155,7 @@ function CampusDetails({ campus, onChange }: { campus: Campus; onChange: () => v
             setMapFocus(center, campus.name);
             router.push("/", { transitionTypes: ["tab"] });
           }}
-          className="press flex min-h-12 items-center justify-center gap-2 whitespace-nowrap rounded-card bg-surface-2 px-3 text-[14px] font-semibold"
+          className="press flex min-h-12 items-center justify-center gap-2 rounded-card bg-surface-2 px-3 text-center text-[14px] font-semibold leading-tight"
         >
           <MapPinned className="size-4" aria-hidden /> {es ? "En el mapa" : "On the map"}
         </button>
@@ -176,7 +176,7 @@ function CampusDetails({ campus, onChange }: { campus: Campus; onChange: () => v
         <a href={campus.police.url} target="_blank" rel="noopener noreferrer" className="underline">
           {campus.police.name}
         </a>
-        {es ? ". En una emergencia, llame al 911." : ". In an emergency, call 911."}
+        .
       </p>
     </div>
   );

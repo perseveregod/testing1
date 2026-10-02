@@ -116,7 +116,7 @@ export const demoAdapter: SourceAdapter = {
     id: "demo",
     name: "Demo data",
     kind: "demo",
-    attribution: "DEMO DATA: fictional incidents for testing. Not real events.",
+    attribution: "Fictional examples so you can explore the app. Not real events.",
   },
   rolling: true,
   notify: false,

@@ -174,7 +174,7 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
               <h2 id="pets" className="t-section">
                 {t("safety.pets")}
               </h2>
-              <Link href="/report" transitionTypes={["nav-forward"]} className="text-[13px] font-medium text-brand">
+              <Link href="/report" transitionTypes={["nav-forward"]} className="-my-3 flex min-h-11 items-center text-[13px] font-medium text-brand">
                 {t("safety.postPet")}
               </Link>
             </div>

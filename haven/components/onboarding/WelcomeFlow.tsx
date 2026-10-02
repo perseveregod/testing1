@@ -157,7 +157,7 @@ function WelcomeSteps() {
                 finish();
               }}
               disabled={push.busy}
-              className="press flex min-h-[54px] items-center justify-center gap-2 rounded-card bg-live text-[16px] font-semibold text-white disabled:opacity-70"
+              className="press flex min-h-[54px] items-center justify-center gap-2 rounded-card bg-brand text-[16px] font-semibold text-white disabled:opacity-70"
             >
               <BellRing className="size-5" aria-hidden /> {t("welcome.turnOnAlerts")}
             </button>

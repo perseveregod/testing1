@@ -106,6 +106,14 @@ export function useT(): Translator {
   );
 }
 
+const KNOWN_SOURCES = new Set(["user", "demo", "houston_active", "nws_alerts"]);
+
+/** A data source's name and credit line in the reader's language. */
+export function sourceText(s: { id: string; name: string; attribution: string }, lang: Lang): { name: string; attribution: string } {
+  if (!KNOWN_SOURCES.has(s.id)) return { name: s.name, attribution: s.attribution };
+  return { name: translate(lang, `src.${s.id}.name` as Key), attribution: translate(lang, `src.${s.id}.attr` as Key) };
+}
+
 export function incidentTitle(i: Pick<PublicIncident, "title" | "category" | "storm">, lang: Lang): string {
   if (i.storm) return stormTitle(i.storm, lang);
   if (lang !== "es") return i.title;

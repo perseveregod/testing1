@@ -96,7 +96,9 @@ export function Sheet({
   useEffect(() => {
     if (!open) return;
     const prev = document.activeElement as HTMLElement | null;
-    panel.current?.focus({ preventScroll: true });
+    // Leave focus alone if something inside asked for it (a search box with
+    // autoFocus): taking it back would keep the keyboard from opening.
+    if (!panel.current?.contains(document.activeElement)) panel.current?.focus({ preventScroll: true });
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") return onClose();
       // Keep Tab inside the dialog: it's modal, so the page behind it shouldn't take focus.

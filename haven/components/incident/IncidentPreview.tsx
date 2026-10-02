@@ -6,7 +6,7 @@ import { fetcher } from "@/lib/client/api";
 import { dateTime } from "@/lib/time";
 import type { IncidentDetail } from "@/lib/types";
 import { StatusStepper, Timeline } from "./Timeline";
-import { useT } from "@/lib/client/lang";
+import { sourceText, useT } from "@/lib/client/lang";
 import { STATE_STYLE, strings as stormStrings } from "@/lib/storm";
 import { Check, ChevronDown, ChevronRight, ChevronUp, Share2, X } from "lucide-react";
 import { apiSend, errorMessage } from "@/lib/client/api";
@@ -99,7 +99,7 @@ function PreviewCard({
     <div
       role="dialog"
       aria-label={t("inc.detailsOf", { t: catLabel })}
-      className={`panel pointer-events-auto relative mx-auto flex w-full max-w-lg flex-col overflow-hidden rounded-card ${closing ? "haven-sheet-out" : "haven-sheet-in"}`}
+      className={`panel pointer-events-auto relative mx-auto flex w-full max-w-lg flex-col overflow-hidden rounded-card ${expanded ? "!bg-surface" : ""} ${closing ? "haven-sheet-out" : "haven-sheet-in"}`}
       style={{
         transform: dy ? `translateY(${dy}px)` : undefined,
         transition: dy ? "none" : "transform 260ms var(--ease-out), max-height 320ms var(--ease-out)",
@@ -119,8 +119,9 @@ function PreviewCard({
         <div className="flex items-start gap-3">
           <CategoryIcon category={incident.category} size="lg" muted={ended} animated glow />
           <div className="min-w-0 flex-1 pt-0.5">
-            <p className="flex min-w-0 items-center gap-2 text-[13px] font-medium" style={{ color: ended ? "var(--muted)" : def.color }}>
-              <span className="truncate">{catLabel}</span>
+            {/* The kind, unless the title already is the kind (a neighbor's report). */}
+            <p className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[13px] font-medium" style={{ color: ended ? "var(--muted)" : def.color }}>
+              {catLabel.toLowerCase() !== title(incident).toLowerCase() && <span className="truncate">{catLabel}</span>}
               {isLive(incident) && !storm && <LiveBadge />}
               <OriginBadge incident={incident} />
             </p>
@@ -197,7 +198,7 @@ function PreviewCard({
           <div className="mt-5 border-t border-line pt-4">
             {incident.status !== "under_review" && (
               <div className="rounded-card bg-surface px-4 pb-3 pt-4">
-                <StatusStepper status={incident.status} color={def.color} />
+                <StatusStepper status={incident.status} color={def.color} community={incident.source.kind === "user"} />
               </div>
             )}
             <dl className="mt-4 divide-y divide-line text-[14px]">
@@ -207,7 +208,7 @@ function PreviewCard({
               </div>
               <div className="flex gap-4 py-2.5">
                 <dt className="w-24 shrink-0 text-muted">{t("inc.source")}</dt>
-                <dd className="min-w-0 text-muted">{incident.source.attribution}</dd>
+                <dd className="min-w-0 text-muted">{sourceText(incident.source, lang).attribution}</dd>
               </div>
             </dl>
             <h3 className="mb-3 mt-5 text-[13px] font-medium text-muted">{t("inc.timeline")}</h3>

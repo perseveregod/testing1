@@ -139,7 +139,7 @@ export function SearchSheet({
               </ul>
             </>
           ) : (
-            <p className="py-8 text-center text-[14px] text-faint">{es ? "Busque un vecindario, calle o lugar conocido." : "Search for a neighborhood, street or landmark."}</p>
+            <p className="py-8 text-center text-[14px] text-faint">{es ? "Pruebe “Heights”, “Westheimer” o un código postal." : "Try “Heights”, “Westheimer” or a ZIP code."}</p>
           )
         ) : searching ? (
           <div className="flex justify-center py-8 text-muted">

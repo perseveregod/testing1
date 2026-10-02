@@ -162,5 +162,5 @@ export function useNearYou(center: LatLng | null, initial?: InitialIncidents | n
 
 /** "18 active · 5 mi" — the one wording for the shared count. */
 export function activeLabel(n: number, radiusMi = NEAR_RADIUS_MI, es = false): string {
-  return es ? `${n} activos · ${radiusMi} mi` : `${n} active · ${radiusMi} mi`;
+  return es ? `${n} ${n === 1 ? "activo" : "activos"} · ${radiusMi} mi` : `${n} active · ${radiusMi} mi`;
 }

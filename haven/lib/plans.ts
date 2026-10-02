@@ -1,4 +1,5 @@
 import type { PlanId, PlanLimits } from "./types";
+import { FEATURES } from "./features";
 
 // Entitlements by plan. The server enforces these; the client only uses them
 // to show locks and explain limits. Prices live in server/billing/config.ts so
@@ -35,7 +36,7 @@ export const LIFETIME_FEATURES: { title: string; detail: string }[] = [
   { title: "Alerts up to 25 miles", detail: "Free covers 5 miles around you" },
   { title: "Up to 10 saved places", detail: "Home, work, school, family and more" },
   { title: "Per-place alert rules", detail: "Different radius and categories for Home vs. Work" },
-  { title: "Area insights", detail: "30-day trends by category near you and your places" },
+  ...(FEATURES.insights ? [{ title: "Area insights", detail: "30-day trends by category near you and your places" }] : []),
   { title: "90 days of history", detail: "Free shows the last 24 hours" },
   { title: "Advanced filters", detail: "Severity, verified-only and time range" },
   { title: "Quiet hours", detail: "Only critical alerts overnight" },

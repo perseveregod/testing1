@@ -108,7 +108,7 @@ export function PlacesSection() {
                   <button
                     onClick={() => setRulesFor(p)}
                     aria-label={es ? `Reglas de alerta para ${p.label}` : `Alert rules for ${p.label}`}
-                    className={`press inline-flex size-10 items-center justify-center rounded-full ${p.radiusMi != null || p.categories != null ? "text-gold" : "text-faint"}`}
+                    className={`press inline-flex size-11 items-center justify-center rounded-full ${p.radiusMi != null || p.categories != null ? "text-gold" : "text-faint"}`}
                   >
                     <SlidersHorizontal className="size-[18px]" aria-hidden />
                   </button>
@@ -117,14 +117,14 @@ export function PlacesSection() {
                   onClick={() => toggleAlerts(p)}
                   aria-label={p.alertsEnabled ? (es ? `Desactivar alertas de ${p.label}` : `Turn off alerts for ${p.label}`) : es ? `Activar alertas de ${p.label}` : `Turn on alerts for ${p.label}`}
                   aria-pressed={p.alertsEnabled}
-                  className={`press inline-flex size-10 items-center justify-center rounded-full ${p.alertsEnabled ? "text-brand" : "text-faint"}`}
+                  className={`press inline-flex size-11 items-center justify-center rounded-full ${p.alertsEnabled ? "text-brand" : "text-faint"}`}
                 >
                   {p.alertsEnabled ? <Bell className="size-5" aria-hidden /> : <BellOff className="size-5" aria-hidden />}
                 </button>
                 <button
                   onClick={() => remove(p)}
                   aria-label={es ? `Quitar ${p.label}` : `Remove ${p.label}`}
-                  className="press -mr-2 inline-flex size-10 items-center justify-center rounded-full text-faint hover:text-danger"
+                  className="press -mr-2 inline-flex size-11 items-center justify-center rounded-full text-faint hover:text-danger"
                 >
                   <Trash2 className="size-[18px]" aria-hidden />
                 </button>

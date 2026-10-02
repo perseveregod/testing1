@@ -6,7 +6,7 @@ import useSWR from "swr";
 import { BarChart3, Bell, ChevronRight, CircleHelp, Database, FileText, Languages, LogOut, ShieldCheck, Sparkles } from "lucide-react";
 import { apiSend, fetcher } from "@/lib/client/api";
 import { useNotifications, useViewer } from "@/lib/client/hooks";
-import { setLang, useT } from "@/lib/client/lang";
+import { setLang, sourceText, useT } from "@/lib/client/lang";
 import { FEATURES } from "@/lib/features";
 import type { DataSource, PublicIncident } from "@/lib/types";
 import { useToast } from "@/components/providers/ToastProvider";
@@ -43,14 +43,15 @@ export function ProfileScreen() {
       <PageHeader title={t("profile.title")} large />
       <div className="mx-auto max-w-lg px-4">
         {/* Account */}
-        <div className="mt-2 flex items-center gap-4 px-1">
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-3 px-1">
           <span className="flex size-14 items-center justify-center rounded-full bg-surface-3 text-[22px] font-semibold text-muted">
             {initial ?? <span className="size-6 rounded-full bg-faint/50" aria-hidden />}
           </span>
-          <div className="min-w-0 flex-1">
+          {/* On a narrow phone the sign-in button drops below instead of squeezing the name. */}
+          <div className="min-w-[9.5rem] flex-1">
             {viewer ? (
               <>
-                <p className="truncate text-[18px] font-semibold tracking-[-0.015em]">{viewer.email ?? t("profile.guest")}</p>
+                <p className="break-words text-[18px] font-semibold leading-tight tracking-[-0.015em]">{viewer.email ?? t("profile.guest")}</p>
                 <p className="text-[13px] text-muted">{viewer.email ? t("profile.signedIn") : t("profile.private")}</p>
               </>
             ) : (
@@ -61,7 +62,7 @@ export function ProfileScreen() {
             )}
           </div>
           {viewer && !viewer.email && (
-            <button onClick={() => setSignIn(true)} className="press h-10 rounded-full bg-surface-3 px-4 text-[14px] font-semibold">
+            <button onClick={() => setSignIn(true)} className="press h-11 shrink-0 rounded-full bg-surface-3 px-4 text-[14px] font-semibold">
               {t("profile.signIn")}
             </button>
           )}
@@ -119,7 +120,7 @@ export function ProfileScreen() {
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[16px] tracking-[-0.01em]">{t("profile.language")}</span>
             </span>
-            <div className="w-[164px] shrink-0">
+            <div className="w-[148px] shrink-0">
               <Segmented
                 label={t("profile.language")}
                 value={lang}
@@ -189,7 +190,7 @@ function MyReports() {
 }
 
 function SourcesSection() {
-  const { t } = useT();
+  const { t, lang } = useT();
   const { data } = useSWR<{ sources: DataSource[] }>("/api/sources", fetcher, { revalidateOnFocus: false });
   const sources = data?.sources.filter((s) => s.enabled) ?? [];
   return (
@@ -204,10 +205,10 @@ function SourcesSection() {
             <Database className="mt-[3px] size-[18px] shrink-0 text-muted" aria-hidden />
             <div className="min-w-0 flex-1">
               <p className="flex items-center gap-2 text-[15px]">
-                {s.name}
+                {sourceText(s, lang).name}
                 {s.kind === "demo" && <DemoTag />}
               </p>
-              <p className="mt-0.5 text-[13px] leading-snug text-muted">{s.attribution}</p>
+              <p className="mt-0.5 text-[13px] leading-snug text-muted">{sourceText(s, lang).attribution}</p>
             </div>
           </div>
         ))

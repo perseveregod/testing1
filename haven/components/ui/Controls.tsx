@@ -13,7 +13,7 @@ export function Chip({
   return (
     <button
       aria-pressed={active}
-      className={`press inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[14px] font-medium disabled:opacity-45 ${
+      className={`press inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full px-4 text-[14px] font-medium disabled:opacity-45 ${
         active ? "bg-text text-bg" : "bg-surface-2 text-text/90 hover:bg-surface-3"
       } ${className}`}
       {...rest}
@@ -157,8 +157,9 @@ export function Row({
         </span>
       )}
       <span className="min-w-0 flex-1">
-        <span className={`block truncate text-[16px] tracking-[-0.01em] ${tone === "danger" ? "text-danger" : ""}`}>{title}</span>
-        {detail && <span className="block truncate text-[13px] text-muted">{detail}</span>}
+        {/* Two lines, not a cut-off one: Spanish runs a third longer than English. */}
+        <span className={`line-clamp-2 text-[16px] leading-snug tracking-[-0.01em] ${tone === "danger" ? "text-danger" : ""}`}>{title}</span>
+        {detail && <span className="mt-0.5 line-clamp-2 text-[13px] leading-snug text-muted">{detail}</span>}
       </span>
       {trailing}
       {href && <ChevronRight className="size-[18px] shrink-0 text-faint" aria-hidden />}

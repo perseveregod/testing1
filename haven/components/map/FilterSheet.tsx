@@ -92,7 +92,7 @@ export function FilterSheet({
             {es ? "Restablecer" : "Reset"}
           </Button>
           <Button size="lg" onClick={onClose}>
-            {es ? "Aplicar" : "Show incidents"}
+            {es ? "Listo" : "Done"}
           </Button>
         </div>
       }

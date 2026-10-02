@@ -232,7 +232,7 @@ export function SafeWalkScreen() {
               </Button>
               <a
                 href={`tel:${EMERGENCY_NUMBER}`}
-                className="press inline-flex min-h-12 items-center justify-center gap-2 rounded-control bg-live text-[15px] font-semibold text-white"
+                className="press inline-flex min-h-12 items-center justify-center gap-2 rounded-control bg-danger text-[15px] font-semibold text-white"
               >
                 <Phone className="size-4" aria-hidden /> {es ? "Llamar al" : "Call"} {EMERGENCY_NUMBER}
               </a>
@@ -260,30 +260,6 @@ export function SafeWalkScreen() {
         <p className="text-[15px] leading-relaxed text-muted">
           {es ? "Un temporizador de aviso para caminar solo. Todo se queda en este teléfono." : "A check-in timer for walking somewhere alone. Everything stays on this phone."}
         </p>
-        <ol className="mt-4 divide-y divide-line rounded-card bg-surface px-4">
-          {(es
-            ? [
-                ["Inicie el temporizador", "Elija cuánto debería durar el camino. Toque “Estoy bien” al llegar."],
-                ["Si falta el aviso", "Si el tiempo se acaba, Haven suena una alarma en este teléfono."],
-                ["Avise a sus contactos", "Un mensaje con su ubicación queda listo para enviar. Usted lo envía; Haven nunca escribe a nadie por sí solo."],
-              ]
-            : [
-                ["Start the timer", "Pick how long the walk should take. Tap “I'm safe” when you arrive."],
-                ["Miss the check-in", "If the timer runs out, Haven sounds an alarm on this phone."],
-                ["Alert your contacts", "A text with your location is ready to send. You send it; Haven never messages anyone on its own."],
-              ]
-          ).map(([t, b], i) => (
-            <li key={t} className="flex gap-3.5 py-3">
-              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-surface-3 text-[12px] font-bold text-muted tnum" aria-hidden>
-                {i + 1}
-              </span>
-              <span className="min-w-0">
-                <span className="block text-[15px] font-medium tracking-[-0.01em]">{t}</span>
-                <span className="block text-[13px] leading-snug text-muted">{b}</span>
-              </span>
-            </li>
-          ))}
-        </ol>
 
         <section className="mt-6">
           <label htmlFor="dest" className="mb-2 block text-[13px] font-medium text-muted">
@@ -300,10 +276,7 @@ export function SafeWalkScreen() {
         </section>
 
         <section className="mt-5">
-          <div className="mb-2 flex items-baseline justify-between">
-            <p className="text-[13px] font-medium text-muted">{es ? "Avisar después de (minutos)" : "Check in after (minutes)"}</p>
-            <p className="text-[12px] text-faint">{es ? "1 = prueba rápida" : "1 = quick test"}</p>
-          </div>
+          <p className="mb-2 text-[13px] font-medium text-muted">{es ? "Avisar después de (minutos)" : "Check in after (minutes)"}</p>
           <Segmented
             label={es ? "Tiempo de aviso" : "Check-in time"}
             value={minutes}
@@ -326,7 +299,7 @@ export function SafeWalkScreen() {
                   <button
                     onClick={() => removeContact(c.id)}
                     aria-label={es ? `Quitar a ${c.name}` : `Remove ${c.name}`}
-                    className="press -mr-2 flex size-10 items-center justify-center rounded-full text-faint hover:text-danger"
+                    className="press -mr-2 flex size-11 items-center justify-center rounded-full text-faint hover:text-danger"
                   >
                     <Trash2 className="size-4" aria-hidden />
                   </button>
@@ -364,9 +337,37 @@ export function SafeWalkScreen() {
           )}
         </section>
 
-        <Button size="lg" block onClick={start} className="mt-8 !bg-live !text-white">
+        <Button size="lg" block onClick={start} className="mt-7">
           <ShieldCheck className="size-5" aria-hidden /> {es ? "Iniciar Camino seguro" : "Start Safe Walk"}
         </Button>
+
+        {/* How it works comes after the button: someone about to walk home
+            shouldn't have to scroll past an explainer to start. */}
+        <h2 className="t-section mt-8 px-1">{es ? "Cómo funciona" : "How it works"}</h2>
+        <ol className="mt-2.5 divide-y divide-line rounded-card bg-surface px-4">
+          {(es
+            ? [
+                ["Inicie el temporizador", "Elija cuánto debería durar el camino. Toque “Estoy bien” al llegar."],
+                ["Si falta el aviso", "Si el tiempo se acaba, Haven suena una alarma en este teléfono."],
+                ["Avise a sus contactos", "Un mensaje con su ubicación queda listo para enviar. Usted lo envía; Haven nunca escribe a nadie por sí solo."],
+              ]
+            : [
+                ["Start the timer", "Pick how long the walk should take. Tap “I'm safe” when you arrive."],
+                ["Miss the check-in", "If the timer runs out, Haven sounds an alarm on this phone."],
+                ["Alert your contacts", "A text with your location is ready to send. You send it; Haven never messages anyone on its own."],
+              ]
+          ).map(([t, b], i) => (
+            <li key={t} className="flex gap-3.5 py-3">
+              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-surface-3 text-[12px] font-bold text-muted tnum" aria-hidden>
+                {i + 1}
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[15px] font-medium tracking-[-0.01em]">{t}</span>
+                <span className="block text-[13px] leading-snug text-muted">{b}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
         <p className="mt-3 text-center text-[12px] leading-relaxed text-faint">
           {es
             ? `Camino seguro es gratis para todos. No reemplaza al ${EMERGENCY_NUMBER}: si está en peligro, llame de inmediato.`

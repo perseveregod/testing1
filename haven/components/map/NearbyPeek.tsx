@@ -11,7 +11,7 @@ import { neighborhoodFor } from "@/lib/houston";
 import type { Lang } from "@/lib/storm";
 import type { PublicIncident } from "@/lib/types";
 import { CategoryIcon } from "@/components/incident/CategoryIcon";
-import { isLive } from "@/components/incident/Badges";
+import { DemoTag, isLive, LiveBadge } from "@/components/incident/Badges";
 
 /**
  * The map's bottom sheet, docked above the tab bar. Collapsed it is one row:
@@ -79,6 +79,8 @@ export function NearbyPeek({
         })()
       : t("near.withinCenter", { n: NEAR_RADIUS_MI });
 
+  const offerLocate = !storm && Boolean(onLocate) && !position;
+
   return (
     <section aria-label={title} className="panel pointer-events-auto overflow-hidden rounded-card">
       <button
@@ -101,34 +103,31 @@ export function NearbyPeek({
             <span className="min-w-0 flex-1">
               <span className="flex items-center gap-2 text-[16px] font-semibold leading-tight tracking-[-0.01em] tnum">
                 {title}
-                {allDemo && (
-                  <span className="rounded-[4px] bg-text/[0.08] px-1.5 py-px text-[10px] font-semibold text-muted">
-                    {t("common.demo")}
-                  </span>
-                )}
+                {allDemo && <DemoTag />}
               </span>
-              <span className="mt-0.5 block truncate text-[13px] leading-tight text-muted">
-                {where}
-                {!storm && fresh.checkedAt != null && now > 0 && (
-                  <span className={fresh.stale ? "text-warn" : "text-faint"}>
-                    {" · "}
-                    {t(fresh.stale ? "fresh.shortStale" : "fresh.short", { t: timeAgo(new Date(fresh.checkedAt).toISOString(), now) })}
-                  </span>
-                )}
-                {!storm && onLocate && !position && (
-                  <>
-                    {" · "}
-                    <span
-                      role="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onLocate();
-                      }}
-                      className="font-semibold text-brand"
-                    >
-                      {t("common.locateMe")}
+              <span className="mt-0.5 flex min-w-0 items-baseline gap-1.5 text-[13px] leading-tight text-muted">
+                <span className="min-w-0 truncate">
+                  {where}
+                  {/* The freshness stamp gives way to "Locate me": that link is
+                      the only way to turn location on from the map. */}
+                  {!storm && !offerLocate && fresh.checkedAt != null && now > 0 && (
+                    <span className={fresh.stale ? "text-warn" : "text-faint"}>
+                      {" · "}
+                      {t(fresh.stale ? "fresh.shortStale" : "fresh.short", { t: timeAgo(new Date(fresh.checkedAt).toISOString(), now) })}
                     </span>
-                  </>
+                  )}
+                </span>
+                {offerLocate && (
+                  <span
+                    role="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onLocate?.();
+                    }}
+                    className="shrink-0 font-semibold text-brand"
+                  >
+                    {t("common.locateMe")}
+                  </span>
                 )}
               </span>
             </span>
@@ -155,7 +154,11 @@ export function NearbyPeek({
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[14px] font-semibold tracking-[-0.01em]">{titleOf(i)}</span>
                       <span className="block truncate text-[12px] text-muted tnum">
-                        {live && <span className="mr-1.5 font-bold uppercase text-live">{t("common.live")}</span>}
+                        {live && (
+                          <span className="mr-1.5 inline-flex align-middle">
+                            <LiveBadge />
+                          </span>
+                        )}
                         {a ? <span className="font-semibold text-brand">{t("near.from", { d: formatDistance(a.distanceMi), place: a.label })} · </span> : d != null && `${formatDistance(d)} · `}
                         {now > 0 ? timeAgo(i.createdAt, now) : ""}
                       </span>

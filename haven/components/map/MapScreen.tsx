@@ -473,7 +473,7 @@ export function MapScreen({ initial, active = true }: { initial?: InitialInciden
                   <ListChecks className="size-3.5" aria-hidden />
                   {t("map.prepare")}
                 </Chip>
-                <a href={`tel:${EMERGENCY_NUMBER}`} className="press inline-flex h-9 shrink-0 items-center rounded-full bg-live px-3.5 text-[13px] font-bold text-white">
+                <a href={`tel:${EMERGENCY_NUMBER}`} className="press inline-flex h-[34px] shrink-0 items-center rounded-full bg-danger px-3.5 text-[13px] font-bold text-white">
                   {EMERGENCY_NUMBER}
                 </a>
               </>

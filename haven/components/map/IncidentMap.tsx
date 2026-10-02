@@ -362,8 +362,8 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
         pitch: introRef.current ? 0 : PITCH_3D,
         bearing: introRef.current ? 0 : BEARING_3D,
         maxPitch: 72,
-        // Always visible (not collapsed) so the OpenStreetMap / OpenFreeMap credit is shown per license.
-        attributionControl: { compact: true },
+        // Added below, bottom-left: the map's own controls live bottom-right.
+        attributionControl: false,
         fadeDuration: 0,
         // 3x phones would draw 2.25x the pixels of 2x for no visible gain on a
         // tilted map with buildings; this is the difference between a pan that
@@ -371,6 +371,8 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
         pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
       });
       map.current = m;
+      // The OpenStreetMap / OpenFreeMap credit, per license: a small ⓘ that opens on tap.
+      m.addControl(new ml.AttributionControl({ compact: true }), "bottom-left");
 
       m.on("error", (e) => {
         // Only a failure of the style document itself warrants the fallback;

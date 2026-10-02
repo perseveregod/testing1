@@ -40,12 +40,20 @@ export function Timeline({ updates }: { updates: PublicIncidentUpdate[] }) {
 
 const STEP_KEYS: Key[] = ["inc.step.reported", "inc.step.responding", "inc.step.contained", "inc.step.cleared"];
 const STEP_FOR: Record<IncidentStatus, number> = { under_review: 0, active: 1, contained: 2, resolved: 3 };
+// A neighbor's report says nothing about who is responding: reported, still
+// going on, over.
+const COMMUNITY_KEYS: Key[] = ["inc.step.reported", "inc.active", "inc.ended"];
+const COMMUNITY_FOR: Record<IncidentStatus, number> = { under_review: 0, active: 1, contained: 1, resolved: 2 };
 
-/** Where the incident is in its life: Reported → Responding → Contained → Cleared. */
-export function StatusStepper({ status, color }: { status: IncidentStatus; color: string }) {
+/**
+ * Where the incident is in its life. Official dispatches: Reported →
+ * Responding → Contained → Cleared. Community reports: Reported → Active →
+ * Ended.
+ */
+export function StatusStepper({ status, color, community = false }: { status: IncidentStatus; color: string; community?: boolean }) {
   const { t, es } = useT();
-  const STEPS = STEP_KEYS.map((k) => t(k));
-  const current = STEP_FOR[status];
+  const STEPS = (community ? COMMUNITY_KEYS : STEP_KEYS).map((k) => t(k));
+  const current = (community ? COMMUNITY_FOR : STEP_FOR)[status];
   const ended = status === "resolved";
   return (
     <div role="group" aria-label={`${t("inc.status")}: ${STEPS[current]}`}>
@@ -73,14 +81,15 @@ export function StatusStepper({ status, color }: { status: IncidentStatus; color
           );
         })}
       </div>
-      <div className={`relative mt-2 h-4 text-[11px] font-semibold ${es ? "tracking-[-0.01em]" : ""}`}>
+      {/* Labels may take two lines (Spanish, narrow phones) rather than run into each other. */}
+      <div className={`relative mt-2 h-7 text-[11px] font-semibold leading-[1.2] ${es ? "tracking-[-0.01em]" : ""}`}>
         {STEPS.map((label, i) => {
           const pct = (i / (STEPS.length - 1)) * 100;
           const shift = i === 0 ? "0%" : i === STEPS.length - 1 ? "-100%" : "-50%";
           return (
             <span
               key={label}
-              className={`absolute top-0 whitespace-nowrap ${i === current ? "text-text" : i < current ? "text-muted" : "text-faint"}`}
+              className={`absolute top-0 max-w-[27%] ${i === 0 ? "text-left" : i === STEPS.length - 1 ? "text-right" : "text-center"} ${i === current ? "text-text" : i < current ? "text-muted" : "text-faint"}`}
               style={{ left: `${pct}%`, transform: `translateX(${shift})` }}
               aria-current={i === current ? "step" : undefined}
             >
