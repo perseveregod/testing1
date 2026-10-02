@@ -205,7 +205,7 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
             <div className="overflow-hidden rounded-card bg-surface">
               {RESOURCES.map((g, gi) => (
                 <div key={g.id} className={gi > 0 ? "border-t-4 border-bg/60" : ""}>
-                  <p className="t-section px-4 pb-1 pt-3">{g.title}</p>
+                  <p className="t-section px-4 pb-1 pt-3">{es ? g.titleEs : g.title}</p>
                   <ul className="divide-y divide-line">
                     {g.items.map((r) => {
                       const external = r.href.startsWith("http");
@@ -217,8 +217,8 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
                             className="flex min-h-[52px] items-center gap-3 px-4 py-2.5 active:bg-surface-2"
                           >
                             <div className="min-w-0 flex-1">
-                              <p className="text-[15px] font-medium tracking-[-0.01em]">{r.title}</p>
-                              <p className="mt-0.5 text-[13px] leading-snug text-muted">{r.detail}</p>
+                              <p className="text-[15px] font-medium tracking-[-0.01em]">{es ? r.titleEs : r.title}</p>
+                              <p className="mt-0.5 text-[13px] leading-snug text-muted">{es ? r.detailEs : r.detail}</p>
                             </div>
                             {r.label ? (
                               <span className="shrink-0 text-[13px] font-semibold text-brand tnum">{r.label}</span>
