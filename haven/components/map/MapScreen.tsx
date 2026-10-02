@@ -23,7 +23,7 @@ import { StormReportSheet } from "@/components/storm/StormReportSheet";
 import { DEFAULT_CENTER, EMERGENCY_NUMBER } from "@/lib/client/defaults";
 import { errorMessage } from "@/lib/client/api";
 import { useArrivals } from "@/lib/client/arrivals";
-import { distanceFrom, useHydrated, useIncidents, useNearYou, useViewer, type InitialIncidents } from "@/lib/client/hooks";
+import { distanceFrom, incidentsUrl, useHydrated, useIncidents, useNearYou, useViewer, type IncidentParams, type InitialIncidents } from "@/lib/client/hooks";
 import { distanceMiles, formatDistance, type LatLng } from "@/lib/geo";
 import { lastKnownPosition, useLocation } from "@/components/providers/LocationProvider";
 import { IncidentPreview } from "@/components/incident/IncidentPreview";
@@ -243,27 +243,29 @@ export function MapScreen({ initial, active = true }: { initial?: InitialInciden
   // and the first pins are already their part of town, straight from the
   // copy kept on this device.
   const near = useNearYou(hydrated ? (lastPosition ?? DEFAULT_CENTER) : null, initial);
-  const viewportQuery = useIncidents(
-    storm.on
-      ? {
-          // Storm Mode: only power / flooding / place reports from the last 6 hours.
-          center: area?.center ?? DEFAULT_CENTER,
-          radiusMi: Math.max(area?.radiusMi ?? 10, 10),
-          categories: stormFilter ? [stormFilter] : STORM_CATEGORIES,
-          sinceHours: 6,
-          includeResolved: false,
-        }
-      : {
-          // Nothing until the map reports a viewport: the "near you" answer
-          // covers the first frame (it's a superset of what's in view).
-          center: area?.center ?? null,
-          radiusMi: area?.radiusMi ?? 5,
-          ...filterParams(filters, viewer),
-        },
-    storm.on ? null : initial,
-  );
+  const viewportParams: IncidentParams = storm.on
+    ? {
+        // Storm Mode: only power / flooding / place reports from the last 6 hours.
+        center: area?.center ?? DEFAULT_CENTER,
+        radiusMi: Math.max(area?.radiusMi ?? 10, 10),
+        categories: stormFilter ? [stormFilter] : STORM_CATEGORIES,
+        sinceHours: 6,
+        includeResolved: false,
+      }
+    : {
+        // Nothing until the map reports a viewport: the "near you" answer
+        // covers the first frame (it's a superset of what's in view).
+        center: area?.center ?? null,
+        radiusMi: area?.radiusMi ?? 5,
+        ...filterParams(filters, viewer),
+      };
+  const viewportQuery = useIncidents(viewportParams, storm.on ? null : initial);
   const { isLoading, isValidating, error, mutate } = viewportQuery;
-  const items = !storm.on && !area ? near.items : viewportQuery.items;
+  const fromNear = !storm.on && !area;
+  const items = fromNear ? near.items : viewportQuery.items;
+  // Which query the pins come from: a new answer to the same question is
+  // news (ripples); a different question (pan, zoom, filter) is not.
+  const itemsKey = fromNear ? "near" : (incidentsUrl(viewportParams) ?? "");
   // Something new within 5 mi gets a few seconds as a chip under the filters
   // (the ring on its pin may be off screen); tapping it goes there.
   const { arrived } = useArrivals(near.items, { scrolled: false });
@@ -363,6 +365,7 @@ export function MapScreen({ initial, active = true }: { initial?: InitialInciden
       <IncidentMap
         ref={mapRef}
         incidents={items}
+        incidentsKey={itemsKey}
         selectedId={selectedId}
         onSelect={setSelectedId}
         userPosition={position}

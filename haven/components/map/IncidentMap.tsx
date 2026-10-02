@@ -74,6 +74,8 @@ export interface Viewport {
 
 interface Props {
   incidents: PublicIncident[];
+  /** Identifies the query `incidents` answers; ripples only play for a new answer to the same query. */
+  incidentsKey?: string;
   selectedId: string | null;
   onSelect: (id: string | null) => void;
   userPosition: LatLng | null;
@@ -129,6 +131,7 @@ const SOURCE = "incidents";
 export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
   {
     incidents,
+    incidentsKey,
     selectedId,
     onSelect,
     userPosition,
@@ -534,7 +537,9 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
   // Push incidents into the clustered source. Ones that weren't there a
   // moment ago get a ring that spreads and fades, so a refresh reads as
   // something arriving rather than the map blinking.
+  // Every id shown so far: a pin that scrolls back into the query isn't news.
   const knownIds = useRef<Set<string> | null>(null);
+  const knownKey = useRef<string | undefined>(undefined);
   const rippleRaf = useRef(0);
   useEffect(() => () => cancelAnimationFrame(rippleRaf.current), []);
   useEffect(() => {
@@ -543,10 +548,14 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
     if (!ready || !src) return;
     const m = map.current!;
     const before = knownIds.current;
-    knownIds.current = new Set(incidents.map((i) => i.id));
-    if (before && before.size > 0 && booted.current) {
+    const sameQuery = knownKey.current === incidentsKey;
+    knownKey.current = incidentsKey;
+    const known = new Set(before);
+    for (const i of incidents) known.add(i.id);
+    knownIds.current = known;
+    if (before && before.size > 0 && sameQuery && booted.current) {
       const fresh = incidents.filter((i) => !before.has(i.id));
-      // A handful is news; a whole new list (new area, new filter) is not.
+      // A handful is news; a whole new list is not.
       if (fresh.length > 0 && fresh.length <= 12) {
         (m.getSource(RIPPLE) as GeoJSONSource | undefined)?.setData(rippleGeoJson(fresh));
         cancelAnimationFrame(rippleRaf.current);
@@ -569,7 +578,7 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
       activityGeoJson(incidents),
     );
     (map.current?.getSource(LIGHTS) as GeoJSONSource | undefined)?.setData(lightsGeoJson(incidents));
-  }, [incidents, ready]);
+  }, [incidents, incidentsKey, ready]);
 
   // Live lights breathe while the city is in view.
   useEffect(() => {
