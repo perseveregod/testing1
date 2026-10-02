@@ -22,8 +22,8 @@
 <style>
   /* Layout: a bento. Rounded tiles of uneven size on a grey page; the size of a tile says how
      much it matters. White tiles carry words, the black tile carries a review and its reply,
-     blue is the price, yellow is the surprise. Blue is the brand: every button, the price, the step numbers and the
-     closing tile. The home page is light only, by design. */
+     blue is the price, yellow is the surprise. Blue is the brand: the headline tile, every button, the price, the step
+     numbers and the closing tile. The home page is light only, by design. */
   body { --bg: #edf1f9; --surface: #ffffff; --ink: #111111; --muted: #5c5c63; --line: rgba(0,0,0,.1); --field-line: #d0d0d6;
     --brand: #0b57d0; --accent: #0b57d0; --brand-soft: rgba(11,87,208,.1); --sun: #ffd335; --reply: #8ab4ff;
     background: var(--bg); color: var(--ink); color-scheme: light; font-family: "Inter", -apple-system, BlinkMacSystemFont, system-ui, sans-serif; }
@@ -48,9 +48,9 @@
   .hero { grid-template-columns: 1.22fr 1fr 1fr; grid-template-rows: minmax(300px, auto) minmax(260px, auto); }
   .hero .lead { grid-row: 1 / 3; display: flex; flex-direction: column; }
   .hero h1 { font-size: clamp(40px, 4.7vw, 62px); line-height: 1.0; letter-spacing: -0.045em; font-weight: 700; margin-top: clamp(28px, 7vw, 104px); }
-  .hero h1 .blue-text { color: var(--brand); }
-  .hero .lead p { font-size: 20px; line-height: 1.4; color: var(--muted); margin-top: 20px; }
-  .hero .go { margin-top: auto; padding-top: 32px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; font-size: 16px; color: var(--muted); }
+  .hero h1 .sun-text { color: var(--sun); }
+  .hero .lead p { font-size: 20px; line-height: 1.4; color: rgba(255,255,255,.88); margin-top: 20px; }
+  .hero .go { margin-top: auto; padding-top: 32px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; font-size: 16px; color: rgba(255,255,255,.88); }
   .hero .show { grid-column: 2 / 4; display: flex; flex-direction: column; }
   .who { display: flex; align-items: center; gap: 12px; font-size: 15px; color: #9a9aa2; }
   .who .stars { font-size: 22px; }
@@ -59,7 +59,7 @@
   .show .label { font-size: 14px; font-weight: 500; color: #9a9aa2; margin-top: 22px; }
   .show .reply { font-size: clamp(18px, 1.7vw, 21px); line-height: 1.4; color: var(--reply); margin-top: 6px; max-width: 31em; min-height: 4.2em; }
   .show .sample { margin-top: auto; padding-top: 14px; font-size: 13px; color: #7e7e86; }
-  .hero .price b { display: block; font-size: clamp(84px, 9vw, 118px); line-height: .9; letter-spacing: -0.06em; font-weight: 700; }
+  .hero .price b { color: var(--brand); display: block; font-size: clamp(84px, 9vw, 118px); line-height: .9; letter-spacing: -0.06em; font-weight: 700; }
   .hero .price p, .hero .lang p { font-size: 18px; line-height: 1.35; margin-top: 14px; }
   .hero .lang b { display: block; font-size: clamp(25px, 2.5vw, 31px); line-height: 1.08; letter-spacing: -0.035em; font-weight: 700; }
 
@@ -162,10 +162,10 @@
   </nav>
 
   <header class="bento hero">
-    <div class="tile lead">
-      <h1>Every review answered, <span class="blue-text">in your voice.</span></h1>
+    <div class="tile blue lead">
+      <h1>Every review answered, <span class="sun-text">in your voice.</span></h1>
       <p>Paste a Google or Yelp review. Read the reply. Post it.</p>
-      <div class="go"><a class="btn lg" href="/app#signup">Start free</a><span>15 free replies a month. No card needed.</span></div>
+      <div class="go"><a class="btn light lg" href="/app#signup">Start free</a><span>15 free replies a month. No card needed.</span></div>
     </div>
     <div class="tile black show" aria-label="Example of a review and the reply ReplyDesk drafts">
       <div class="who"><span class="stars" aria-label="1 out of 5 stars">★<span class="off">★★★★</span></span><span>Dana K., 3 hours ago</span></div>
@@ -174,7 +174,7 @@
       <p class="reply" id="heroReply">Dana, we’re truly sorry. A 45-minute wait and a wrong order is not what we want for anyone. I’d like to make it right. Call the restaurant and ask for Rosa.</p>
       <p class="sample">A sample review, for illustration.</p>
     </div>
-    <a class="tile blue price" href="#pricing"><b>$9</b><p>a month for 300 replies. The first 15 every month are free.</p></a>
+    <a class="tile price" href="#pricing"><b>$9</b><p>a month for 300 replies. The first 15 every month are free.</p></a>
     <div class="tile sun lang"><b>¿Reseña en español? Respuesta en español.</b><p>Replies come back in the language of the review.</p></div>
   </header>
 
