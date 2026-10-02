@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { SWRConfig } from "swr";
 import { apiSend, fetcher } from "@/lib/client/api";
+import { approximate } from "@/lib/geo";
 import { useAlertPrefs, useNotifications } from "@/lib/client/hooks";
 import { LangSync } from "@/lib/client/lang";
 import { CameraAlertWatcher } from "@/components/cameras/CameraAlertWatcher";
@@ -32,9 +33,13 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Shares an approximate location with the server only while near-me alerts are on. */
+/**
+ * While near-me alerts are on, sends one rounded point (within about half a
+ * mile) so the server can match alerts. The exact fix never leaves the phone.
+ * If the browser's location permission is taken away, the stored point goes too.
+ */
 function NearMeSync() {
-  const { position } = useLocation();
+  const { position, status } = useLocation();
   const { prefs } = useAlertPrefs();
   const lastSent = useRef<{ at: number; lat: number; lng: number } | null>(null);
 
@@ -44,10 +49,20 @@ function NearMeSync() {
     const moved = !prev || Math.abs(prev.lat - position.lat) > 0.005 || Math.abs(prev.lng - position.lng) > 0.005;
     if (!moved && prev && Date.now() - prev.at < 10 * 60_000) return;
     lastSent.current = { at: Date.now(), lat: position.lat, lng: position.lng };
-    apiSend("/api/me/location", "POST", { latitude: position.lat, longitude: position.lng }).catch(() => {
+    const rough = approximate(position, 2);
+    apiSend("/api/me/location", "POST", { latitude: rough.lat, longitude: rough.lng }).catch(() => {
       lastSent.current = null;
     });
   }, [position, prefs?.enabled, prefs?.nearMe]);
+
+  // Location blocked while near-me is still switched on: don't keep matching
+  // alerts against wherever this person last was.
+  const blocked = status === "denied" && Boolean(prefs?.enabled && prefs.nearMe);
+  useEffect(() => {
+    if (!blocked) return;
+    lastSent.current = null;
+    apiSend("/api/me/location", "DELETE").catch(() => {});
+  }, [blocked]);
   return null;
 }
 

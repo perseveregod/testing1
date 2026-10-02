@@ -87,8 +87,9 @@ export function ReportFlow() {
     try {
       const r = await apiSend<Result>("/api/reports", "POST", {
         category,
-        latitude: point.lat,
-        longitude: point.lng,
+        // Rounded to about a block before it leaves the phone (the server rounds again).
+        latitude: Math.round(point.lat * 1000) / 1000,
+        longitude: Math.round(point.lng * 1000) / 1000,
         description: description.trim(),
         clientRequestId: requestId,
       });

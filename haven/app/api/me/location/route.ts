@@ -1,24 +1,20 @@
-import { approximate } from "@/lib/geo";
 import { locationSchema } from "@/lib/validation";
 import { clientIp, json, parseBody, rateLimit, route } from "@/server/http";
 import { requireUser } from "@/server/auth/session";
-import { getStore } from "@/server/store";
+import { forgetLocation, rememberLocation } from "@/server/services/alerts";
 
-// Stores an approximate (~1 km) location, used only for "near me" alerts.
-// Clearing it (DELETE) happens automatically when near-me alerts are turned off.
+// One rounded point (within about half a mile), kept only for "near me" alerts.
+// It is deleted when those alerts are turned off, and on request (DELETE).
 export const POST = route(async (req: Request) => {
   const user = await requireUser(clientIp(req));
   rateLimit(`loc:${user.id}`, 30, 3_600_000);
   const body = await parseBody(req, locationSchema);
-  const prefs = await getStore().getAlertPrefs(user.id);
-  if (!prefs?.nearMe) return json({ stored: false });
-  const p = approximate({ lat: body.latitude, lng: body.longitude }, 2);
-  await getStore().updateUser(user.id, { lastLat: p.lat, lastLng: p.lng, lastLocationAt: new Date().toISOString() });
-  return json({ stored: true });
+  const stored = await rememberLocation(user.id, { lat: body.latitude, lng: body.longitude });
+  return json({ stored });
 });
 
 export const DELETE = route(async (req: Request) => {
   const user = await requireUser(clientIp(req));
-  await getStore().updateUser(user.id, { lastLat: null, lastLng: null, lastLocationAt: null });
+  await forgetLocation(user.id);
   return json({ stored: false });
 });

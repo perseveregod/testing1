@@ -38,9 +38,11 @@ export default function LegalPage() {
           <h2 className="text-[20px] font-bold tracking-[-0.02em]">Privacy</h2>
           <ul className="list-disc space-y-1.5 pl-5">
             <li>Your identity is never shown on reports. Others see &quot;someone nearby&quot;.</li>
-            <li>Report locations are rounded to about 100 m before they are stored.</li>
-            <li>Your live location stays on your device. If you turn on &quot;alerts near me&quot;, Haven keeps one approximate (~1 km) point to match alerts, and deletes it when you turn that off.</li>
-            <li>Saved places are private and only used to match alerts.</li>
+            <li>Your exact position never leaves your device. Everything below is rounded on your phone first.</li>
+            <li>To load what&apos;s nearby, your phone sends a position rounded to about a block (about 100 m). Haven uses it to answer and does not save it to your account. Like any website, the hosting provider keeps short-lived request logs.</li>
+            <li>If you turn on &quot;alerts near me&quot;, Haven keeps one rougher point (rounded to about 1 km, so within about half a mile of you) from the last time the app was open. It is deleted when you turn that setting off, turn alerts off, or block location in your browser.</li>
+            <li>Report locations and saved places are rounded to about a block before they are stored. Saved places are private and only used to match alerts.</li>
+            <li>Address search, and the street name shown for a report, are looked up through OpenStreetMap&apos;s geocoder using the search text or the rounded point. Map images load from the map provider (OpenFreeMap or OpenStreetMap, and MapTiler for satellite view), which can see which part of the map you are viewing but not who you are in Haven.</li>
             <li>Phone numbers, emails, links and similar details are removed from text automatically.</li>
             <li>Payments are handled by Stripe. Haven never sees your card number.</li>
           </ul>

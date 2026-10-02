@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { getCategory, SEVERITY_RANK } from "@/lib/categories";
-import { distanceMiles, formatDistance, METERS_PER_MILE } from "@/lib/geo";
+import { approximate, distanceMiles, formatDistance, METERS_PER_MILE, type LatLng } from "@/lib/geo";
 import { limitsFor, PLAN_LIMITS } from "@/lib/plans";
 import type { AlertPreferences, IncidentRecord, NotificationItem, PlanId } from "@/lib/types";
 import { getStore } from "../store";
@@ -22,6 +22,36 @@ export const DEFAULT_ALERT_PREFS: AlertPreferences = {
   timeZone: null,
   nearMe: false,
 };
+
+/** "Alerts near me" is in effect only while alerts and near-me are both on. */
+export function nearMeActive(prefs: Pick<AlertPreferences, "enabled" | "nearMe"> | null | undefined): boolean {
+  return Boolean(prefs?.enabled && prefs.nearMe);
+}
+
+export async function forgetLocation(userId: string): Promise<void> {
+  await getStore().updateUser(userId, { lastLat: null, lastLng: null, lastLocationAt: null });
+}
+
+/**
+ * Saves alert preferences. The stored location exists only for near-me alerts,
+ * so it is deleted the moment they stop (either switch), before anything else.
+ */
+export async function saveAlertPrefs(userId: string, prefs: AlertPreferences): Promise<void> {
+  if (!nearMeActive(prefs)) await forgetLocation(userId);
+  await getStore().saveAlertPrefs(userId, prefs);
+}
+
+/**
+ * Keeps one point for near-me alerts, rounded to 0.01 degrees (within about half
+ * a mile of the real position). Refused unless near-me alerts are on.
+ */
+export async function rememberLocation(userId: string, p: LatLng): Promise<boolean> {
+  const store = getStore();
+  if (!nearMeActive(await store.getAlertPrefs(userId))) return false;
+  const r = approximate(p, 2);
+  await store.updateUser(userId, { lastLat: r.lat, lastLng: r.lng, lastLocationAt: new Date().toISOString() });
+  return true;
+}
 
 /** Clamp stored prefs to what the person's plan allows today. */
 export function effectivePrefs(prefs: AlertPreferences, plan: PlanId): AlertPreferences {
@@ -116,7 +146,7 @@ export async function dispatchAlerts(inc: IncidentRecord, excludeUserId: string 
   for (const u of users) {
     if (u.userId === excludeUserId || out.has(u.userId) || u.lastLat == null || u.lastLng == null) continue;
     const prefs = effectivePrefs(u.prefs, u.plan);
-    if (!wantsIncident(prefs, inc, now)) continue;
+    if (!nearMeActive(prefs) || !wantsIncident(prefs, inc, now)) continue;
     const d = distanceMiles(point, { lat: u.lastLat, lng: u.lastLng });
     if (d > prefs.radiusMi) continue;
     out.set(u.userId, make(u.userId, `About ${formatDistance(d)} from you${inc.approximateAddress ? ` · ${inc.approximateAddress}` : ""}`));

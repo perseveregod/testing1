@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { approximate } from "@/lib/geo";
 import { placeSchema } from "@/lib/validation";
 import { ApiError, clientIp, json, parseBody, route } from "@/server/http";
 import { currentUser, requireUser, toViewer } from "@/server/auth/session";
@@ -30,7 +31,9 @@ export const POST = route(async (req: Request) => {
     input.radiusMi = null;
     input.categories = null;
   }
-  const place = { id: randomUUID(), createdAt: new Date().toISOString(), ...input };
+  // Never keep the exact spot (often a home): snap to about a block.
+  const point = approximate({ lat: input.latitude, lng: input.longitude }, 3);
+  const place = { id: randomUUID(), createdAt: new Date().toISOString(), ...input, latitude: point.lat, longitude: point.lng };
   await getStore().insertPlace(user.id, place);
   return json({ place }, 201);
 });

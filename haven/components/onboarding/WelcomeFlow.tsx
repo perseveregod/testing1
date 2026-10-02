@@ -85,7 +85,7 @@ function WelcomeSteps() {
       className="haven-fade-in fixed inset-0 z-[80] flex flex-col bg-bg"
       style={{ paddingTop: "calc(var(--safe-top) + 16px)", paddingBottom: "calc(var(--safe-bottom) + 20px)" }}
     >
-      <div className="relative mx-auto flex w-full max-w-md flex-1 flex-col px-6">
+      <div className="relative mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col px-6">
         <div className="flex items-center justify-between">
           <AppIconMark className="size-9" />
           {!last && (
@@ -95,14 +95,15 @@ function WelcomeSteps() {
           )}
         </div>
 
-        <div key={step} className="haven-rise flex flex-1 flex-col justify-center">
+        {/* Scrolls on short phones instead of pushing the buttons off screen. */}
+        <div key={step} className="haven-rise -mx-1 flex min-h-0 flex-1 flex-col overflow-y-auto px-1 py-3 [&>*]:shrink-0 [&>:first-child]:mt-auto [&>:last-child]:mb-auto">
           <span
-            className="flex size-20 items-center justify-center rounded-card"
+            className={`flex items-center justify-center rounded-card ${locationStep ? "size-14 [@media(max-height:700px)]:hidden" : "size-20"}`}
             style={{ background: `color-mix(in srgb, ${s.color} 18%, transparent)`, color: s.color }}
           >
-            <Icon className="size-10" strokeWidth={1.8} aria-hidden />
+            <Icon className={locationStep ? "size-7" : "size-10"} strokeWidth={1.8} aria-hidden />
           </span>
-          <h1 id="welcome-title" className="mt-7 text-[32px] font-bold leading-[1.1] tracking-[-0.03em]">
+          <h1 id="welcome-title" className={`${locationStep ? "mt-5 text-[28px]" : "mt-7 text-[32px]"} font-bold leading-[1.1] tracking-[-0.03em]`}>
             {t(s.title)}
           </h1>
           <p className="mt-3 text-[17px] leading-[1.5] text-muted">{t(s.body)}</p>
@@ -113,9 +114,23 @@ function WelcomeSteps() {
             </>
           )}
           {locationStep && (
-            <p className="mt-6 rounded-card bg-surface px-4 py-3 text-[14px] leading-snug text-muted">
-              {t("welcome.note", { n: EMERGENCY_NUMBER })}
-            </p>
+            <>
+              {/* The same facts as the privacy page, before the browser asks. */}
+              <section aria-labelledby="loc-use" className="mt-5 rounded-card bg-surface px-4 py-3.5">
+                <h2 id="loc-use" className="text-[14px] font-semibold">
+                  {t("loc.use.title")}
+                </h2>
+                <ul className="mt-2 space-y-2 text-[14px] leading-snug text-muted">
+                  {(["loc.use.nearby", "loc.use.alerts"] as const).map((k) => (
+                    <li key={k} className="flex gap-2.5">
+                      <span className="mt-[7px] size-1.5 shrink-0 rounded-full bg-muted" aria-hidden />
+                      <span>{t(k)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+              <p className="mt-3 px-1 text-[13px] leading-snug text-muted">{t("welcome.note", { n: EMERGENCY_NUMBER })}</p>
+            </>
           )}
         </div>
 

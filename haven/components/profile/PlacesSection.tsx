@@ -167,8 +167,9 @@ function AddPlaceSheet({ open, onClose, usedKinds, onAdded }: { open: boolean; o
       await apiSend("/api/places", "POST", {
         kind,
         label: name,
-        latitude: picked.point.lat,
-        longitude: picked.point.lng,
+        // About a block, not the exact spot (the server rounds again).
+        latitude: Math.round(picked.point.lat * 1000) / 1000,
+        longitude: Math.round(picked.point.lng * 1000) / 1000,
         address: picked.address,
         alertsEnabled: true,
       });
@@ -225,7 +226,7 @@ function AddPlaceSheet({ open, onClose, usedKinds, onAdded }: { open: boolean; o
             <ul className="mt-1 divide-y divide-line">
               <ResultRow
                 title={es ? "Usar mi ubicación actual" : "Use my current location"}
-                detail={position ? (es ? "Se guarda de forma aproximada" : "Saved approximately") : es ? "Permitir acceso a la ubicación" : "Allow location access"}
+                detail={position ? (es ? "Se guarda redondeada a una cuadra" : "Saved rounded to about a block") : es ? "Permitir acceso a la ubicación" : "Allow location access"}
                 icon={<LocateFixed className="size-[18px]" aria-hidden />}
                 onClick={() => {
                   if (!position) {

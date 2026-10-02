@@ -31,8 +31,8 @@ const QA = [
   {
     q: ["Is my location shared?", "¿Se comparte mi ubicación?"],
     a: [
-      "Your exact location stays on your phone. Reports and saved places are rounded to about a block. “Near me” alerts share an approximate (~1 km) location only while that setting is on, and turning it off deletes it.",
-      "Su ubicación exacta se queda en su teléfono. Los reportes y lugares guardados se redondean a una cuadra aproximadamente. Las alertas “cerca de mí” comparten una ubicación aproximada (~1 km) solo mientras esa opción está activa, y al apagarla se borra.",
+      "Your exact position never leaves your phone. To load what's nearby, Haven sends a position rounded to about a block and doesn't save it to your account. Reports and saved places are rounded to about a block. “Alerts near me” keeps one rougher point (within about half a mile) from the last time Haven was open, and deletes it when you turn that off, turn alerts off, or block location.",
+      "Su posición exacta nunca sale de su teléfono. Para cargar lo cercano, Haven envía una posición redondeada a una cuadra y no la guarda en su cuenta. Los reportes y lugares guardados se redondean a una cuadra. Las “alertas cerca de mí” guardan un punto más aproximado (a media milla) de la última vez que abrió Haven, y lo borran cuando las apaga, apaga las alertas o bloquea la ubicación.",
     ],
   },
   {
