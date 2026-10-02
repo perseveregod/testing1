@@ -207,6 +207,12 @@ export function MapScreen({ initial, active = true }: { initial?: InitialInciden
     bearing: BEARING_3D,
     pitch: PITCH_3D,
   });
+  // The map reports its camera after every move; only a real change in
+  // heading or tilt is worth re-rendering the screen for.
+  const onCamera = useCallback(
+    (c: Camera) => setCamera((prev) => (Math.abs(prev.bearing - c.bearing) < 0.5 && Math.abs(prev.pitch - c.pitch) < 0.5 ? prev : c)),
+    [],
+  );
 
   const chooseMode = useCallback((m: MapMode) => {
     setMode(m);
@@ -282,7 +288,7 @@ export function MapScreen({ initial, active = true }: { initial?: InitialInciden
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  const now = Math.floor(useClock(true) / 30_000) * 30_000;
+  const now = useClock(true, 30_000);
   // An official weather alert in view: offer Storm Mode.
   const weatherAlert = !storm.on && items.some((i) => i.source.kind === "weather" && i.status !== "resolved");
 
@@ -384,7 +390,7 @@ export function MapScreen({ initial, active = true }: { initial?: InitialInciden
         }
         onViewportChange={setViewport}
         mode={mode}
-        onCameraChange={setCamera}
+        onCameraChange={onCamera}
         intro={intro}
         active={active}
         onLights={onLights}

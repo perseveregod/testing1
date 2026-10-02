@@ -3,6 +3,7 @@
 import "maplibre-gl/dist/maplibre-gl.css";
 import {
   forwardRef,
+  memo,
   useCallback,
   useEffect,
   useImperativeHandle,
@@ -37,6 +38,7 @@ import {
   lightsGeoJson,
   PITCH_3D,
   pulseLights,
+  PULSE_BEAT_MS,
   resolveMode,
   setLightsReveal,
   styleUrlFor,
@@ -261,6 +263,7 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
   }, []);
 
   // Reconcile HTML markers with what the clustered source currently shows.
+  const visibleSig = useRef("");
   const syncMarkers = useCallback(() => {
     const m = map.current;
     const ml = lib.current;
@@ -320,8 +323,25 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
         markers.current.delete(key);
       }
     }
-    setVisible([...next.values()]);
+    // Positions were applied above; React only needs to hear about it when
+    // the set of pins or what a pin shows has changed. (This runs for every
+    // tile that loads, usually with the same answer.)
+    const list = [...next.values()];
+    const sig = markerSignature(list);
+    if (sig === visibleSig.current) return;
+    visibleSig.current = sig;
+    setVisible(list);
   }, []);
+  // Tile loads arrive in bursts: one sync per frame is enough.
+  const syncRaf = useRef(0);
+  const scheduleSync = useCallback(() => {
+    if (syncRaf.current) return;
+    syncRaf.current = requestAnimationFrame(() => {
+      syncRaf.current = 0;
+      syncMarkers();
+    });
+  }, [syncMarkers]);
+  useEffect(() => () => cancelAnimationFrame(syncRaf.current), []);
 
   // Create the map once.
   useEffect(() => {
@@ -477,7 +497,7 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
       m.on("movestart", () => container.current?.classList.add("map-moving"));
       m.on("moveend", () => {
         container.current?.classList.remove("map-moving");
-        syncMarkers();
+        scheduleSync();
         emitViewport();
         onCamera.current?.({ bearing: m.getBearing(), pitch: m.getPitch() });
       });
@@ -493,7 +513,7 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
         onCamera.current?.({ bearing: m.getBearing(), pitch: m.getPitch() }),
       );
       m.on("sourcedata", (e) => {
-        if (e.sourceId === SOURCE && e.isSourceLoaded) syncMarkers();
+        if (e.sourceId === SOURCE && e.isSourceLoaded) scheduleSync();
       });
       m.on("click", (e) => {
         if ((e.originalEvent.target as HTMLElement).closest(".haven-marker"))
@@ -549,6 +569,7 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
   // Every id shown so far: a pin that scrolls back into the query isn't news.
   const knownIds = useRef<Set<string> | null>(null);
   const knownKey = useRef<string | undefined>(undefined);
+  const pushed = useRef<PublicIncident[] | null>(null);
   const rippleRaf = useRef(0);
   useEffect(() => () => cancelAnimationFrame(rippleRaf.current), []);
   useEffect(() => {
@@ -579,6 +600,10 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
         rippleRaf.current = requestAnimationFrame(tick);
       }
     }
+    // The same list under a new key (a pan, before its answer arrives) has
+    // nothing new to draw; each setData is a full rebuild in the worker.
+    if (pushed.current === incidents) return;
+    pushed.current = incidents;
     src.setData(toGeoJson(incidents));
     (map.current?.getSource(BEACONS) as GeoJSONSource | undefined)?.setData(
       beaconGeoJson(incidents),
@@ -593,15 +618,14 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
   useEffect(() => {
     const m = map.current;
     if (!ready || !lightsMode || !m) return;
-    let raf = 0;
-    const tick = (t: number) => {
-      // Restyling a layer every frame is fine while the map is still; during
-      // a gesture it would compete with the pan itself.
-      if (!m.isMoving()) pulseLights(m, t);
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    // One paint change per beat; the GPU eases between them. (A per-frame
+    // restyle here used to rebuild the lights source sixty times a second.)
+    let beat = 0;
+    const id = setInterval(() => {
+      if (document.hidden) return;
+      pulseLights(m, beat++);
+    }, PULSE_BEAT_MS);
+    return () => clearInterval(id);
   }, [ready, lightsMode, styleEpoch]);
 
   // The blink-on: once the first paint is in, lights come on one at a time
@@ -822,6 +846,7 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
     }
   }, [selectedId]);
 
+  const pick = useCallback((id: string) => onSelectRef.current(id), []);
   const zoomIntoCluster = useCallback(
     async (clusterId: number, lng: number, lat: number) => {
       const m = map.current;
@@ -866,27 +891,32 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
         createPortal(
           v.kind === "cluster" ? (
             <ClusterMarker
+              clusterId={v.clusterId}
+              lng={v.lng}
+              lat={v.lat}
               count={v.count}
               maxSev={v.maxSev}
-              onClick={() => zoomIntoCluster(v.clusterId, v.lng, v.lat)}
+              onZoom={zoomIntoCluster}
             />
           ) : v.stormState ? (
             <StormPin
+              id={v.id}
               category={v.category}
               state={v.stormState}
               confirms={v.confirms}
               fade={v.stormFadeValue}
               selected={v.id === selectedId}
-              onClick={() => onSelect(v.id)}
+              onPick={pick}
             />
           ) : (
             <PointMarker
+              id={v.id}
               category={v.category}
               severity={v.severity}
               ended={v.ended}
               age={v.age}
               selected={v.id === selectedId}
-              onClick={() => onSelect(v.id)}
+              onPick={pick}
             />
           ),
           v.el,
@@ -896,6 +926,17 @@ export const IncidentMap = forwardRef<MapHandle, Props>(function IncidentMap(
     </>
   );
 });
+
+/** Everything about the visible pins that affects what React renders. */
+export function markerSignature(list: readonly Visible[]): string {
+  return list
+    .map((v) =>
+      v.kind === "cluster"
+        ? `${v.key}|${v.count}|${v.maxSev}|${v.lng},${v.lat}`
+        : `${v.key}|${v.category}|${v.severity}|${v.ended ? 1 : 0}|${v.age.toFixed(2)}|${v.stormState ?? ""}|${v.confirms}|${v.stormFadeValue}`,
+    )
+    .join(";");
+}
 
 /** Night tuning, kept under its old name for the small maps. */
 export const tuneStyle = tuneNightStyle;
@@ -943,27 +984,32 @@ function toGeoJson(incidents: PublicIncident[]): GeoJSON.FeatureCollection {
   };
 }
 
-function PointMarker({
+// The three pin components are memoized and take ids plus stable callbacks:
+// the map re-syncs its pins on every tile load, and only pins whose own
+// props changed should render again.
+const PointMarker = memo(function PointMarker({
+  id,
   category,
   severity,
   ended,
   age,
   selected,
-  onClick,
+  onPick,
 }: {
+  id: string;
   category: PublicIncident["category"];
   severity: number;
   ended: boolean;
   /** Hours since it was reported. */
   age: number;
   selected: boolean;
-  onClick: () => void;
+  onPick: (id: string) => void;
 }) {
   const def = getCategory(category);
   const label = `${def.label}, ${["low", "moderate", "high", "critical"][severity] ?? "unknown"} severity${ended ? ", ended" : ""}`;
   const press = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onClick();
+    onPick(id);
   };
 
   // Ended incidents recede to a small gray dot so live ones own the map.
@@ -1045,26 +1091,28 @@ function PointMarker({
       </span>
     </button>
   );
-}
+});
 
 /**
  * A storm report pin: colored by what it says (flooded is big, red and
  * pulsing), with the number of neighbors who confirmed it.
  */
-function StormPin({
+const StormPin = memo(function StormPin({
+  id,
   category,
   state,
   confirms,
   fade,
   selected,
-  onClick,
+  onPick,
 }: {
+  id: string;
   category: PublicIncident["category"];
   state: StormState;
   confirms: number;
   fade: number;
   selected: boolean;
-  onClick: () => void;
+  onPick: (id: string) => void;
 }) {
   const style = STATE_STYLE[state];
   const flooded = state === "flooded";
@@ -1075,7 +1123,7 @@ function StormPin({
       type="button"
       onClick={(e) => {
         e.stopPropagation();
-        onClick();
+        onPick(id);
       }}
       aria-label={label}
       aria-pressed={selected}
@@ -1134,16 +1182,22 @@ function StormPin({
       )}
     </button>
   );
-}
+});
 
-function ClusterMarker({
+const ClusterMarker = memo(function ClusterMarker({
+  clusterId,
+  lng,
+  lat,
   count,
   maxSev,
-  onClick,
+  onZoom,
 }: {
+  clusterId: number;
+  lng: number;
+  lat: number;
   count: number;
   maxSev: number;
-  onClick: () => void;
+  onZoom: (clusterId: number, lng: number, lat: number) => void;
 }) {
   const ring = ["#6b7280", "#f5b84b", "#ff8a5c", "#ff2d55"][
     Math.max(0, Math.min(3, maxSev))
@@ -1154,7 +1208,7 @@ function ClusterMarker({
       type="button"
       onClick={(e) => {
         e.stopPropagation();
-        onClick();
+        onZoom(clusterId, lng, lat);
       }}
       aria-label={`${count} incidents here. Zoom in.`}
       className="haven-marker haven-pop flex items-center justify-center rounded-full bg-[#15181f] text-[14px] font-bold text-white tnum"
@@ -1167,4 +1221,4 @@ function ClusterMarker({
       {count}
     </button>
   );
-}
+});

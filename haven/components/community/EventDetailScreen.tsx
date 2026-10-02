@@ -26,7 +26,7 @@ export function EventDetailScreen({ id }: { id: string }) {
   const [sending, setSending] = useState(false);
   const [signIn, setSignIn] = useState(false);
   const requestId = useMemo(() => crypto.randomUUID(), []);
-  const now = useClock(true);
+  const now = useClock(true, 30_000);
   const { es, lang, timeAgo } = useT();
 
   async function toggleGoing() {

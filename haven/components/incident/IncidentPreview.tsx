@@ -12,6 +12,7 @@ import { Check, ChevronDown, ChevronRight, ChevronUp, Share2, X } from "lucide-r
 import { apiSend, errorMessage } from "@/lib/client/api";
 import { shareIncident } from "@/lib/client/share";
 import { formatDistance } from "@/lib/geo";
+import { streetAddress } from "@/lib/houston";
 import type { PublicIncident } from "@/lib/types";
 import { useToast } from "@/components/providers/ToastProvider";
 import { Button, ButtonLink } from "@/components/ui/Button";
@@ -139,7 +140,7 @@ function PreviewCard({
 
       <div className={`relative px-4 pb-4 ${expanded ? "overflow-y-auto overscroll-contain" : ""}`}>
         <p className="mt-2.5 text-[13px] text-muted">
-          {incident.approximateAddress || t("inc.approx")}
+          {streetAddress(incident.approximateAddress) || t("inc.approx")}
           {distanceMi != null && <span className="text-text tnum"> · {t("inc.away", { d: formatDistance(distanceMi) })}</span>}
           <span className="tnum"> · {timeAgo(incident.createdAt)}</span>
         </p>

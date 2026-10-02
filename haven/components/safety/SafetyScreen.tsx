@@ -13,7 +13,7 @@ import { getCategory, FILTER_GROUPS } from "@/lib/categories";
 import { DEFAULT_CENTER } from "@/lib/client/defaults";
 import { distanceFrom, NEAR_RADIUS_MI, useHydrated, useNearYou, type InitialIncidents } from "@/lib/client/hooks";
 import { useT } from "@/lib/client/lang";
-import { neighborhoodFor } from "@/lib/houston";
+import { neighborhoodFor, streetAddress } from "@/lib/houston";
 import { formatRemaining, useClock, useSafeWalk } from "@/lib/client/safewalk";
 import { RESOURCE_AREA, RESOURCES } from "@/lib/resources";
 import { formatDistance } from "@/lib/geo";
@@ -242,7 +242,7 @@ export function SafetyScreen({ initial }: { initial?: InitialIncidents | null })
 }
 
 function BriefRow({ incident, distanceMi }: { incident: PublicIncident; distanceMi: number | null }) {
-  const { timeAgo, title } = useT();
+  const { t, timeAgo, title } = useT();
   return (
     <li>
       <Link
@@ -259,7 +259,7 @@ function BriefRow({ incident, distanceMi }: { incident: PublicIncident; distance
           </p>
           <p className="mt-0.5 flex items-baseline gap-2 text-[12px] text-muted">
             {isLive(incident) && <LiveBadge />}
-            <span className="min-w-0 truncate">{incident.approximateAddress}</span>
+            <span className="min-w-0 truncate">{streetAddress(incident.approximateAddress) || t("inc.approx")}</span>
             {distanceMi != null && <span className="shrink-0 text-faint tnum">{formatDistance(distanceMi)}</span>}
           </p>
         </div>

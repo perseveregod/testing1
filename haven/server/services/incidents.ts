@@ -268,7 +268,7 @@ export async function createReport(
   }
 
   const def = getCategory(input.category);
-  const address = (await describeLocation(point.lat, point.lng)) || "Approximate location";
+  const address = await describeLocation(point.lat, point.lng);
   const rec: IncidentRecord = {
     id: randomUUID(),
     category: input.category,
@@ -371,7 +371,7 @@ async function createStormReport(
     return { incidentId: current.id, merged: true, redacted };
   }
 
-  const address = (await describeLocation(point.lat, point.lng)) || "Approximate location";
+  const address = await describeLocation(point.lat, point.lng);
   const id = randomUUID();
   const rec: IncidentRecord = {
     id,

@@ -5,6 +5,7 @@ import { MapPinned, Navigation, ShieldCheck } from "lucide-react";
 import { categoriesInGroup, type FilterGroup } from "@/lib/categories";
 import { DEFAULT_CENTER } from "@/lib/client/defaults";
 import { distanceFrom, nearYouParams, useFeedFreshness, useHydrated, useIncidents, type InitialIncidents } from "@/lib/client/hooks";
+import { useAffects } from "@/lib/client/affects";
 import { useArrivals, useScrolledPast } from "@/lib/client/arrivals";
 import { useClock } from "@/lib/client/safewalk";
 import { errorMessage } from "@/lib/client/api";
@@ -44,7 +45,7 @@ const FILTERS: { id: FeedFilter; label: Key }[] = [
 export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
   const { position, lastPosition, status, request } = useLocation();
   const { t } = useT();
-  const now = Math.floor(useClock(true) / 30_000) * 30_000;
+  const now = useClock(true, 30_000);
   const fresh = useFeedFreshness(now);
   const [filter, setFilter] = useState<FeedFilter>("nearby");
   // Mount a short list first; the rest comes on request. Keeps the tab instant.
@@ -67,6 +68,8 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
   );
   // Rows that came in since the last answer glow briefly; while scrolled
   // down, a pill counts them until the person is back at the top.
+  // "0.4 mi from Home": one lookup for the whole list.
+  const affectsOf = useAffects();
   const scrolled = useScrolledPast(240);
   const { arrived, pending } = useArrivals(items, { scrolled });
 
@@ -199,7 +202,7 @@ export function FeedScreen({ initial }: { initial?: InitialIncidents | null }) {
                     {showHeader && (
                       <h2 className="t-section -mx-4 bg-transparent px-4 pb-1 pt-5">{t(section)}</h2>
                     )}
-                    <IncidentRow incident={i} distanceMi={distanceFrom(here, i)} />
+                    <IncidentRow incident={i} distanceMi={distanceFrom(here, i)} affects={affectsOf(i)} />
                   </div>
                 );
               })

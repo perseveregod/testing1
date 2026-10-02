@@ -53,7 +53,19 @@ export const LIGHTS_ZOOM = 12.6;
 const LIGHTS_HALO = "city-lights-halo";
 const LIGHTS_PULSE = "city-lights-pulse";
 const LIGHTS_CORE = "city-lights-core";
-const LIGHT_LAYERS = [LIGHTS_HALO, LIGHTS_PULSE, LIGHTS_CORE];
+// Live lights breathe in three groups, each on its own beat (see pulseLights).
+const PULSE_GROUPS = 3;
+/** One beat of the pulse; also the length of the paint transition. */
+export const PULSE_BEAT_MS = 700;
+const pulseLayer = (k: number) => `${LIGHTS_PULSE}-${k}`;
+const PULSE_LAYERS = Array.from({ length: PULSE_GROUPS }, (_, k) => pulseLayer(k));
+const LIGHT_LAYERS = [LIGHTS_HALO, ...PULSE_LAYERS, LIGHTS_CORE];
+const pulseFilter = (k: number): unknown[] => [["get", "live"], ["==", ["%", ["get", "seq"], PULSE_GROUPS], k]];
+// The two ends of a breath. Zoom-only values on purpose: a value that reads a
+// feature property makes MapLibre rebuild the whole source in its worker on
+// every change, which at one change per frame was a third of the main thread.
+const PULSE_REST = { radius: ["interpolate", ["linear"], ["zoom"], 8, 4, LIGHTS_ZOOM, 8], opacity: 0.5 };
+const PULSE_OUT = { radius: ["interpolate", ["linear"], ["zoom"], 8, 18, LIGHTS_ZOOM, 38], opacity: 0.04 };
 
 function shuffleKey(id: string): number {
   let h = 2166136261;
@@ -81,17 +93,14 @@ export function lightsGeoJson(incidents: PublicIncident[], now = Date.now()): Ge
           id: i.id,
           color: getCategory(i.category).color,
           sev,
+          // Also picks the light's pulse group (seq % 3).
           seq: seq.get(i.id) ?? 0,
           live: sev >= 2 || fresh,
-          // Each light pulses on its own beat.
-          phase: (shuffleKey(i.id + "p") % 1000) / 1000,
         },
       };
     }),
   };
 }
-
-const haloRadius = (z: number, base: number) => ["interpolate", ["linear"], ["zoom"], 8, base * 0.6, LIGHTS_ZOOM, base] as unknown as number;
 
 /** Adds the three light layers (idempotent). Visible only below LIGHTS_ZOOM. */
 export function addLightsLayers(m: MlMap, night: boolean, before?: string) {
@@ -113,22 +122,27 @@ export function addLightsLayers(m: MlMap, night: boolean, before?: string) {
     },
     before,
   );
-  m.addLayer(
-    {
-      id: LIGHTS_PULSE,
-      type: "circle",
-      source: LIGHTS,
-      maxzoom: LIGHTS_ZOOM,
-      filter: ["get", "live"],
-      paint: {
-        "circle-color": ["get", "color"],
-        "circle-radius": haloRadius(0, 10),
-        "circle-blur": 0.7,
-        "circle-opacity": 0.5,
+  for (let k = 0; k < PULSE_GROUPS; k++) {
+    m.addLayer(
+      {
+        id: pulseLayer(k),
+        type: "circle",
+        source: LIGHTS,
+        maxzoom: LIGHTS_ZOOM,
+        filter: ["all", ...pulseFilter(k)] as unknown as FilterSpecification,
+        paint: {
+          "circle-color": ["get", "color"],
+          "circle-radius": PULSE_REST.radius as unknown as number,
+          "circle-blur": 0.7,
+          "circle-opacity": PULSE_REST.opacity,
+          // The GPU eases between the two ends; nothing runs per frame.
+          "circle-radius-transition": { duration: PULSE_BEAT_MS, delay: 0 },
+          "circle-opacity-transition": { duration: PULSE_BEAT_MS, delay: 0 },
+        },
       },
-    },
-    before,
-  );
+      before,
+    );
+  }
   m.addLayer(
     {
       id: LIGHTS_CORE,
@@ -150,29 +164,31 @@ export function addLightsLayers(m: MlMap, night: boolean, before?: string) {
 export function setLightsReveal(m: MlMap, upto: number | null) {
   for (const id of LIGHT_LAYERS) {
     if (!m.getLayer(id)) continue;
-    const base: unknown[] = id === LIGHTS_PULSE ? [["get", "live"]] : [];
+    const group = PULSE_LAYERS.indexOf(id);
+    const base: unknown[] = group >= 0 ? pulseFilter(group) : [];
     const reveal = upto == null ? [] : [["<", ["get", "seq"], upto]];
     const parts = [...base, ...reveal];
     m.setFilter(id, parts.length === 0 ? null : parts.length === 1 ? (parts[0] as unknown as FilterSpecification) : (["all", ...parts] as unknown as FilterSpecification));
   }
 }
 
-/** One frame of the pulse: live lights breathe on a ~1.6 s cycle, each on its own phase. */
-export function pulseLights(m: MlMap, t: number) {
-  if (!m.getLayer(LIGHTS_PULSE)) return;
-  const cycle = ((t / 1600) % 1);
-  // phase per feature: p = (cycle + phase) % 1 → radius grows, opacity fades.
-  const p = ["%", ["+", cycle, ["get", "phase"]], 1];
-  m.setPaintProperty(LIGHTS_PULSE, "circle-radius", [
-    "interpolate",
-    ["linear"],
-    ["zoom"],
-    8,
-    ["+", 4, ["*", 14, p]],
-    LIGHTS_ZOOM,
-    ["+", 8, ["*", 30, p]],
-  ]);
-  m.setPaintProperty(LIGHTS_PULSE, "circle-opacity", ["*", 0.55, ["-", 1, p]]);
+/**
+ * One beat of the pulse: each group swells and fades for a beat, then settles
+ * for two, so the city never pulses in unison. `beat` counts up from 0.
+ */
+export function pulseLights(m: MlMap, beat: number) {
+  for (let k = 0; k < PULSE_GROUPS; k++) {
+    const id = pulseLayer(k);
+    if (!m.getLayer(id)) continue;
+    const end = pulseTarget(beat, k) === "out" ? PULSE_OUT : PULSE_REST;
+    m.setPaintProperty(id, "circle-radius", end.radius);
+    m.setPaintProperty(id, "circle-opacity", end.opacity);
+  }
+}
+
+/** Which end of the breath group `k` heads for on this beat. */
+export function pulseTarget(beat: number, k: number): "out" | "rest" {
+  return (((beat - k) % PULSE_GROUPS) + PULSE_GROUPS) % PULSE_GROUPS === 0 ? "out" : "rest";
 }
 
 function firstSymbolLayer(m: MlMap): string | undefined {

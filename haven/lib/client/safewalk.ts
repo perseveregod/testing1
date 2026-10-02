@@ -164,15 +164,25 @@ function subscribeClock(cb: () => void) {
   };
 }
 
-/** Current time, updated every second while `running`. 0 on the server. */
-export function useClock(running: boolean): number {
+/** `t` rounded down to a multiple of `stepMs`. */
+export function steppedTime(t: number, stepMs: number): number {
+  return stepMs > 1 ? Math.floor(t / stepMs) * stepMs : t;
+}
+
+/**
+ * Current time while `running` (0 on the server). The value only changes
+ * every `stepMs`, so a screen that shows "3 min ago" passes 30 000 and
+ * re-renders twice a minute instead of every second; a countdown keeps the
+ * default.
+ */
+export function useClock(running: boolean, stepMs = 1000): number {
   const subscribe = useCallback((cb: () => void) => (running ? subscribeClock(cb) : () => {}), [running]);
   return useSyncExternalStore(
     subscribe,
     () => {
       if (!running) return 0;
       if (!clock) clock = Date.now();
-      return clock;
+      return steppedTime(clock, stepMs);
     },
     () => 0,
   );

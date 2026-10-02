@@ -1,12 +1,13 @@
 "use client";
 
+import { memo } from "react";
 import Link from "next/link";
 import { formatDistance } from "@/lib/geo";
-import { neighborhoodLabel } from "@/lib/houston";
+import { neighborhoodLabel, streetAddress } from "@/lib/houston";
 import type { Key } from "@/lib/i18n";
 import type { PublicIncident } from "@/lib/types";
 import { isLive, LiveBadge, OriginBadge } from "./Badges";
-import { useAffects } from "@/lib/client/affects";
+import type { Affects } from "@/lib/client/affects";
 import { useT } from "@/lib/client/lang";
 import { CategoryIcon } from "./CategoryIcon";
 
@@ -38,7 +39,7 @@ export function DispatchRow({ incident, distanceMi }: { incident: PublicIncident
         </p>
         <p className="truncate text-[13px] text-muted">
           {ended && <span className="text-faint">{t("inc.ended")} · </span>}
-          {incident.approximateAddress || t("inc.approx")}
+          {streetAddress(incident.approximateAddress) || t("inc.approx")}
           {distanceMi != null && <span className="text-faint tnum"> · {formatDistance(distanceMi)}</span>}
         </p>
       </div>
@@ -80,13 +81,25 @@ export function foldDuplicates(items: PublicIncident[]): PublicIncident[] {
   return items.filter((i) => keep.has(i.id));
 }
 
-/** One incident as a list row: glyph, title, place, and a two-line preview. */
-export function IncidentRow({ incident, distanceMi }: { incident: PublicIncident; distanceMi: number | null }) {
+/**
+ * One incident as a list row: glyph, title, place, and a two-line preview.
+ * Memoized, and `affects` ("0.4 mi from Home") is worked out once by the
+ * list, not per row: a row that subscribes to places and alert settings
+ * itself costs four data subscriptions, times every row on screen.
+ */
+export const IncidentRow = memo(function IncidentRow({
+  incident,
+  distanceMi,
+  affects,
+}: {
+  incident: PublicIncident;
+  distanceMi: number | null;
+  affects: Affects | null;
+}) {
   const { t, timeAgo, title } = useT();
-  const hood = neighborhoodLabel({ lat: incident.latitude, lng: incident.longitude }, incident.approximateAddress);
-  const affects = useAffects()(incident);
+  const street = streetAddress(incident.approximateAddress);
+  const hood = neighborhoodLabel({ lat: incident.latitude, lng: incident.longitude }, street);
   const ended = incident.status === "resolved";
-  const active = incident.status === "active";
   const live = isLive(incident);
   return (
     <Link
@@ -95,11 +108,9 @@ export function IncidentRow({ incident, distanceMi }: { incident: PublicIncident
       transitionTypes={["nav-forward"]}
       className="cv-row group relative -mx-4 flex gap-3 px-4 py-3.5 transition-colors active:bg-white/[0.03]"
     >
-      <div className="relative pt-0.5">
+      {/* Live is said once, by the badge on the next line. */}
+      <div className="pt-0.5">
         <CategoryIcon category={incident.category} muted={ended} />
-        {active && live && (
-          <span className="absolute -right-0.5 top-0 size-2.5 rounded-full bg-live ring-[2.5px] ring-bg" aria-label={t("inc.active")} />
-        )}
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-3">
@@ -113,8 +124,7 @@ export function IncidentRow({ incident, distanceMi }: { incident: PublicIncident
           {live && <LiveBadge />}
           <span className="min-w-0 truncate">
             {ended && <span className="text-faint">{t("inc.ended")} · </span>}
-            {hood ? `${hood}, ` : ""}
-            {incident.approximateAddress || t("inc.approx")}
+            {[hood, street].filter(Boolean).join(", ") || t("inc.approx")}
           </span>
           {affects ? (
             <span className="shrink-0 font-medium text-brand tnum">{t("near.from", { d: formatDistance(affects.distanceMi), place: affects.label })}</span>
@@ -140,7 +150,7 @@ export function IncidentRow({ incident, distanceMi }: { incident: PublicIncident
       </div>
     </Link>
   );
-}
+});
 
 const SEV_RANK = { low: 0, moderate: 1, high: 2, critical: 3 } as const;
 
@@ -155,7 +165,13 @@ export function pickTopIncident(items: PublicIncident[]): PublicIncident | null 
 /** Big "happening now" card pinned above the feed. */
 export function TopIncidentCard({ incident, distanceMi }: { incident: PublicIncident; distanceMi: number | null }) {
   const { t, timeAgo, title, cat } = useT();
-  const { def, short } = cat(incident.category);
+  const { def, short, label } = cat(incident.category);
+  const street = streetAddress(incident.approximateAddress);
+  const hood = neighborhoodLabel({ lat: incident.latitude, lng: incident.longitude }, street);
+  const place = [hood, street].filter(Boolean).join(", ") || t("inc.approx");
+  // A neighbor's report is titled with its category; don't say it twice.
+  const name = title(incident).toLowerCase();
+  const showKind = short.toLowerCase() !== name && label.toLowerCase() !== name;
   return (
     <Link
       href={`/incidents/${incident.id}`}
@@ -165,17 +181,21 @@ export function TopIncidentCard({ incident, distanceMi }: { incident: PublicInci
     >
       <div className="flex items-center gap-2 text-[13px] font-semibold text-muted">
         <LiveBadge size="md" />
-        <span>{t("feed.happeningNow")}</span>
-        <span className="ml-auto font-normal text-faint tnum">{timeAgo(incident.createdAt)}</span>
+        <span className="min-w-0 truncate">{t("feed.happeningNow")}</span>
+        <span className="ml-auto whitespace-nowrap pl-2 font-normal text-faint tnum">{timeAgo(incident.createdAt)}</span>
       </div>
       <div className="mt-3 flex gap-3.5">
         <CategoryIcon category={incident.category} size="lg" animated />
         <div className="min-w-0 flex-1">
           <h3 className="text-[20px] font-bold leading-[1.15] tracking-[-0.025em]">{title(incident)}</h3>
           <p className="mt-1 truncate text-[13px] text-muted">
-            <span style={{ color: def.color }}>{short}</span>
-            {" · "}
-            {incident.approximateAddress || t("inc.approx")}
+            {showKind && (
+              <>
+                <span style={{ color: def.color }}>{short}</span>
+                {" · "}
+              </>
+            )}
+            {place}
             {distanceMi != null && <span className="text-faint tnum"> · {formatDistance(distanceMi)}</span>}
           </p>
         </div>

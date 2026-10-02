@@ -31,7 +31,7 @@ export function CommunityScreen() {
   const [signIn, setSignIn] = useState(false);
   const { es } = useT();
   // Minute-level "now" so buckets and the Now badge stay pure during render.
-  const now = Math.floor(useClock(true) / 60_000) * 60_000;
+  const now = useClock(true, 60_000);
 
   const groups = useMemo(() => {
     const shown = kind === "all" ? events : events.filter((e) => e.kind === kind);

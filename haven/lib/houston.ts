@@ -147,3 +147,13 @@ export const FREEWAY_NAMES = [
   "the Loop",
   "Beltway 8",
 ] as const;
+
+/**
+ * The street part of an incident's address, or "" when there isn't one.
+ * (Older community reports stored the English words "Approximate location"
+ * where the address goes; treat that as no address so it can be translated.)
+ */
+export function streetAddress(address: string | null | undefined): string {
+  const a = (address ?? "").trim();
+  return a.toLowerCase() === "approximate location" ? "" : a;
+}
