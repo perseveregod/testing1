@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { BellRing } from "lucide-react";
 import { startAlarm, stopAlarm } from "@/lib/client/alarm";
 import { useClock, useSafeWalk } from "@/lib/client/safewalk";
+import { useT } from "@/lib/client/lang";
 
 /**
  * Mounted once for the whole app, so a missed Safe Walk check-in sounds the
@@ -15,6 +16,7 @@ export function SafeWalkWatcher() {
   const walk = useSafeWalk()?.walk ?? null;
   const now = useClock(walk != null);
   const path = usePathname();
+  const { t } = useT();
   const overdue = walk != null && now > 0 && now >= walk.endsAt;
 
   useEffect(() => {
@@ -37,8 +39,8 @@ export function SafeWalkWatcher() {
     >
       <BellRing className="haven-blink size-5 shrink-0" aria-hidden />
       <span className="min-w-0 flex-1">
-        <span className="block text-[15px] font-bold">Safe Walk check-in missed</span>
-        <span className="block text-[13px] opacity-90">Tap if you&apos;re OK, or to alert your contacts</span>
+        <span className="block text-[15px] font-bold">{t("safety.walkMissedBanner")}</span>
+        <span className="block text-[13px] opacity-90">{t("safety.walkMissedBannerBody")}</span>
       </span>
     </Link>
   );

@@ -187,6 +187,11 @@ export function SafeWalkScreen() {
                 <div className="mt-5 h-2 w-full overflow-hidden rounded-full bg-surface-3" aria-hidden>
                   <div className="h-full rounded-full bg-brand transition-[width] duration-1000 ease-linear" style={{ width: `${pct * 100}%` }} />
                 </div>
+                <p className="mt-3 max-w-xs text-[13px] leading-snug text-warn">
+                  {es
+                    ? "Mantenga Haven abierto y la pantalla encendida. Si el teléfono se bloquea, la alarma no puede sonar."
+                    : "Keep Haven open and the screen on. If the phone locks, the alarm can't sound."}
+                </p>
               </>
             )}
           </div>
@@ -337,37 +342,41 @@ export function SafeWalkScreen() {
           )}
         </section>
 
-        <Button size="lg" block onClick={start} className="mt-7">
+        {/* The limits come before the button, not after it: someone relying on
+            this needs to know what it won't do before they start walking. */}
+        <section aria-labelledby="walk-limits" className="mt-6 rounded-card bg-surface px-4 py-3.5">
+          <h2 id="walk-limits" className="text-[15px] font-semibold tracking-[-0.01em]">
+            {es ? "Antes de empezar" : "Before you start"}
+          </h2>
+          <ul className="mt-2 space-y-2 text-[14px] leading-snug text-muted">
+            {(es
+              ? [
+                  ["Es un temporizador en este teléfono.", "Si no toca “Estoy bien” a tiempo, suena una alarma aquí y queda listo un mensaje con su ubicación."],
+                  ["No se avisa a nadie automáticamente.", "Sus contactos solo se enteran si usted mismo envía el mensaje. Haven no llama ni escribe a nadie."],
+                  ["Solo funciona con Haven abierto en pantalla.", "Si el teléfono se bloquea o cambia de app, el tiempo sigue corriendo pero la alarma no puede sonar hasta que vuelva a abrir Haven."],
+                  ["Nadie está vigilando.", `Si está en peligro, llame al ${EMERGENCY_NUMBER}.`],
+                ]
+              : [
+                  ["It's a timer on this phone.", "If you don't tap “I'm safe” in time, an alarm sounds here and a text with your location is ready to send."],
+                  ["No one is notified automatically.", "Your contacts only find out if you send the text yourself. Haven doesn't call or message anyone."],
+                  ["It only works while Haven is open on your screen.", "If the phone locks or you switch apps, time keeps counting but the alarm can't sound until you open Haven again."],
+                  ["No one is monitoring this.", `If you're in danger, call ${EMERGENCY_NUMBER}.`],
+                ]
+            ).map(([lead, rest]) => (
+              <li key={lead} className="flex gap-2.5">
+                <span className="mt-[7px] size-1.5 shrink-0 rounded-full bg-faint" aria-hidden />
+                <span>
+                  <span className="font-medium text-text">{lead}</span> {rest}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <Button size="lg" block onClick={start} className="mt-4">
           <ShieldCheck className="size-5" aria-hidden /> {es ? "Iniciar Camino seguro" : "Start Safe Walk"}
         </Button>
 
-        {/* How it works comes after the button: someone about to walk home
-            shouldn't have to scroll past an explainer to start. */}
-        <h2 className="t-section mt-8 px-1">{es ? "Cómo funciona" : "How it works"}</h2>
-        <ol className="mt-2.5 divide-y divide-line rounded-card bg-surface px-4">
-          {(es
-            ? [
-                ["Inicie el temporizador", "Elija cuánto debería durar el camino. Toque “Estoy bien” al llegar."],
-                ["Si falta el aviso", "Si el tiempo se acaba, Haven suena una alarma en este teléfono."],
-                ["Avise a sus contactos", "Un mensaje con su ubicación queda listo para enviar. Usted lo envía; Haven nunca escribe a nadie por sí solo."],
-              ]
-            : [
-                ["Start the timer", "Pick how long the walk should take. Tap “I'm safe” when you arrive."],
-                ["Miss the check-in", "If the timer runs out, Haven sounds an alarm on this phone."],
-                ["Alert your contacts", "A text with your location is ready to send. You send it; Haven never messages anyone on its own."],
-              ]
-          ).map(([t, b], i) => (
-            <li key={t} className="flex gap-3.5 py-3">
-              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-surface-3 text-[12px] font-bold text-muted tnum" aria-hidden>
-                {i + 1}
-              </span>
-              <span className="min-w-0">
-                <span className="block text-[15px] font-medium tracking-[-0.01em]">{t}</span>
-                <span className="block text-[13px] leading-snug text-muted">{b}</span>
-              </span>
-            </li>
-          ))}
-        </ol>
         <p className="mt-3 text-center text-[12px] leading-relaxed text-faint">
           {es
             ? `Camino seguro es gratis para todos. No reemplaza al ${EMERGENCY_NUMBER}: si está en peligro, llame de inmediato.`
