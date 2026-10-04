@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Live 3D map of how futures and crypto markets are moving together, from 5-minute bars.">
+<title>LARA Market Observatory</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&family=Saira:wght@300;400;500;600&display=swap">
+<style>
+html { color-scheme: dark; }
+body { margin: 0; }
+img { max-width: 100%; }
+/* Layout: an instrument console. One bar of markets, one readout strip, two 3D views side by side, two plain-number cards under them. */
+:root {
+  color-scheme: dark;
+  --bg: #05070c;
+  --panel: #070a11;
+  --panel-2: #0c111c;
+  --line: #172033;
+  --line-2: #2a3855;
+  --fg: #e3e9f4;
+  --muted: #8a96ae;
+  --dim: #5d6982;
+  --up: #5aa9ff;
+  --down: #ff9a3d;
+  --snap: #c7b8ff;
+  --live: #5fd39a;
+  --warn: #e8c468;
+  --bad: #ff7a7a;
+  --f-display: "Saira", "Avenir Next", "Segoe UI", sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+body { background: var(--bg); color: var(--fg); font: 400 14px/1.5 var(--f-body); }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--up); outline-offset: 2px; }
+
+.app { max-width: 1480px; margin: 0 auto; padding-inline: clamp(16px, 2.4vw, 32px); padding-block: 14px 28px; display: grid; gap: 16px; }
+
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.brand { font: 600 13px/1 var(--f-display); letter-spacing: .34em; color: var(--fg); }
+.brand span { font-weight: 300; letter-spacing: .2em; color: var(--muted); margin-left: .6em; }
+.tabs { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; }
+.tabgroup { font: 400 10px/1 var(--f-display); letter-spacing: .2em; text-transform: uppercase; color: var(--dim); padding: 0 6px 0 12px; }
+.tabgroup:first-child { padding-left: 0; }
+.tab { font: 500 13px/1 var(--f-display); letter-spacing: .14em; padding: 9px 9px 8px; color: var(--muted); background: none; border: 0; border-bottom: 2px solid transparent; cursor: pointer; }
+.tab:hover { color: var(--fg); }
+.tab[aria-pressed="true"] { color: #fff; border-bottom-color: var(--up); }
+.bar-right { margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.status { --sc: var(--muted); display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 6px 11px; border: 1px solid color-mix(in srgb, var(--sc) 45%, transparent); border-radius: 999px; font: 400 11.5px/1.2 var(--f-mono); color: var(--muted); }
+.status b { font: 600 10.5px/1 var(--f-display); letter-spacing: .2em; color: var(--sc); }
+.status .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--sc); }
+.status[data-code="SNAPSHOT"] { --sc: var(--snap); }
+.status[data-code="LIVE"] { --sc: var(--live); }
+.status[data-code="DELAYED"] { --sc: var(--warn); }
+.status[data-code="STALE"], .status[data-code="OFFLINE"] { --sc: var(--bad); }
+.ctl { padding: 6px 11px; border: 1px solid var(--line-2); border-radius: 6px; background: none; color: var(--muted); font: 400 12px/1 var(--f-body); cursor: pointer; }
+.ctl:hover { color: var(--fg); border-color: var(--dim); }
+
+.summary { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px 40px; }
+.sym h1 { margin: 0; font: 300 clamp(34px, 5vw, 52px)/1 var(--f-display); letter-spacing: .2em; color: #fff; }
+.sym p { margin: 8px 0 0; color: var(--muted); font-size: 13px; }
+.facts { display: flex; flex-wrap: wrap; gap: 12px 34px; margin: 0; }
+.facts dt { font: 400 10px/1 var(--f-display); letter-spacing: .2em; text-transform: uppercase; color: var(--dim); margin-bottom: 7px; }
+.facts dd { margin: 0; font: 400 17px/1 var(--f-mono); font-variant-numeric: tabular-nums; color: var(--fg); }
+.up { color: var(--up); } .down { color: var(--down); }
+
+.stage, .details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.panel { min-width: 0; border: 1px solid var(--line); background: var(--panel); border-radius: 4px; }
+.panel > header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; padding: 12px 14px 0; }
+.panel h2, .card h2 { margin: 0; font: 500 11px/1.2 var(--f-display); letter-spacing: .22em; text-transform: uppercase; color: var(--fg); }
+.panel header p { margin: 0; color: var(--muted); font-size: 12.5px; min-width: 0; }
+.view { position: relative; height: clamp(340px, 42vw, 600px); touch-action: pan-y; }
+.view canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
+.view canvas:active { cursor: grabbing; }
+.labels { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.nlabel { position: absolute; left: 0; top: 0; display: grid; justify-items: center; gap: 3px; padding: 3px 6px; background: none; border: 0; cursor: pointer; pointer-events: auto; white-space: nowrap; }
+.nlabel b { font: 500 12px/1 var(--f-display); letter-spacing: .16em; color: var(--fg); }
+.nlabel i { font: 400 11px/1 var(--f-mono); font-style: normal; color: var(--muted); }
+.nlabel.pos i { color: var(--up); } .nlabel.neg i { color: var(--down); }
+.nlabel.sel b { font-size: 15px; color: #fff; }
+.dlabel { position: absolute; left: 0; top: 0; font: 400 11px/1 var(--f-mono); color: var(--muted); white-space: nowrap; }
+.dlabel.title { font: 400 10px/1 var(--f-display); letter-spacing: .2em; text-transform: uppercase; color: var(--dim); }
+.dlabel.hot { color: var(--fg); }
+.hint { position: absolute; right: 12px; bottom: 10px; font: 400 10px/1 var(--f-display); letter-spacing: .18em; text-transform: uppercase; color: var(--dim); pointer-events: none; }
+.nogl { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--muted); }
+
+.card { min-width: 0; border: 1px solid var(--line); background: var(--panel); border-radius: 4px; padding: 14px; }
+.card h2 b { color: var(--up); font-weight: 600; }
+.clist { list-style: none; margin: 12px 0 0; padding: 0; }
+.crow { display: grid; grid-template-columns: 3rem minmax(0, 1fr) minmax(90px, 36%) 3.4rem; align-items: center; gap: 10px; width: 100%; padding: 8px 4px; background: none; border: 0; border-top: 1px solid var(--line); text-align: left; cursor: pointer; }
+.crow:hover { background: var(--panel-2); }
+.crow .s { font: 500 12px/1 var(--f-display); letter-spacing: .14em; }
+.crow .n { color: var(--muted); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.crow .v { font: 400 13px/1 var(--f-mono); font-variant-numeric: tabular-nums; text-align: right; }
+.track { position: relative; height: 6px; background: var(--line); border-radius: 3px; }
+.track::after { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--line-2); }
+.track i { position: absolute; top: 0; bottom: 0; border-radius: 3px; }
+.note { margin: 12px 0 0; color: var(--muted); font-size: 12.5px; max-width: 65ch; }
+.dist { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px 22px; margin: 14px 0 0; }
+.dist dt { font: 400 10px/1.2 var(--f-display); letter-spacing: .18em; text-transform: uppercase; color: var(--dim); margin-bottom: 6px; }
+.dist dd { margin: 0; font: 400 14px/1.35 var(--f-mono); font-variant-numeric: tabular-nums; }
+.dist dd small { display: block; font-size: 11.5px; color: var(--muted); }
+.foot { color: var(--dim); font-size: 12px; margin: 0; }
+
+dialog { width: min(640px, calc(100% - 32px)); max-height: min(80vh, 720px); padding: 0; border: 1px solid var(--line-2); border-radius: 6px; background: var(--panel-2); color: var(--fg); }
+dialog::backdrop { background: rgba(2, 4, 8, .72); }
+.dlg { padding: 22px 24px 24px; overflow-y: auto; max-height: inherit; }
+.dlg header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.dlg h2 { margin: 0; font: 300 24px/1.1 var(--f-display); letter-spacing: .06em; }
+.dlg h3 { margin: 20px 0 6px; font: 500 11px/1 var(--f-display); letter-spacing: .22em; text-transform: uppercase; color: var(--fg); }
+.dlg p { margin: 0 0 8px; color: var(--muted); max-width: 65ch; }
+
+@media (max-width: 860px) {
+  .stage, .details { grid-template-columns: minmax(0, 1fr); }
+  .view { height: clamp(320px, 84vw, 520px); }
+  .bar-right { margin-left: 0; }
+}
+@media (max-width: 480px) {
+  .crow { grid-template-columns: 3rem minmax(0, 1fr) 3.4rem; }
+  .crow .n { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="bar">
+    <div class="brand">LARA<span>Market Observatory</span></div>
+    <nav class="tabs" id="tabs" aria-label="Markets"></nav>
+    <div class="bar-right">
+      <div class="status" id="status" data-code="LOADING"><span class="dot"></span><b id="statusCode">LOADING</b><span id="statusText"></span></div>
+      <button class="ctl" id="btnPause" type="button" aria-pressed="false">Pause</button>
+      <button class="ctl" id="btnReset" type="button">Reset view</button>
+      <button class="ctl" id="btnInfo" type="button">How it works</button>
+    </div>
+  </header>
+
+  <section class="summary" aria-live="polite">
+    <div class="sym"><h1 id="symId">…</h1><p id="symName">Loading market data</p></div>
+    <dl class="facts">
+      <div><dt>Last</dt><dd id="fLast"></dd></div>
+      <div><dt id="fChgLabel">Session</dt><dd id="fChg"></dd></div>
+      <div><dt>Typical 5-min move</dt><dd id="fSd"></dd></div>
+      <div><dt>Last bar</dt><dd id="fBar"></dd></div>
+    </dl>
+  </section>
+
+  <main class="stage">
+    <section class="panel">
+      <header><h2>Return correlations</h2><p id="fieldSub"></p></header>
+      <div class="view" id="fieldView" tabindex="0" role="img" aria-label="3D map of markets. Markets that move together sit close together. Drag or use arrow keys to rotate.">
+        <canvas></canvas><div class="labels" id="fieldLabels"></div><span class="hint">Drag to rotate</span>
+      </div>
+    </section>
+    <section class="panel">
+      <header><h2>Return density</h2><p id="densSub"></p></header>
+      <div class="view" id="densView" tabindex="0" role="img" aria-label="3D surface of how five-minute returns were distributed through the session. Drag or use arrow keys to rotate.">
+        <canvas></canvas><div class="labels" id="densLabels"></div><span class="hint">Drag to rotate</span>
+      </div>
+    </section>
+  </main>
+
+  <section class="details">
+    <div class="card">
+      <h2>Moving with <b id="corrSym"></b></h2>
+      <ol class="clist" id="corrList"></ol>
+      <p class="note" id="corrNote"></p>
+    </div>
+    <div class="card">
+      <h2 id="distTitle">Last 120 five-minute returns</h2>
+      <dl class="dist" id="dist"></dl>
+      <p class="note" id="distNote"></p>
+    </div>
+  </section>
+
+  <p class="foot">Reference data only. No broker connection, no orders, no predictions.</p>
+</div>
+
+<dialog id="info" aria-labelledby="infoTitle">
+  <div class="dlg">
+    <header><h2 id="infoTitle">How it works</h2><button class="ctl" id="btnClose" type="button">Close</button></header>
+    <h3>Data</h3>
+    <p id="infoData"></p>
+    <p>Every number comes from completed five-minute bars. A return is the change from one bar's close to the next. If two bars are not exactly five minutes apart (the daily futures break, a weekend, a missing bar), no return is counted for that gap.</p>
+    <h3>Correlation map</h3>
+    <p>Each market's correlation with every other market is measured on the last 120 five-minute returns the two share (10 hours). A pair with fewer than 30 shared returns is shown as not measured and gets no line.</p>
+    <p>Markets are placed so that distance follows correlation: the closer two markets sit, the more they moved together. It is a 3D approximation, and near-identical markets are nudged apart so both labels stay readable. Lines are drawn for correlations of 0.35 or stronger, blue for positive and orange for negative.</p>
+    <p>The burst around each market is its last 120 returns laid out like a clock, oldest at the top and running clockwise. A longer spoke is a bigger move, on the same scale for every market. Blue is up, orange is down, and older spokes are fainter.</p>
+    <h3>Density surface</h3>
+    <p>Each ridge shows how 48 consecutive returns (4 hours) were spread out: left of zero is down, right is up, and height is how common that size of move was. Ridges step forward 25 minutes at a time, oldest at the back and the latest at the front.</p>
+    <p>Each ridge is smoothed with the standard rule-of-thumb width for its sample size, so a peak needs several returns behind it to show up. Returns larger than the axis fall off the chart; the range in the card below gives the true extremes.</p>
+    <h3>Motion</h3>
+    <p>The slow sway is only there to show depth. It carries no data, and Pause stops it.</p>
+  </div>
+</dialog>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>window.LARA_CONFIG = { mode: 'live', api: '/api/market', every: 60 };</script>
+<script src="math.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
